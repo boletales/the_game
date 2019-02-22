@@ -42,6 +42,9 @@
                 document.getElementById("anataha").innerHTML="あなたは ";
                 document.getElementById("name").innerHTML=name;
             });
+            socket.on("reconnect", function(data){
+                location.reload(true);
+            });
             function send(command){
                 socket.emit("command",{"command":command});
             }

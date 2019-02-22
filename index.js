@@ -19,7 +19,8 @@ io.on('connection',function(socket){
         io.emit('message',data);
     });
     let id="guest"+Math.floor(Math.random()*10000);
-    socket.emit("joined",{"id":id})
+    socket.emit("joined",{"id":id});
+    console.log("connected:"+id);
 
     waiting.push(new Human(id,socket));
     if(turns==0 && waiting.length+players.length>=2)init();
@@ -28,10 +29,10 @@ io.on('connection',function(socket){
         players.filter(p=>p.hasOwnProperty("socket")).filter(p=>p.socket==socket).forEach(function(player){
             player.hp=0;
             player.input=function(cb){
-                cb(new decision(player.name,player.name,_SKILLS.non));
+                cb(new decision([_SKILLS.non]));
             }.bind(player);
             if(todo.length>1 && todo[1].hasOwnProperty("turn")){
-                newresult[player.name]=new decision(player.name,player.name,_SKILLS.non);
+                newresult[player.name]=new decision([_SKILLS.non]);
                 if(Object.keys(newresult).length==Object.keys(todo[0]).length){
                     todo.shift();
                     result=Object.assign(newresult);
@@ -39,6 +40,8 @@ io.on('connection',function(socket){
                     tick();
                 }
             }
+            player.clearCommand();
+            console.log("disconnected:"+player.name);
         });
     });
 });
@@ -49,7 +52,13 @@ console.log('It works!!');
 function Human(name,socket){
     Player.call(this,name);
     this.socket=socket;
-    this.input=commandInput.bind(null,this);
+    this.sleepcount=0;
+    this.input=function(callBack){
+        let timeout=setTimeout(function(callBack){
+            this.clearCommand();callBack(new decision([_SKILLS.non]));this.sleepcount++;if(this.sleepcount>=2)this.hp=0;
+        }.bind(this,callBack),15000);
+        commandInput(this,[],[{message:"行動入力",type:"action"}],undefined,callBack,timeout);
+    }.bind(this);
     this.onCommand=function(){};
     this.reqCommand=function(onCommand,message,commands){
         this.socket.emit('input_command',{"message":message,"commands":commands});
@@ -70,6 +79,8 @@ function log(str){
 
 
 const _HP=6;
+const _ATTACK_DEFAULT=(user,players,decisions,args)=>players.map(p=>0);
+const _DEFENSE_DEFAULT=(user,players,decisions,damages,args)=>damages.forEach(d=>user.hp-=d);
 const _SKILLS={
     //id:技id mes:技名
     //atk:(技主,対象,対象の使用技)=>対象への攻撃力(防御前)
@@ -77,16 +88,73 @@ const _SKILLS={
     //act:技主=>使用時エフェクト
     //forone:対象は一人か (falseなら自分用の技か全体攻撃)
     //pow:威力(攻撃技専用)
-    non:{id:0,mes:"スカ",forone:false,},
-    def:{id:1,mes:"防御",forone:false,                                                            dmg:(p,o,od,at)=>Math.max(at-1,0)},
-    atk:{id:2,mes:"攻撃",forone:true ,atk:(p,o,od)=>_SKILLS.atk.pow ,pow:1},
-    chr:{id:3,mes:"溜め",forone:false,                                                            act:p=>p.charge++},
-    wav:{id:4,mes:"光線",forone:true ,atk:(p,o,od)=>(od.id==_SKILLS.mir.id ? 0 : _SKILLS.wav.pow),act:p=>p.charge-- ,req:(p)=>(p.charge>0),pow:3},
-    mir:{id:5,mes:"反射",forone:false,atk:(p,o,od)=>(od.id==_SKILLS.wav.id ? _SKILLS.wav.pow : 0),dmg:(p,o,od,at)=>(od.id==_SKILLS.wav.id ? 0 : at)},
+    non:{id:0,mes:"スカ",args:[],
+        attackPhase :_ATTACK_DEFAULT,
+        defensePhase:_DEFENSE_DEFAULT
+    },
+
+    def:{id:1,mes:"防御",args:[], 
+            attackPhase:_ATTACK_DEFAULT,
+            defensePhase:function(user,players,decisions,damages,args){
+                damages.forEach(d=>user.hp-=Math.max(0,d-1));
+            },
+            dmg:(p,o,od,at)=>Math.max(at-1,0)
+        },
+
+    atk:{id:2,mes:"攻撃",args:[{message:"対象入力",type:"opponent"}],
+            attackPhase:function(user,players,decisions,args){
+                let damages=players.map(p=>0);
+                damages[players.findIndex(p=>p.name==args[0])] = _SKILLS.atk.pow;
+                return damages;
+            },pow:1,
+            defensePhase:_DEFENSE_DEFAULT
+        },
+
+    chr:{id:3,mes:"溜め",args:[],
+            attackPhase:function(user,players,decisions,args){
+                let damages=players.map(p=>0);
+                user.charge++;
+                return damages;
+            },
+            defensePhase:_DEFENSE_DEFAULT
+        },
+
+    wav:{id:4,mes:"光線",args:[{message:"対象入力",type:"opponent"}],
+            attackPhase:function(user,players,decisions,args){
+                let damages=players.map(p=>0);
+                if(user.charge>0){
+                    user.charge--;
+                    let target=players.findIndex(p=>p.name==args[0]);
+                    damages[target] = _SKILLS.wav.pow;
+                }
+                return damages;
+            },
+            beam:true,
+            requirement:(p)=>(p.charge>0),pow:3,
+            defensePhase:_DEFENSE_DEFAULT
+        },
+    
+    mir:{id:5,mes:"反射",args:[],
+            attackPhase:function(user,players,decisions,args){
+                return decisions.map(d=>
+                    d.skill.hasOwnProperty("beam")?d.skill.pow:0);
+            },
+            defensePhase:function(user,players,decisions,damages,args){
+                damages.map((d,i)=>
+                    decisions[i].skill.hasOwnProperty("beam")?0:d);
+            },
+        }
     //sui:{id:7,mes:"自殺"                                                                ,act:p=>(p.hp=0)}
 };
 
 players=[];
+function reset(){
+    turns=0;
+    players=[];
+    playercount=0;
+    waiting=[];
+    io.emit("reconnect");
+}
 
 let todoMoto=[
     {start:function(cb){
@@ -135,51 +203,66 @@ function tick(){
         }.bind(null,id,Object.keys(todo[0]).length));
     }
 }
-function commandInput(from,callBack){
-    let onCommand=function (callBack,input){
-        let _callBack=callBack;
-        from.clearCommand();
-        let skill=_SKILLS[input];
-        if(skill.forone){
-            aimInput(from,skill,_callBack);
-        }else{
-            _callBack(decision(from.name,from.name,skill))
-        }
-    }.bind(null,callBack);
+
+function commandInput(from,args,argsleft,backToPrev,callBack,timeout){
+    switch (argsleft[0].type) {
+        case "action":
+            var options=Object.keys(_SKILLS).filter(command=>
+                !_SKILLS[command].hasOwnProperty("requirement")
+                ||_SKILLS[command].requirement(from)
+            );
+            var optionnames=options.map(s=>_SKILLS[s].mes);
+            var optionargs=(n)=>_SKILLS[n].args;
+            var optionconv=(n)=>_SKILLS[n];
+            break;
+        case "opponent":
+            var options=players.filter(p=>p!==from).map(p=>p.name);
+            var optionnames=options;
+            break;
     
-    let avilableCommands=Object.keys(_SKILLS).filter(command=>
-        !_SKILLS[command].hasOwnProperty("req")
-        ||_SKILLS[command].req(from)
-    )
-    from.reqCommand(onCommand,"行動入力",avilableCommands.map(c=>{return {"name":_SKILLS[c].mes,"command":c}}));
-    
-    function aimInput(from,skill,callBack){        
-        let onAim=function(callBack,input){
-            if(input=="!cancel"){
-                commandInput(from,callBack);
-                return;
-            }
-            let _callBack=callBack;
-            from.clearCommand();
-            _callBack(decision(from.name,input,skill));
-        }.bind(null,callBack);
-        from.reqCommand(onAim,"対象入力",[{"name":"キャンセル","command":"!cancel"}]
-            .concat(players.filter(p=>p!==from).map(p=>{return {"name":p.name,"command":p.name}})));
+        default:
+            break;
     }
+    let backToThis=function (from,args,argsleft,backToPrev,callBack,timeout){
+        commandInput(from,args,argsleft,backToPrev,callBack,timeout)
+    }.bind(null,from,args,argsleft,backToPrev,callBack,timeout);
+    let onCommand=function (from,callBack,args,argsleft,optionargs,backToThis,backToPrev,optionconv,timeout,input){
+        from.clearCommand();
+        if(input=="!cancel") backToPrev();
+        var newargs=[];
+        if(optionargs!=undefined)var newargs=optionargs(input);
+        if(optionconv!=undefined)input=optionconv(input);
+        if(argsleft.length+newargs.length<=1){
+            callBack(decision(args.concat(input)));
+            clearTimeout(timeout);
+            from.sleepcount=0;
+        }else{
+            commandInput(from,args.concat(input),argsleft.concat(newargs).slice(1),backToThis,callBack,timeout);
+        }
+    }.bind(null,from,callBack,args,argsleft,optionargs,backToThis,backToPrev,optionconv,timeout);
+    
+    if(args.length==0){
+        from.reqCommand(onCommand,argsleft[0].message,options.map((c,i)=>{return {"name":optionnames[i],"command":c}}));
+    }else{
+        from.reqCommand(onCommand,argsleft[0].message,
+            [{"name":"キャンセル","command":"!cancel"}].concat(options.map((c,i)=>{return {"name":optionnames[i],"command":c}})));
+    }
+
+    
 }
 function logLine(str){
     log(str+"\n");
 }
 
 
-function decision(from,to,skill){
-    return {from:from,to:to,skill:skill};
+function decision(args){
+    return {skill:args[0],args:args.slice(1)};
 }
 function Player(name){
     this.hp=_HP;
     this.name=name;
     this.charge=0;
-    this.decision=function(o){return _SKILLS.non}.bind(this);
+    this.decision=function(o){return new decision([_SKILLS.non])}.bind(this);
     this.input=function(cb){
         cb(this.decision(players.filter(v=>v!==this)))
     }.bind(this);
@@ -188,131 +271,41 @@ function Player(name){
         return this.name+"(hp:"+this.hp+",charge:"+this.charge+")";
     }
 }
-
-
-function Random(name){
-    Player.call(this,name);
-    this.decision=function(o){
-        return decision(
-            this.name,
-            array_shuffle(o)[0].name,
-            _SKILLS[Object.keys(_SKILLS)[Math.floor(Math.random()*Object.keys(_SKILLS).length-1)+1]]
-        );
-    };
-}
-function CPU1(name){
-    Player.call(this,name);
-    this.decision=function(o){
-        let weakest=array_shuffle(o).sort((p1,p2)=>p1.hp-p2.hp)[0];
-        if(this.charge>0){
-            if(weakest.hp>=3){
-                return decision(
-                    this.name,
-                    weakest.name,
-                    _SKILLS.wav
-                );
-            }
-        }else{
-            if(Math.random()>0.7){
-                return decision(
-                    this.name,
-                    weakest.name,
-                    _SKILLS.chr
-                );
-            }
-        }
-        return decision(
-            this.name,
-            weakest.name,
-            _SKILLS.atk
-        );
-    };
-}
-function CPU2(name){
-    Player.call(this,name);
-    this.decision=function(o){
-        let strongest=array_shuffle(o).sort((p1,p2)=>p2.hp-p1.hp)[0];
-        if(this.charge>0){
-            if(strongest.hp>=3){
-                return decision(
-                    this.name,
-                    strongest.name,
-                    _SKILLS.wav
-                );
-            }
-        }else{
-            if(Math.random()>0.7){
-                return decision(
-                    this.name,
-                    strongest.name,
-                    _SKILLS.chr
-                );
-            }
-        }
-        return decision(
-            this.name,
-            strongest.name,
-            _SKILLS.atk
-        );
-    };
-}
 function array_shuffle(arr){
     let newarr=[];
     arr.forEach(v=>newarr.splice(Math.floor((newarr.length+1)*Math.random()),0,v));
     return newarr;
 }
 
-
-function req(pFrom,dFrom){
-    if(dFrom.hasOwnProperty("req") && !dFrom.req(pFrom)){
-        return _SKILLS.non;
-    }else{
-        return dFrom;
-    }
-}
-function act(p,d){
-    if(d.hasOwnProperty("act")){
-        d.act(p);
-    }
-}
-function atk(pAtk,dAtk,pDef,dDef){
-    if(dAtk.hasOwnProperty("atk")){
-        return dAtk.atk(pAtk,pDef,dDef);
-    }else{
-        return 0;
-    }
-}
-function def(pDef,dDef,pAtk,dAtk,atk){
-    if(dDef.hasOwnProperty("dmg")){
-        pDef.hp-=dDef.dmg(pDef,pAtk,dAtk,atk);
-    }else{
-        pDef.hp-=atk;
-    }
-}
 function turn(players,decisions){
     logLine("~~~~~");
+    //条件処理
+    for(let from=0;from<decisions.length;from++){
+        if( decisions[from].skill.hasOwnProperty("reqirement") &&
+            decisions[from].skill.requirement(players[from])){
+                decisions[from].skill=_SKILLS.non;
+            }
+    }
+
+    let damages=players.map(p=>[]);
+    //攻撃処理
+    for(let from=0;from<decisions.length;from++){
+        decisions[from].skill.attackPhase(players[from],players,decisions,decisions[from].args).forEach((damage,i) => {
+            damages[i].push(damage);
+        });
+    }
+    //防御処理
+    for(let from=0;from<decisions.length;from++){
+        decisions[from].skill.defensePhase(players[from],players,decisions,damages[from],decisions[from].args);
+    }
+
+    //技表示
     for(let i=0;i<decisions.length;i++){
-        if(decisions[i].skill.forone){
-            logLine(players[i].name+" : "+decisions[i].skill.mes+"⇢"+decisions[i].to);
+        if(decisions[i].args.hasOwnProperty("to")){
+            logLine(players[i].name+" : "+decisions[i].skill.mes+"⇢"+decisions[i].args.to);
         }else{
             logLine(players[i].name+" : "+decisions[i].skill.mes);
         }
-    }
-    //条件処理
-    for(let from=0;from<decisions.length;from++){
-        let to=players.findIndex(v=>v.name==decisions[from].to);
-        decisions[from].skill=req(players[from],decisions[from].skill,players[to],decisions[to].skill);
-    }
-    //行動処理
-    for(let from=0;from<decisions.length;from++){
-        let to=players.findIndex(v=>v.name==decisions[from].to);
-        act(players[from],decisions[from].skill);
-    }
-    //攻撃処理
-    for(let from=0;from<decisions.length;from++){
-        let to=players.findIndex(v=>v.name==decisions[from].to);
-        let atkpow=atk(players[from],decisions[from].skill,players[to],decisions[to].skill);
-        def(players[to],decisions[to].skill,players[from],decisions[from].skill,atkpow);
     }
     logLine("~~~~~");
     //hp表示
@@ -329,8 +322,10 @@ function turn(players,decisions){
         return true;
     }else{
         logLine("試合終了");
-        if(livingCount>0)logLine("勝者..."+players[0].name);
+        if(livingCount>0)logLine("勝者..."+players.filter(v=>v.hp>0)[0].name);
         else logLine("勝者...なし");
+        logLine("10秒後にリスタート");
+        setTimeout(()=>reset(),10000);
         return false;
     }
 }
