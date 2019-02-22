@@ -18,15 +18,17 @@ io.on('connection',function(socket){
         console.log(data);
         io.emit('message',data);
     });
-    waiting.push(new Human("p"+playercount,socket));
-    if(turns==0)init();
+    let id="guest"+Math.floor(Math.random()*10000);
+    socket.emit("joined",{"id":id})
+
+    waiting.push(new Human(id,socket));
+    if(turns==0 && waiting.length+players.length>=2)init();
 
     socket.on('disconnect',(data)=>{
         players.filter(p=>p.hasOwnProperty("socket")).filter(p=>p.socket==socket).forEach(function(player){
             player.hp=0;
-            player.decision=function(o){return new decision(player.name,player.name,_SKILLS.non)}.bind(this);
             player.input=function(cb){
-                cb(this.decision(players.filter(v=>v!==this)));
+                cb(new decision(player.name,player.name,_SKILLS.non));
             }.bind(player);
             if(todo.length>1 && todo[1].hasOwnProperty("turn")){
                 newresult[player.name]=new decision(player.name,player.name,_SKILLS.non);
@@ -50,12 +52,12 @@ function Human(name,socket){
     this.input=commandInput.bind(null,this);
     this.onCommand=function(){};
     this.reqCommand=function(onCommand,message,commands){
-        io.to(this.socket.id).emit('input_command',{"message":message,"commands":commands});
+        this.socket.emit('input_command',{"message":message,"commands":commands});
         this.onCommand=onCommand;
     }
     this.clearCommand=function(){
         this.socket.on("command",function(){});
-        io.to(this.socket.id).emit("clear_command",{});
+        this.socket.emit("clear_command",{});
     }
     this.socket.on("command",function(data){
         this.onCommand(data.command)
@@ -84,7 +86,7 @@ const _SKILLS={
     //sui:{id:7,mes:"自殺"                                                                ,act:p=>(p.hp=0)}
 };
 
-players=[new Random("r1"),new Random("r2")];
+players=[];
 
 let todoMoto=[
     {start:function(cb){
@@ -144,10 +146,11 @@ function commandInput(from,callBack){
             _callBack(decision(from.name,from.name,skill))
         }
     }.bind(null,callBack);
+    
     let avilableCommands=Object.keys(_SKILLS).filter(command=>
-            !_SKILLS[command].hasOwnProperty("req")
-            ||players.filter(p=>p!==from).filter(player=>_SKILLS[command].req(player)).length>0
-        )
+        !_SKILLS[command].hasOwnProperty("req")
+        ||_SKILLS[command].req(from)
+    )
     from.reqCommand(onCommand,"行動入力",avilableCommands.map(c=>{return {"name":_SKILLS[c].mes,"command":c}}));
     
     function aimInput(from,skill,callBack){        
@@ -328,8 +331,6 @@ function turn(players,decisions){
         logLine("試合終了");
         if(livingCount>0)logLine("勝者..."+players[0].name);
         else logLine("勝者...なし");
-        turns=0;
-        init();
         return false;
     }
 }

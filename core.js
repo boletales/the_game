@@ -75,7 +75,7 @@ function commandInput(from,callBack){
         )
     from.reqCommand(onCommand,"行動入力",avilableCommands.map(c=>{return {"name":_SKILLS[c].mes,"command":c}}));
     
-    function aimInput(from,skill,callBack){        
+    function aimInput(from,skill,callBack){
         let onAim=function(callBack,input){
             if(input=="!cancel"){
                 commandInput(from,callBack);
