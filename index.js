@@ -40,6 +40,7 @@ http.listen(process.env.PORT || 80);
 console.log('It works!!');
 
 function resetGame(){
+    recentLog=[];
     delete game;
     game=new _game.Game(_SKILLS_MOTO,_HP_DEFAULT,resetGame,log);
     Object.keys(io.sockets.connected).forEach(k=>{
@@ -49,7 +50,7 @@ function resetGame(){
         log("connected:"+id);
         game.joinPlayer(new Human(id,game,s),Infinity);
     });
-    if(game.players.length>=2)game.init();
+    if(game.players.length>=2)game.init();    
 }
 
 function Human(name,game,socket){
