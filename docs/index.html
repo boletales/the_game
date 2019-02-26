@@ -38,13 +38,17 @@
                 document.getElementById("command").innerHTML="…待機…";
             });
             socket.on("joined", function(data){
+                setName(data);
+            });
+            socket.on("reset", function(data){
+                setName(data);
+                document.getElementById("output").innerText="";
+            });
+            function setName(data){
                 name=data.id;
                 document.getElementById("anataha").innerHTML="あなたは ";
                 document.getElementById("name").innerHTML=name;
-            });
-            socket.on("reconnect", function(data){
-                location.reload(true);
-            });
+            }
             function send(command){
                 socket.emit("command",{"command":command});
             }
