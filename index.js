@@ -23,6 +23,7 @@ io.on('connection',function(socket){
     socket.on('chat',function(data){
         data.time=new Date();
         console.log(data);
+        if(data.message.startsWith("!")) command(data.message);
         io.emit('message',data);
     });
     socket.on('disconnect',(data)=>{
@@ -81,4 +82,20 @@ function log(str){
 }
 function logLine(str){
     log(str+"\n");
+}
+
+function command(_com){
+    let com=_com.split(" ");
+    switch (com[0]) {
+        case "reset":
+            resetGame();
+            break;
+
+        case "kick":
+            if(game!=undefined && game.hasOwnProperty("killPlayer"))(game.killPlayer(com[1]));
+            break;
+    
+        default:
+            break;
+    }
 }
