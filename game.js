@@ -74,6 +74,7 @@ exports._HP_DEFAULT=6;
 class Game{
     constructor(skills,hp,onReset,log){
         this.log=log;
+        this.startnumber=2;
         this.todoMoto=[
             {start:function(cb){
                 this.log("★第"+this.turns+"ターン★");
@@ -248,14 +249,20 @@ class Game{
             player.clearCommand();
         });
     }
-    joinPlayer(player,startnumber){
+    joinPlayer(player){
         if(this.turns==0){
             this.players.push(player);
-            if(this.players.length>=startnumber){
+            if(this.players.length>=this.startnumber){
                 this.init();
             }
         }else{
             this.waiting.push(player);
+        }
+    }
+    setStartnumber(startnumber){
+        this.startnumber=startnumber;
+        if(this.players.length>=this.startnumber){
+            this.init();
         }
     }
 }

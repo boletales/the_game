@@ -23,7 +23,7 @@ io.on('connection',function(socket){
     sendRecentLog(socket);
     socket.emit("joined",{"id":id});
     log("connected:"+id);
-    game.joinPlayer(new Human(id,game,socket),2);
+    game.joinPlayer(new Human(id,game,socket));
 
     socket.on('chat',function(data){
         chat(data);
@@ -104,6 +104,10 @@ function command(_com){
 
         case "kick":
             if(game!=undefined && game.killPlayer!=undefined)(game.killPlayer(com[1]));
+            break;
+
+        case "startnumber":
+            if(game!=undefined && game.setStartnumber!=undefined)(game.setStartnumber(parseInt(com[1])));
             break;
     
         default:
