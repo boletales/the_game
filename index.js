@@ -48,9 +48,9 @@ function resetGame(){
         let id="guest"+Math.floor(Math.random()*10000);
         s.emit("reset",{"id":id});
         log("connected:"+id);
-        game.joinPlayer(new Human(id,game,s),Infinity);
+        game.joinPlayer(new Human(id,game,false));
     });
-    if(game.players.length>=2)game.init();    
+    setStartnumber(game.startnumber);
 }
 
 function Human(name,game,socket){

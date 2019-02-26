@@ -249,10 +249,10 @@ class Game{
             player.clearCommand();
         });
     }
-    joinPlayer(player){
+    joinPlayer(player,start=true){
         if(this.turns==0){
             this.players.push(player);
-            if(this.players.length>=this.startnumber){
+            if(start && this.players.length>=this.startnumber){
                 this.init();
             }
         }else{
