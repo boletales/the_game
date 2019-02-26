@@ -4,25 +4,29 @@ const http=require('http').createServer(app);
 const socketIO=require('socket.io');
 const room=require('socket.io')
 const io=socketIO.listen(http);
-const _TIMEOUT_SECONDS=150;
+const _TIMEOUT_SECONDS=240;
 var events = require('events');
 var eventEmitter = new events.EventEmitter();
 eventEmitter.setMaxListeners(40);
-let playercount=0;
+
 const _HP_DEFAULT=6;
+
+let recentLog=[];
+let recentLogMax=20;
+
 let game=new _game.Game(_game._SKILLS_MOTO,_HP_DEFAULT,resetGame,log);
 app.get('/',function(req,res){
     res.sendFile(__dirname+'/docs/index.html');
 });
 io.on('connection',function(socket){
     let id="guest"+Math.floor(Math.random()*10000);
+    sendRecentLog(socket);
     socket.emit("joined",{"id":id});
     log("connected:"+id);
     game.joinPlayer(new Human(id,game,socket),2);
 
     socket.on('chat',function(data){
-        data.time=new Date();
-        console.log(data);
+        chat(data);
         if(data.message.startsWith("!")) command(data.message.slice(1));
         io.emit('message',data);
     });
@@ -77,8 +81,19 @@ function Human(name,game,socket){
 }
 
 function log(str){
-    io.emit('message',{"name":"★system","message":str});
-    process.stdout.write("★system≫"+str+"\n");
+    chat({"name":"★system","message":str});
+}
+function chat(data){
+    data.time=new Date();
+    io.emit('message',data);
+    process.stdout.write(data.name+"≫"+data.message+"\n");
+    recentLog.push(data);
+    if(recentLog.length>recentLogMax)recentLog.shift();
+}
+function sendRecentLog(socket){
+    recentLog.forEach(data=>
+            socket.emit("message",data)
+        );
 }
 
 function command(_com){
