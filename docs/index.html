@@ -17,11 +17,7 @@
             let socket = io.connect();
             let name="接続待ち";
             socket.on("message", function(data){
-                if(data.name=="system★"){
-                    document.getElementById("output").innerText+=data.message;
-                }else{
-                    document.getElementById("output").innerText+=data.name+"≫"+data.message;
-                }
+                document.getElementById("output").innerText+=data.name+"≫"+data.message+"\n";
                 document.getElementById("output").scrollTop = document.getElementById("output").scrollHeight;
             });
             document.getElementById("chat").onsubmit=function(e){

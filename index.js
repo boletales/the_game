@@ -80,9 +80,6 @@ function log(str){
     io.emit('message',{"name":"★system","message":str});
     process.stdout.write("★system≫"+str);
 }
-function logLine(str){
-    log(str+"\n");
-}
 
 function command(_com){
     let com=_com.split(" ");

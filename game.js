@@ -76,7 +76,7 @@ class Game{
         this.log=log;
         this.todoMoto=[
             {start:function(cb){
-                this.logLine("★第"+this.turns+"ターン★");
+                this.log("★第"+this.turns+"ターン★");
                 this.players=this.players.concat(this.waiting);
                 this.waiting=[];
                 this.todo[1]={};
@@ -105,9 +105,6 @@ class Game{
         this.result={};
         this.newresult={};
         this.onReset=onReset;
-    }
-    logLine(str){
-        this.log(str+"\n");
     }
     reset(){
         this.turns=0;
@@ -186,7 +183,7 @@ class Game{
     }
 
     turn(players,decisions){
-        this.logLine("~~~~~");
+        this.log("~~~~~");
         //条件処理
         for(let from=0;from<decisions.length;from++){
             if( decisions[from].skill.hasOwnProperty("reqirement") &&
@@ -206,7 +203,7 @@ class Game{
         for(let from=0;from<decisions.length;from++){
             decisions[from].skill.defensePhase(players[from],players,decisions,damages[from],decisions[from].args);
         }
-        this.logLine("~~~~~");
+        this.log("~~~~~");
         //hp表示
         let livingCount=players.filter(v=>v.hp>0).length;
         for(let i=0;i<decisions.length;i++){
@@ -216,19 +213,19 @@ class Game{
                 this.log(players[i].name+" : "+decisions[i].skill.mes);
             }
             if(players[i].hp<=0){
-                this.logLine("  死亡("+(livingCount+1)+"位)...");
+                this.log("  死亡("+(livingCount+1)+"位)...");
             }else{
-                this.logLine("  "+"♥".repeat(players[i].hp)+"   "+"☯".repeat(players[i].charge));
+                this.log("  "+"♥".repeat(players[i].hp)+"   "+"☯".repeat(players[i].charge));
             }
         }
-        this.logLine("~~~~~");
+        this.log("~~~~~");
         if(livingCount>1){
             return true;
         }else{
-            this.logLine("試合終了");
-            if(livingCount>0)this.logLine("勝者..."+players.filter(v=>v.hp>0)[0].name);
-            else this.logLine("勝者...なし");
-            this.logLine("10秒後にリスタート");
+            this.log("試合終了");
+            if(livingCount>0)this.log("勝者..."+players.filter(v=>v.hp>0)[0].name);
+            else this.log("勝者...なし");
+            this.log("10秒後にリスタート");
             setTimeout(()=>this.reset(),10000);
             return false;
         }
