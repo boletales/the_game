@@ -23,7 +23,7 @@ io.on('connection',function(socket){
     socket.on('chat',function(data){
         data.time=new Date();
         console.log(data);
-        if(data.message.startsWith("!")) command(data.message);
+        if(data.message.startsWith("!")) command(data.message.slice(1));
         io.emit('message',data);
     });
     socket.on('disconnect',(data)=>{
@@ -78,7 +78,7 @@ function Human(name,game,socket){
 
 function log(str){
     io.emit('message',{"name":"★system","message":str});
-    process.stdout.write("★system≫"+str);
+    process.stdout.write("★system≫"+str+"\n");
 }
 
 function command(_com){
@@ -89,7 +89,7 @@ function command(_com){
             break;
 
         case "kick":
-            if(game!=undefined && game.hasOwnProperty("killPlayer"))(game.killPlayer(com[1]));
+            if(game!=undefined && game.killPlayer!=undefined)(game.killPlayer(com[1]));
             break;
     
         default:
