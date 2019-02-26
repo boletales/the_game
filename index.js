@@ -93,7 +93,7 @@ function chat(data){
 function sendRecentLog(socket){
     recentLog.forEach(data=>
             socket.emit("message",data)
-        );
+        ); 
 }
 
 function command(_com){
