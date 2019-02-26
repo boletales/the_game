@@ -28,7 +28,6 @@ io.on('connection',function(socket){
     socket.on('chat',function(data){
         chat(data);
         if(data.message.startsWith("!")) command(data.message.slice(1));
-        io.emit('message',data);
     });
     socket.on('disconnect',(data)=>{
         game.players.filter(p=>p.hasOwnProperty("socket")).filter(p=>p.socket==socket).map(p=>p.name).forEach(function(player){
