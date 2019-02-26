@@ -17,7 +17,7 @@ app.get('/',function(req,res){
 io.on('connection',function(socket){
     let id="guest"+Math.floor(Math.random()*10000);
     socket.emit("joined",{"id":id});
-    logLine("connected:"+id);
+    log("connected:"+id);
     game.joinPlayer(new Human(id,game,socket),2);
 
     socket.on('chat',function(data){
@@ -28,7 +28,7 @@ io.on('connection',function(socket){
     });
     socket.on('disconnect',(data)=>{
         game.players.filter(p=>p.hasOwnProperty("socket")).filter(p=>p.socket==socket).map(p=>p.name).forEach(function(player){
-            logLine("disconnected:"+player);
+            log("disconnected:"+player);
             game.killPlayer(player);
         });
     });
@@ -43,7 +43,7 @@ function resetGame(){
         let s=io.sockets.connected[k];
         let id="guest"+Math.floor(Math.random()*10000);
         s.emit("reset",{"id":id});
-        logLine("connected:"+id);
+        log("connected:"+id);
         game.joinPlayer(new Human(id,game,s),Infinity);
     });
     if(game.players.length>=2)game.init();
