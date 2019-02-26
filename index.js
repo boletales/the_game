@@ -31,7 +31,7 @@ io.on('connection',function(socket){
         });
     });
 });
-http.listen(80);
+http.listen(process.env.PORT || 80);
 console.log('It works!!');
 
 function resetGame(){
