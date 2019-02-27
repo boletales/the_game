@@ -243,7 +243,7 @@ class Game{
                     this.todo.shift();
                     this.result=Object.assign(this.newresult);
                     this.newresult={};
-                    tick();
+                    this.tick();
                 }
             }
             player.clearCommand();

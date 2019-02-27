@@ -50,7 +50,7 @@ function resetGame(){
         log("connected:"+id);
         game.joinPlayer(new Human(id,game,s),false);
     });
-    setStartnumber(game.startnumber);
+    game.setStartnumber(game.startnumber);
 }
 
 function Human(name,game,socket){
