@@ -72,7 +72,7 @@ class Room{
             this.game.players.filter(p=>p.hasOwnProperty("socket")).filter(p=>p.socket==socket).forEach(function(player){
                 this.log("disconnected:"+player.nickname);
                 this.game.killPlayer(player.id);
-            });
+            }.bind(this));
             if(io.to(this.name).sockets.length==0)this.endGame();
             showRoomState();
         }).bind(this));
