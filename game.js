@@ -72,7 +72,7 @@ exports._SKILLS_MOTO=_SKILLS_MOTO;
 
 exports._HP_DEFAULT=6;
 class Game{
-    constructor(skills,hp,onEnd,log,showPlayers=function(){}){
+    constructor(skills,hp,closeGame,okawari,log,showPlayers=function(){}){
         this.log=log;
         this.startnumber=2;
         this.todoMoto=[
@@ -105,7 +105,8 @@ class Game{
         this.todo=this.todoMoto.map(v=>Object.assign(v));
         this.result={};
         this.newresult={};
-        this.onEnd=onEnd;
+        this.closeGame=closeGame;
+        this.okawari=okawari;
         this.showPlayers=showPlayers;
     }
     reset(){
@@ -113,7 +114,7 @@ class Game{
         this.players=[];
         this.waiting=[];
         this.playercount=0;
-        this.onEnd();
+        this.closeGame();
     }
     init(){
         this.turns=1;
@@ -232,6 +233,8 @@ class Game{
             this.log("試合終了");
             if(livingCount>0)this.log("勝者..."+players.filter(v=>v.hp>0)[0].nickname);
             else this.log("勝者...なし");
+            this.log("10秒後に次の試合");
+            setTimeout(this.okawari,10000)
             return false;
         }
     }

@@ -52,6 +52,9 @@
             socket.on("goRobby", function(data){
                 location.href="../../"
             });
+            socket.on("goRoom", function(data){
+                location.href="./"+data.name;
+            });
             socket.on("showPlayers", function(data){
                 document.getElementById("players").innerHTML="<span style='color:"+getColor(data.you.team)+";border-style: dotted;'>"+data.you.name+"≫"+data.you.state+"</span><br>";
                 data.others.forEach(player=>{

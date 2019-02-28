@@ -19,7 +19,7 @@ io.on('connection',function(socket){
     socket.join("robby");
     showRoomState();
     socket.on("makeRoom",data=>{
-        makeRoom(socket);
+        makeRoomAndJoin(socket);
     });
     socket.on("joinRoom",data=>{
         joinRoom(data.roomname,socket,data.nickname,data.team);
@@ -31,12 +31,16 @@ console.log('It works!!');
 function randomID(keta){
     return ("0".repeat(keta)+Math.floor(Math.random()*Math.pow(10,keta))).slice(-keta);
 }
-function makeRoom(socket){
+function makeRoomAndJoin(socket){
+    socket.emit("roomMade",{name:makeRoom()});
+}
+function makeRoom(){
     let keta=4;
-    let roomname="room"+randomID(keta);
+    let roomname;
+    do{roomname="room"+randomID(keta);}while(rooms.hasOwnProperty(roomname))
     rooms[roomname]=new Room(roomname);
     showRoomState();
-    socket.emit("roomMade",{name:roomname});
+    return roomname;
 }
 function joinRoom(roomname,socket,nickname,team){
     if(rooms.hasOwnProperty(roomname)){
@@ -57,7 +61,7 @@ class Room{
         this.recentLog=[];
         this.recentLogMax=20;
         this.name=name;
-        this.game=new _game.Game(_game._SKILLS_MOTO,this._HP_DEFAULT,this.endGame.bind(this),this.log.bind(this),this.showPlayers.bind(this));
+        this.game=new _game.Game(_game._SKILLS_MOTO,this._HP_DEFAULT,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this));
     }
     getNumber(){
         if(io.sockets.adapter.rooms[this.name]==undefined)return 0;
@@ -78,7 +82,7 @@ class Room{
                 this.log("disconnected:"+player.nickname);
                 this.game.killPlayer(player.nickname);
             }.bind(this));
-            if(this.getNumber()==0)this.endGame();
+            if(this.getNumber()==0)this.closeGame();
             showRoomState();
         }).bind(this));
     }
@@ -111,11 +115,18 @@ class Room{
         });
     }
 
-    endGame(){
+    closeGame(){
         this.game.players.filter(p=>p.hasOwnProperty("socket")).map(player=>{
             player.socket.emit("goRobby",{});
         });
-        delete this.game;
+        delete rooms[this.name];
+    }
+
+    okawari(){
+        let newRoom=makeRoom();
+        this.game.players.filter(p=>p.hasOwnProperty("socket")).map(player=>{
+            player.socket.emit("goRoom",{name:newRoom});
+        });
         delete rooms[this.name];
     }
 
