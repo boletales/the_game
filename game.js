@@ -231,7 +231,7 @@ class Game{
             return true;
         }else{
             this.log("試合終了");
-            if(livingCount>0)this.log("勝者..."+players.filter(v=>v.hp>0)[0].nickname);
+            if(livingCount>0)this.log("勝者...🎉 "+players.filter(v=>v.hp>0)[0].nickname+" 🎉");
             else this.log("勝者...なし");
             this.log("10秒後に次の試合");
             setTimeout(this.okawari,10000)
