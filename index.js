@@ -22,7 +22,7 @@ io.on('connection',function(socket){
         makeRoom(socket);
     });
     socket.on("joinRoom",data=>{
-        joinRoom(data.roomname,socket,data.nickname);
+        joinRoom(data.roomname,socket,data.nickname,data.team);
     });
 });
 http.listen(process.env.PORT || 80);
@@ -38,10 +38,10 @@ function makeRoom(socket){
     showRoomState();
     socket.emit("roomMade",{name:roomname});
 }
-function joinRoom(roomname,socket,nickname){
+function joinRoom(roomname,socket,nickname,team){
     if(rooms.hasOwnProperty(roomname)){
         socket.join(roomname);
-        rooms[roomname].join(socket,nickname);
+        rooms[roomname].join(socket,nickname,team);
         showRoomState();
     }else{
         socket.emit("goRobby",{});
@@ -63,20 +63,20 @@ class Room{
         if(io.sockets.adapter.rooms[this.name]==undefined)return 0;
         return Object.keys(io.sockets.adapter.rooms[this.name].sockets).length;
     }
-    join(socket,nickname){
+    join(socket,nickname,team){
         this.sendRecentLog(socket);
-        socket.emit("joined",{"id":nickname});
+        socket.emit("joined",{"id":nickname,"team":team});
         this.log("connected:"+nickname);
-        this.game.joinPlayer(new Human(nickname,this.game,socket));
+        this.game.joinPlayer(new Human(nickname,team,this.game,socket));
     
         socket.on('chat',function(data){
             this.chat(data);
             if(data.message.startsWith("!")) this.command(data.message.slice(1));
-        });
+        }.bind(this));
         socket.on('disconnect',((data)=>{
             this.game.players.filter(p=>p.hasOwnProperty("socket")).filter(p=>p.socket==socket).forEach(function(player){
                 this.log("disconnected:"+player.nickname);
-                this.game.killPlayer(player.id);
+                this.game.killPlayer(player.nickname);
             }.bind(this));
             if(this.getNumber()==0)this.endGame();
             showRoomState();
@@ -105,8 +105,8 @@ class Room{
         players.filter(p=>p.hasOwnProperty("socket")).map(player=>{
             player.socket.emit("showPlayers",
                 {
-                    others:players.filter(p=>p!==player).map(p=>({name:p.nickname,state:p.state()}))
-                    ,you:{name:player.nickname,state:player.state()}
+                    others:players.filter(p=>p!==player).map(p=>({name:p.nickname,state:p.state(),team:p.team}))
+                    ,you:{name:player.nickname,state:player.state(),team:player.team}
                 });
         });
     }
@@ -153,8 +153,8 @@ class Room{
     game.setStartnumber(game.startnumber);
 }*/
 
-function Human(nickname,game,socket){
-    _game.Player.call(this,socket.id,nickname,game);
+function Human(nickname,team,game,socket){
+    _game.Player.call(this,socket.id,nickname,team,game);
     this.socket=socket;
     this.sleepcount=0;
     this.input=function(callBack){

@@ -149,8 +149,8 @@ class Game{
                 var optionconv=(n)=>this._SKILLS[n];
                 break;
             case "opponent":
-                var options=this.players.filter(p=>p!==from).map(p=>p.id);
-                var optionnames=this.players.filter(p=>p!==from).map(p=>p.nickname);
+                var options=this.players.filter(p=>p.team!==from.team).map(p=>p.id);
+                var optionnames=this.players.filter(p=>p.team!==from.team).map(p=>p.nickname);
                 break;
         
             default:
@@ -275,8 +275,9 @@ function decision(args){
     return {skill:args[0],args:args.slice(1)};
 }
 exports.decision=decision;
-function Player(id,nickname,game){
+function Player(id,nickname,team,game){
     this.hp=game._HP;
+    this.team=team;
     this.id=id;
     this.nickname=nickname;
     this.charge=0;

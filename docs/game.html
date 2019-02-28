@@ -16,14 +16,19 @@
             <input id="msg">
             <input type="submit"  value="送信">
         </form>
-        <span id="anataha" style="color:#555"></span><span id="name" style="font-size:140%"></span>
+        <span id="anataha" style="color:#555"></span><span id="name" style="font-size:140%"></span><span id="team" style="font-size:100%"></span>
         <pre id="output" style="padding: 5px;width: 100%;height: 20rem;overflow:auto;border-style: dotted;background-color: #eee"></pre>
         <pre id="command" style="padding: 5px;width: 100%;;background-color: #ffd"></pre><br>
-        <pre id="players" style="padding: 5px;width: 100%;;background-color: #ccc"></pre><br>
+        <div id="players" style="padding: 5px;width: 100%;;background-color: #eee"></div><br>
+        <a href="../../">ロビーに戻る</a>
         <script>
+            let teamColor={"a":"#a00","b":"#0a0"};
+            let defaultColor="#000";
+            let getColor=(team)=>(teamColor.hasOwnProperty(team)?teamColor[team]:defaultColor);
             let nickname=prompt("名前を入力してください","名無し"+randomID(3));
+            let team=prompt("チームを入力してください","a");
             let socket = io.connect();
-            socket.emit("joinRoom",{roomname:location.href.split("/").reverse()[0],nickname:nickname});
+            socket.emit("joinRoom",{roomname:location.href.split("/").reverse()[0],nickname:nickname,team:team});
             socket.on("message", function(data){
                 document.getElementById("output").innerText+=data.name+"≫"+data.message+"\n";
                 document.getElementById("output").scrollTop = document.getElementById("output").scrollHeight;
@@ -48,15 +53,17 @@
                 location.href="../../"
             });
             socket.on("showPlayers", function(data){
-                document.getElementById("players").innerHTML="<span sytle='font-size:140%'>"+data.you.name+"≫"+data.you.state+"</span>\n";
+                document.getElementById("players").innerHTML="<span style='color:"+getColor(data.you.team)+";border-style: dotted;'>"+data.you.name+"≫"+data.you.state+"</span><br>";
                 data.others.forEach(player=>{
-                    document.getElementById("players").innerHTML+=player.name+"≫"+player.state+"\n";
+                    document.getElementById("players").innerHTML+="<span style='color:"+getColor(player.team)+"'>"+player.name+"≫"+player.state+"</span><br>";
                 })
             });
+            
             function setName(data){
                 name=data.id;
                 document.getElementById("anataha").innerHTML="あなたは ";
                 document.getElementById("name").innerHTML=name;
+                document.getElementById("team").innerHTML="<span style='color:"+getColor(data.team)+";'>「"+data.team+"」チーム</span>";
             }
             function send(command){
                 socket.emit("command",{"command":command});
