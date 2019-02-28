@@ -72,7 +72,7 @@ exports._SKILLS_MOTO=_SKILLS_MOTO;
 
 exports._HP_DEFAULT=6;
 class Game{
-    constructor(skills,hp,onReset,log){
+    constructor(skills,hp,onReset,log,showPlayers=function(){}){
         this.log=log;
         this.startnumber=2;
         this.todoMoto=[
@@ -106,6 +106,7 @@ class Game{
         this.result={};
         this.newresult={};
         this.onReset=onReset;
+        this.showPlayers=showPlayers;
     }
     reset(){
         this.turns=0;
@@ -160,7 +161,11 @@ class Game{
         }.bind(this,from,args,argsleft,backToPrev,callBack,timeout);
         let onCommand=function (from,callBack,args,argsleft,optionargs,backToThis,backToPrev,optionconv,timeout,input){
             from.clearCommand();
-            if(input=="!cancel") backToPrev();
+            if(input=="!cancel"){
+                backToPrev();
+                return;
+            }
+
             var newargs=[];
             if(optionargs!=undefined)var newargs=optionargs(input);
             if(optionconv!=undefined)input=optionconv(input);
@@ -216,9 +221,10 @@ class Game{
             if(players[i].hp<=0){
                 this.log("  死亡("+(livingCount+1)+"位)...");
             }else{
-                this.log("  "+"♥".repeat(players[i].hp)+"   "+"☯".repeat(players[i].charge));
+                this.log("  "+players[i].state());
             }
         }
+        this.showPlayers(players);
         this.log("~~~~~");
         if(livingCount>1){
             return true;
@@ -282,7 +288,7 @@ function Player(name,game){
     }.bind(this);
 
     this.state=function(){
-        return this.name+"(hp:"+this.hp+",charge:"+this.charge+")";
+        return "♥".repeat(this.hp)+"   "+"☯".repeat(this.charge);
     }
 }
 function array_shuffle(arr){

@@ -4,6 +4,7 @@
         <meta encording="utf-8">
         <title>chat-test</title>
         <script type="text/javascript" src="./socket.io/socket.io.js"></script>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
             body{
                 width:100%;
@@ -18,6 +19,7 @@
         <span id="anataha" style="color:#555"></span><span id="name" style="font-size:140%"></span>
         <pre id="output" style="padding: 5px;width: 100%;height: 20rem;overflow:auto;border-style: dotted;background-color: #eee"></pre>
         <pre id="command" style="padding: 5px;width: 100%;;background-color: #ffd"></pre><br>
+        <pre id="players" style="padding: 5px;width: 100%;;background-color: #ccc"></pre><br>
         <script>
             let socket = io.connect();
             let name="接続待ち";
@@ -44,6 +46,12 @@
             socket.on("reset", function(data){
                 setName(data);
                 document.getElementById("output").innerText="";
+            });
+            socket.on("showPlayers", function(data){
+                document.getElementById("players").innerHTML="<span sytle='font-size:140%'>"+data.you.name+"≫"+data.you.state+"</span>\n";
+                data.others.forEach(player=>{
+                    document.getElementById("players").innerHTML+=player.name+"≫"+player.state+"\n";
+                })
             });
             function setName(data){
                 name=data.id;

@@ -13,7 +13,7 @@ const _HP_DEFAULT=6;
 let recentLog=[];
 let recentLogMax=20;
 
-let game=new _game.Game(_game._SKILLS_MOTO,_HP_DEFAULT,resetGame,log);
+let game=new _game.Game(_game._SKILLS_MOTO,_HP_DEFAULT,resetGame,log,showPlayers);
 app.get('/',function(req,res){
     res.sendFile(__dirname+'/docs/index.html');
 });
@@ -41,7 +41,7 @@ console.log('It works!!');
 function resetGame(){
     recentLog=[];
     delete game;
-    game=new _game.Game(_SKILLS_MOTO,_HP_DEFAULT,resetGame,log);
+    game=new _game.Game(_SKILLS_MOTO,_HP_DEFAULT,resetGame,log,showPlayers);
     Object.keys(io.sockets.connected).forEach(k=>{
         let s=io.sockets.connected[k];
         let id="guest"+Math.floor(Math.random()*10000);
@@ -82,6 +82,7 @@ function Human(name,game,socket){
 function log(str){
     chat({"name":"★system","message":str});
 }
+
 function chat(data){
     data.time=new Date();
     io.emit('message',data);
@@ -89,10 +90,21 @@ function chat(data){
     recentLog.push(data);
     if(recentLog.length>recentLogMax)recentLog.shift();
 }
+
 function sendRecentLog(socket){
     recentLog.forEach(data=>
             socket.emit("message",data)
         ); 
+}
+
+function showPlayers(players){
+    players.filter(p=>p.hasOwnProperty("socket")).map(player=>{
+        player.socket.emit("showPlayers",
+            {
+                others:players.filter(p=>p!==player).map(p=>({name:p.name,state:p.state()}))
+                ,you:{name:player.name,state:player.state()}
+            });
+    });
 }
 
 function command(_com){
