@@ -56,7 +56,7 @@ class Room{
         this.recentLog=[];
         this.recentLogMax=20;
         this.name=name;
-        this.game=new _game.Game(_game._SKILLS_MOTO,this._HP_DEFAULT,this.resetGame.bind(this),this.log.bind(this),this.showPlayers.bind(this));
+        this.game=new _game.Game(_game._SKILLS_MOTO,this._HP_DEFAULT,this.endGame.bind(this),this.log.bind(this),this.showPlayers.bind(this));
     }
     join(socket,nickname){
         this.sendRecentLog(socket);
@@ -68,13 +68,14 @@ class Room{
             this.chat(data);
             if(data.message.startsWith("!")) this.command(data.message.slice(1));
         });
-        socket.on('disconnect',(data)=>{
+        socket.on('disconnect',((data)=>{
             this.game.players.filter(p=>p.hasOwnProperty("socket")).filter(p=>p.socket==socket).forEach(function(player){
                 this.log("disconnected:"+player.nickname);
                 this.game.killPlayer(player.id);
             });
+            if(io.to(this.name).sockets.length==0)this.endGame();
             showRoomState();
-        });
+        }).bind(this));
     }
     
     log(str){
@@ -105,12 +106,12 @@ class Room{
         });
     }
 
-    resetGame(){
+    endGame(){
         this.game.players.filter(p=>p.hasOwnProperty("socket")).map(player=>{
             player.socket.emit("goRobby",{});
         });
         delete this.game;
-        rooms=rooms.filter(r=>r.name!=this.name);
+        delete rooms[this.name];
     }
 
     command(_com){

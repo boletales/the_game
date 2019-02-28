@@ -232,8 +232,6 @@ class Game{
             this.log("試合終了");
             if(livingCount>0)this.log("勝者..."+players.filter(v=>v.hp>0)[0].nickname);
             else this.log("勝者...なし");
-            this.log("10秒後にリスタート");
-            setTimeout(()=>this.reset(),10000);
             return false;
         }
     }
