@@ -24,6 +24,9 @@ io.on('connection',function(socket){
     socket.on("joinRoom",data=>{
         joinRoom(data.roomname,socket,data.nickname,data.team);
     });
+    socket.on('robbyChat',function(data){
+        io.to("robby").emit("message",data);
+    }.bind(this));
 });
 http.listen(process.env.PORT || 80);
 console.log('It works!!');

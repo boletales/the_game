@@ -12,9 +12,17 @@
         </style>
     </head>
     <body>
+        <form id="chat" action="#" style="float:left">
+                <input id="name" value="名無し">
+                <input id="msg">
+                <input type="submit"  value="送信">
+        </form>
+        <pre id="messages" style="padding: 5px;width: 100%;height: 20rem;overflow:auto;border-style: dotted;background-color: #eee"></pre>
+        
         <button id="make" onclick="makeRoom()">部屋追加</button>
         <table id="rooms">
         </table>
+        
         <script>
             let socket = io.connect();
             socket.on("roomStates",data=>{
@@ -24,12 +32,24 @@
                     table.innerHTML+= "<tr><td>"+room.name+"("+room.number+"人)</th><td><a href=./rooms/"+room.name+">参加</th></tr>";
                 });
             });
+            document.getElementById("name").value="名無し"+randomID(3);
+            function randomID(keta){
+                return ("0".repeat(keta)+Math.floor(Math.random()*Math.pow(10,keta))).slice(-keta);
+            }
             function makeRoom(){
                 socket.emit("makeRoom",{});
             }
             socket.on("roomMade",data=>{
                 location.href="./rooms/"+data.name;
             })
+            socket.on("message", function(data){
+                document.getElementById("messages").innerHTML+=data.name+"≫"+data.message+"\n";
+                document.getElementById("messages").scrollTop = document.getElementById("output").scrollHeight;
+            });
+            document.getElementById("chat").onsubmit=function(e){
+                socket.emit("robbyChat", {name : document.getElementById("name").value,message : document.getElementById("msg").value});
+                e.preventDefault();
+            };
         </script>
     </body>
 </html>
