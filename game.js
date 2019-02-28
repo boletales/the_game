@@ -166,7 +166,7 @@ class Game{
             if(optionconv!=undefined)input=optionconv(input);
             if(argsleft.length+newargs.length<=1){
                 callBack(decision(args.concat(input)));
-                clearTimeout(timeout);
+                if(timeout!=undefined)clearTimeout(timeout);
                 from.sleepcount=0;
             }else{
                 this.commandInput(from,args.concat(input),argsleft.concat(newargs).slice(1),backToThis,callBack,timeout);

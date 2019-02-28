@@ -2,7 +2,6 @@ const _game=require("./game.js");
 const app=require('express')();
 const http=require('http').createServer(app);
 const socketIO=require('socket.io');
-const room=require('socket.io')
 const io=socketIO.listen(http);
 const _TIMEOUT_SECONDS=240;
 var events = require('events');
@@ -58,13 +57,13 @@ function Human(name,game,socket){
     this.socket=socket;
     this.sleepcount=0;
     this.input=function(callBack){
-        let timeout=setTimeout(function(callBack){
+        /*let timeout=setTimeout(function(callBack){
             this.clearCommand();
             this.sleepcount++;
             if(this.sleepcount>=2){this.hp=0;}
             callBack(new _game.decision([this.game._SKILLS.non]));
-        }.bind(this,callBack),_TIMEOUT_SECONDS*1000);
-        this.game.commandInput(this,[],[{message:"行動入力",type:"action"}],undefined,callBack,timeout);
+        }.bind(this,callBack),_TIMEOUT_SECONDS*1000);*/
+        this.game.commandInput(this,[],[{message:"行動入力",type:"action"}],undefined,callBack/*,timeout*/);
     }.bind(this);
     this.onCommand=function(){};
     this.reqCommand=function(onCommand,message,commands){
