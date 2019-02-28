@@ -25,7 +25,7 @@ _SKILLS_MOTO={
     atk:{id:2,mes:"攻撃",args:[{message:"対象入力",type:"opponent"}],
             attackPhase:function(user,players,decisions,args){
                 let damages=players.map(p=>0);
-                damages[players.findIndex(p=>p.name==args[0])] = _SKILLS_MOTO.atk.pow;
+                damages[players.findIndex(p=>p.id==args[0])] = _SKILLS_MOTO.atk.pow;
                 return damages;
             },pow:1,
             defensePhase:_DEFENSE_DEFAULT
@@ -45,7 +45,7 @@ _SKILLS_MOTO={
                 let damages=players.map(p=>0);
                 if(user.charge>0){
                     user.charge--;
-                    let target=players.findIndex(p=>p.name==args[0]);
+                    let target=players.findIndex(p=>p.id==args[0]);
                     damages[target] = _SKILLS_MOTO.wav.pow;
                 }
                 return damages;
@@ -72,7 +72,7 @@ exports._SKILLS_MOTO=_SKILLS_MOTO;
 
 exports._HP_DEFAULT=6;
 class Game{
-    constructor(skills,hp,onReset,log,showPlayers=function(){}){
+    constructor(skills,hp,onEnd,log,showPlayers=function(){}){
         this.log=log;
         this.startnumber=2;
         this.todoMoto=[
@@ -81,11 +81,11 @@ class Game{
                 this.players=this.players.concat(this.waiting);
                 this.waiting=[];
                 this.todo[1]={};
-                this.players.forEach(v=>this.todo[1][v.name]=v.input);
+                this.players.forEach(p=>this.todo[1][p.id]=p.input);
                 cb(null);
             }.bind(this)},
             {},
-            {turn:function(cb){return cb(this.turn(this.players,this.players.map(p=>this.result[p.name])))}.bind(this)},
+            {turn:function(cb){return cb(this.turn(this.players,this.players.map(p=>this.result[p.id])))}.bind(this)},
             {nextTurn:
                 function(cb){
                     if(this.result.turn){
@@ -105,7 +105,7 @@ class Game{
         this.todo=this.todoMoto.map(v=>Object.assign(v));
         this.result={};
         this.newresult={};
-        this.onReset=onReset;
+        this.onEnd=onEnd;
         this.showPlayers=showPlayers;
     }
     reset(){
@@ -113,7 +113,7 @@ class Game{
         this.players=[];
         this.waiting=[];
         this.playercount=0;
-        this.onReset();
+        this.onEnd();
     }
     init(){
         this.turns=1;
@@ -149,8 +149,8 @@ class Game{
                 var optionconv=(n)=>this._SKILLS[n];
                 break;
             case "opponent":
-                var options=this.players.filter(p=>p!==from).map(p=>p.name);
-                var optionnames=options;
+                var options=this.players.filter(p=>p!==from).map(p=>p.id);
+                var optionnames=this.players.filter(p=>p!==from).map(p=>p.nickname);
                 break;
         
             default:
@@ -214,9 +214,9 @@ class Game{
         let livingCount=players.filter(v=>v.hp>0).length;
         for(let i=0;i<decisions.length;i++){
             if(decisions[i].args.hasOwnProperty("to")){
-                this.log(players[i].name+" : "+decisions[i].skill.mes+"⇢"+decisions[i].args.to);
+                this.log(players[i].nickname+" : "+decisions[i].skill.mes+"⇢"+decisions[i].args.to);
             }else{
-                this.log(players[i].name+" : "+decisions[i].skill.mes);
+                this.log(players[i].nickname+" : "+decisions[i].skill.mes);
             }
             if(players[i].hp<=0){
                 this.log("  死亡("+(livingCount+1)+"位)...");
@@ -230,7 +230,7 @@ class Game{
             return true;
         }else{
             this.log("試合終了");
-            if(livingCount>0)this.log("勝者..."+players.filter(v=>v.hp>0)[0].name);
+            if(livingCount>0)this.log("勝者..."+players.filter(v=>v.hp>0)[0].nickname);
             else this.log("勝者...なし");
             this.log("10秒後にリスタート");
             setTimeout(()=>this.reset(),10000);
@@ -238,13 +238,13 @@ class Game{
         }
     }
     killPlayer(name){
-        this.players.filter(p=>p.name==name).forEach(player=>{
+        this.players.filter(p=>p.nickname==name).forEach(player=>{
             player.hp=0;
             player.input=function(cb){
                 cb(new decision([this._SKILLS.non]));
             }.bind(this);
             if(this.todo.length>1 && this.todo[1].hasOwnProperty("turn")){
-                this.newresult[player.name]=new decision([this._SKILLS.non]);
+                this.newresult[player.id]=new decision([this._SKILLS.non]);
                 if(Object.keys(this.newresult).length==Object.keys(this.todo[0]).length){
                     this.todo.shift();
                     this.result=Object.assign(this.newresult);
@@ -277,9 +277,10 @@ function decision(args){
     return {skill:args[0],args:args.slice(1)};
 }
 exports.decision=decision;
-function Player(name,game){
+function Player(id,nickname,game){
     this.hp=game._HP;
-    this.name=name;
+    this.id=id;
+    this.nickname=nickname;
     this.charge=0;
     this.game=game;
     this.decision=function(o){return new _game.decision([game._SKILLS.non])}.bind(this);
