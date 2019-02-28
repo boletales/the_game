@@ -12,6 +12,9 @@
         </style>
     </head>
     <body>
+        <button id="make" onclick="makeRoom()">部屋追加</button>
+        <table id="rooms">
+        </table>
         <script>
             let socket = io.connect();
             socket.on("roomStates",data=>{
@@ -28,9 +31,5 @@
                 location.href="./rooms/"+data.name;
             })
         </script>
-        <button id="make" onclick="makeRoom()">部屋追加</button>
-        <table id="rooms">
-            <tr><th>部屋名</th><th>参加</th></tr>
-        </table>
     </body>
 </html>

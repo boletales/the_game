@@ -16,6 +16,7 @@ app.get('/rooms/:roomid',function(req,res){
     res.sendFile(__dirname+'/docs/game.html');
 });
 io.on('connection',function(socket){
+    socket.join("robby");
     showRoomState();
     socket.on("makeRoom",data=>{
         makeRoom(socket);
@@ -48,7 +49,7 @@ function joinRoom(roomname,socket,nickname){
 }
 
 function showRoomState(){
-    io.emit("roomStates",Object.keys(rooms).map(k=>rooms[k]).map(r=>({name:r.name,number:r.game.players.length})));
+    io.to("robby").emit("roomStates",Object.keys(rooms).map(k=>rooms[k]).map(room=>({name:room.name,number:room.getNumber()})));
 }
 class Room{
     constructor(name){
@@ -57,6 +58,10 @@ class Room{
         this.recentLogMax=20;
         this.name=name;
         this.game=new _game.Game(_game._SKILLS_MOTO,this._HP_DEFAULT,this.endGame.bind(this),this.log.bind(this),this.showPlayers.bind(this));
+    }
+    getNumber(){
+        if(io.sockets.adapter.rooms[this.name]==undefined)return 0;
+        return Object.keys(io.sockets.adapter.rooms[this.name].sockets).length;
     }
     join(socket,nickname){
         this.sendRecentLog(socket);
@@ -73,7 +78,7 @@ class Room{
                 this.log("disconnected:"+player.nickname);
                 this.game.killPlayer(player.id);
             }.bind(this));
-            if(io.to(this.name).sockets.length==0)this.endGame();
+            if(this.getNumber()==0)this.endGame();
             showRoomState();
         }).bind(this));
     }
