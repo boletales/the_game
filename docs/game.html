@@ -44,9 +44,8 @@
             socket.on("joined", function(data){
                 setName(data);
             });
-            socket.on("reset", function(data){
-                setName(data);
-                document.getElementById("output").innerText="";
+            socket.on("goRobby", function(data){
+                location.href="../../"
             });
             socket.on("showPlayers", function(data){
                 document.getElementById("players").innerHTML="<span sytle='font-size:140%'>"+data.you.name+"≫"+data.you.state+"</span>\n";

@@ -106,10 +106,10 @@ class Room{
     }
 
     resetGame(){
-        delete this.game;
         this.game.players.filter(p=>p.hasOwnProperty("socket")).map(player=>{
             player.socket.emit("goRobby",{});
         });
+        delete this.game;
         rooms=rooms.filter(r=>r.name!=this.name);
     }
 
