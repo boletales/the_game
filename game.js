@@ -3,18 +3,18 @@ _DEFENSE_DEFAULT=(user,players,decisions,damages,args)=>damages.forEach(d=>user.
 exports._ATTACK_DEFAULT=_ATTACK_DEFAULT;
 exports._DEFENSE_DEFAULT=_DEFENSE_DEFAULT;
 _SKILLS_MOTO={
-    //id:技id mes:技名
+    //id:技id name:技名
     //atk:(技主,対象,対象の使用技)=>対象への攻撃力(防御前)
     //dmg:(技主,対象,対象の使用技,対象の攻撃力)=>対象からのダメージ(防御後)
     //act:技主=>使用時エフェクト
     //forone:対象は一人か (falseなら自分用の技か全体攻撃)
     //pow:威力(攻撃技専用)
-    non:{id:0,mes:"スカ",args:[],
+    non:{id:0,name:"スカ",args:[],
         attackPhase :_ATTACK_DEFAULT,
         defensePhase:_DEFENSE_DEFAULT
     },
 
-    def:{id:1,mes:"防御",args:[], 
+    def:{id:1,name:"防御",args:[], 
             attackPhase:_ATTACK_DEFAULT,
             defensePhase:function(user,players,decisions,damages,args){
                 damages.forEach(d=>user.hp-=Math.max(0,d-1));
@@ -22,7 +22,7 @@ _SKILLS_MOTO={
             dmg:(p,o,od,at)=>Math.max(at-1,0)
         },
 
-    atk:{id:2,mes:"攻撃",args:[{message:"対象入力",type:"opponent"}],
+    atk:{id:2,name:"攻撃",args:[{message:"対象入力",type:"opponent"}],
             attackPhase:function(user,players,decisions,args){
                 let damages=players.map(p=>0);
                 damages[players.findIndex(p=>p.id==args[0])] = _SKILLS_MOTO.atk.pow;
@@ -31,7 +31,7 @@ _SKILLS_MOTO={
             defensePhase:_DEFENSE_DEFAULT
         },
 
-    chr:{id:3,mes:"溜め",args:[],
+    chr:{id:3,name:"溜め",args:[],
             attackPhase:function(user,players,decisions,args){
                 let damages=players.map(p=>0);
                 user.charge++;
@@ -40,7 +40,7 @@ _SKILLS_MOTO={
             defensePhase:_DEFENSE_DEFAULT
         },
 
-    wav:{id:4,mes:"光線",args:[{message:"対象入力",type:"opponent"}],
+    wav:{id:4,name:"光線",args:[{message:"対象入力",type:"opponent"}],
             attackPhase:function(user,players,decisions,args){
                 let damages=players.map(p=>0);
                 if(user.charge>0){
@@ -55,7 +55,7 @@ _SKILLS_MOTO={
             defensePhase:_DEFENSE_DEFAULT
         },
     
-    mir:{id:5,mes:"反射",args:[],
+    mir:{id:5,name:"反射",args:[],
             attackPhase:function(user,players,decisions,args){
                 return decisions.map(d=>
                     d.skill.hasOwnProperty("beam")?d.skill.pow:0);
@@ -66,7 +66,7 @@ _SKILLS_MOTO={
                 ;
             },
         }
-    //sui:{id:7,mes:"自殺"                                                                ,act:p=>(p.hp=0)}
+    //sui:{id:7,name:"自殺"                                                                ,act:p=>(p.hp=0)}
 };
 exports._SKILLS_MOTO=_SKILLS_MOTO;
 
@@ -150,7 +150,7 @@ class Game{
                     !this._SKILLS[command].hasOwnProperty("requirement")
                     ||this._SKILLS[command].requirement(from)
                 );
-                var optionnames=options.map(s=>this._SKILLS[s].mes);
+                var optionnames=options.map(s=>this._SKILLS[s].name);
                 var optionargs=(n)=>this._SKILLS[n].args;
                 var optionconv=(n)=>this._SKILLS[n];
                 break;
@@ -222,9 +222,9 @@ class Game{
 
         for(let i=0;i<decisions.length;i++){
             if(decisions[i].args.hasOwnProperty("to")){
-                this.log(players[i].nickname+" : "+decisions[i].skill.mes+"⇢"+decisions[i].args.to);
+                this.log(players[i].nickname+" : "+decisions[i].skill.name+"⇢"+decisions[i].args.to);
             }else{
-                this.log(players[i].nickname+" : "+decisions[i].skill.mes);
+                this.log(players[i].nickname+" : "+decisions[i].skill.name);
             }
             if(players[i].hp<=0){
                 this.log("  死亡...");
@@ -292,6 +292,8 @@ function Player(id,nickname,team,game){
     this.nickname=nickname;
     this.charge=0;
     this.game=game;
+    this.buffs=[];
+    this.newBuffs=[];
     this.decision=function(o){return new _game.decision([game._SKILLS.non])}.bind(this);
     this.input=function(cb){
         cb(this.decision(players.filter(v=>v!==this)))
@@ -299,6 +301,11 @@ function Player(id,nickname,team,game){
 
     this.state=function(){
         return "♥".repeat(this.hp)+"   "+"☯".repeat(this.charge);
+    }
+
+    this.refreshBuffs=function(){
+        this.buffs=this.buffs.map(b=>b.tick()).filter(b=>b.effective);
+        this.buffs=this.buffs.concat(this.newBuffs);
     }
 }
 function array_shuffle(arr){
