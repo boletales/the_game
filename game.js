@@ -88,6 +88,7 @@ class Game{
                         cb(input);
                     }).bind(this));
                 }).bind(this));
+                this.showPlayers();
                 cb(null);
             }.bind(this)},
             {},
@@ -239,8 +240,15 @@ class Game{
             return true;
         }else{
             this.log("試合終了");
-            if(livingTeams.length>0)this.log("勝者...🎉 チーム「"+livingTeams[0]+"」 🎉");
-            else this.log("勝者...なし");
+            if(livingTeams.length>0){
+                if(this.teamMode){
+                    this.log("勝者...🎉 チーム「"+livingTeams[0]+"」 🎉");
+                }else{
+                    this.log("勝者...🎉 "+players.filter(v=>v.hp>0)[0]+" 🎉");
+                }
+            }else{
+                this.log("勝者...なし");
+            }
             this.log("10秒後に次の試合");
             setTimeout(this.okawari,10000)
             return false;
