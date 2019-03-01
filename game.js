@@ -212,7 +212,9 @@ class Game{
         }
         this.log("~~~~~");
         //hp表示
-        let livingCount=players.filter(v=>v.hp>0).length;
+        let livingTeams=[];
+        players.filter(v=>v.hp>0).forEach(p=>livingTeams.indexOf(p.team)==-1&&livingTeams.push(p.team));
+
         for(let i=0;i<decisions.length;i++){
             if(decisions[i].args.hasOwnProperty("to")){
                 this.log(players[i].nickname+" : "+decisions[i].skill.mes+"⇢"+decisions[i].args.to);
@@ -220,18 +222,18 @@ class Game{
                 this.log(players[i].nickname+" : "+decisions[i].skill.mes);
             }
             if(players[i].hp<=0){
-                this.log("  死亡("+(livingCount+1)+"位)...");
+                this.log("  死亡...");
             }else{
                 this.log("  "+players[i].state());
             }
         }
         this.showPlayers(players);
         this.log("~~~~~");
-        if(livingCount>1){
+        if(livingTeams.length>1){
             return true;
         }else{
             this.log("試合終了");
-            if(livingCount>0)this.log("勝者...🎉 "+players.filter(v=>v.hp>0)[0].nickname+" 🎉");
+            if(livingTeams.length>0)this.log("勝者...🎉 チーム「"+livingTeams[0]+"」 🎉");
             else this.log("勝者...なし");
             this.log("10秒後に次の試合");
             setTimeout(this.okawari,10000)
