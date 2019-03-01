@@ -81,7 +81,12 @@ class Game{
                 this.players=this.players.concat(this.waiting);
                 this.waiting=[];
                 this.todo[1]={};
-                this.players.forEach(p=>this.todo[1][p.id]=p.input);
+                this.players.forEach(p=>this.todo[1][p.id]=(cb=>{
+                    p.input((()=>{
+                        cb();
+                        log("行動決定:"+p.name+"("+this.newresult.length+"/"+this.todo[0].length+")");
+                    }).bind(this));
+                }).bind(this));
                 cb(null);
             }.bind(this)},
             {},
