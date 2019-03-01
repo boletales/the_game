@@ -82,9 +82,9 @@ class Game{
                 this.waiting=[];
                 this.todo[1]={};
                 this.players.forEach(p=>this.todo[1][p.id]=(cb=>{
-                    p.input((()=>{
-                        cb();
-                        log("行動決定:"+p.name+"("+this.newresult.length+"/"+this.todo[0].length+")");
+                    p.input(((input)=>{
+                        log("行動決定:"+p.nickname+"("+(Object.keys(this.newresult).length+1)+"/"+Object.keys(this.todo[0]).length+")");
+                        cb(input);
                     }).bind(this));
                 }).bind(this));
                 cb(null);
