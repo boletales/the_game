@@ -66,7 +66,11 @@
                 name=data.id;
                 document.getElementById("anataha").innerHTML="あなたは ";
                 document.getElementById("name").innerHTML=name;
-                document.getElementById("team").innerHTML="<span style='color:"+getColor(data.team)+";'>「"+data.team+"」チーム</span>";
+                if(data.teamMode){
+                    document.getElementById("team").innerHTML="<span style='color:"+getColor(data.team)+";'>チーム「"+data.team+"」</span>";
+                }else{
+                    document.getElementById("team").innerHTML="";
+                }
             }
             function send(command){
                 socket.emit("command",{"command":command});

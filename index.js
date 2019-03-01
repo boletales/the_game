@@ -59,12 +59,13 @@ function showRoomState(){
     io.to("robby").emit("roomStates",Object.keys(rooms).map(k=>rooms[k]).map(room=>({name:room.name,number:room.getNumber()})));
 }
 class Room{
-    constructor(name){
+    constructor(name,teamMode=true){
         this._HP_DEFAULT=6;
         this.recentLog=[];
         this.recentLogMax=20;
         this.name=name;
-        this.game=new _game.Game(_game._SKILLS_MOTO,this._HP_DEFAULT,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this));
+        this.teamMode=teamMode;
+        this.game=new _game.Game(_game._SKILLS_MOTO,this._HP_DEFAULT,teamMode,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this));
     }
     getNumber(){
         if(io.sockets.adapter.rooms[this.name]==undefined)return 0;
@@ -72,7 +73,7 @@ class Room{
     }
     join(socket,nickname,team){
         this.sendRecentLog(socket);
-        socket.emit("joined",{"id":nickname,"team":team});
+        socket.emit("joined",{"id":nickname,"team":team,"teamMode":this.teamMode});
         this.log("connected:"+nickname);
         this.game.joinPlayer(new Human(nickname,team,this.game,socket));
     

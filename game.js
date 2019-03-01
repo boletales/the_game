@@ -72,8 +72,9 @@ exports._SKILLS_MOTO=_SKILLS_MOTO;
 
 exports._HP_DEFAULT=6;
 class Game{
-    constructor(skills,hp,closeGame,okawari,log,showPlayers=function(){}){
+    constructor(skills,hp,teamMode,closeGame,okawari,log,showPlayers=function(){}){
         this.log=log;
+        this.teamMode=teamMode;
         this.startnumber=2;
         this.todoMoto=[
             {start:function(cb){
