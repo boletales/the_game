@@ -72,9 +72,10 @@ exports._SKILLS_MOTO=_SKILLS_MOTO;
 
 exports._HP_DEFAULT=6;
 class Game{
-    constructor(skills,hp,teamMode,closeGame,okawari,log,showPlayers=function(){}){
+    constructor(skills,hp,args,closeGame,okawari,log,showPlayers=function(){}){
         this.log=log;
-        this.teamMode=teamMode;
+        this.teamMode   = args.hasOwnProperty("teamMode")   ?args.teamMode   :true;
+        this.maxPlayers = args.hasOwnProperty("maxPlayers") ?args.maxPlayers :Infinity;
         this.startnumber=2;
         this.todoMoto=[
             {start:function(cb){
@@ -160,7 +161,6 @@ class Game{
                 var options=this.players.filter(p=>p.team!==from.team).map(p=>p.id);
                 var optionnames=this.players.filter(p=>p.team!==from.team).map(p=>p.nickname);
                 break;
-        
             default:
                 break;
         }
@@ -273,6 +273,9 @@ class Game{
         });
     }
     joinPlayer(player,start=true){
+        if(this.players.length+this.waiting.length>=this.maxPlayers){
+            return false;
+        }
         if(this.turns==0){
             this.players.push(player);
             if(start && this.players.length>=this.startnumber){
@@ -281,6 +284,7 @@ class Game{
         }else{
             this.waiting.push(player);
         }
+        return true;
     }
     setStartnumber(startnumber){
         this.startnumber=startnumber;

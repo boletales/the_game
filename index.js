@@ -8,6 +8,7 @@ var events = require('events');
 var eventEmitter = new events.EventEmitter();
 eventEmitter.setMaxListeners(40);
 var rooms={};
+var taimanRooms={};
 
 app.get('/',function(req,res){
     res.sendFile(__dirname+'/docs/index.html');
@@ -48,52 +49,71 @@ function makeRoom(){
 function joinRoom(roomname,socket,nickname,team){
     if(rooms.hasOwnProperty(roomname)){
         socket.join(roomname);
-        rooms[roomname].join(socket,nickname,team);
-        showRoomState();
+        if(rooms[roomname].join(socket,nickname,team)){
+            showRoomState();
+        }else{
+            socket.emit("goRobby",{});
+            socket.disconnect();
+        }
     }else{
         socket.emit("goRobby",{});
     }
+}
+function joinTaiman(socket,nickname,team){
+    let keta=4;
+    let roomname;
+    do{roomname="room"+randomID(keta);}while(rooms.hasOwnProperty(roomname))
+    rooms[roomname]=new Room(roomname,taimanRooms,{teamMode:false});
 }
 
 function showRoomState(){
     io.to("robby").emit("roomStates",Object.keys(rooms).map(k=>rooms[k]).map(room=>({name:room.name,number:room.getNumber()})));
 }
+class TaimanRoom extends Room{
+    constructor(parent){
+        super(generateUuid(),parent,{teamMode:false,maxPlayers:2});
+    }
+}
 class Room{
-    constructor(name,teamMode=false){
+    constructor(name,parent,args={}){
         this._HP_DEFAULT=6;
         this.recentLog=[];
         this.recentLogMax=20;
         this.name=name;
-        this.teamMode=teamMode;
-        this.game=new _game.Game(_game._SKILLS_MOTO,this._HP_DEFAULT,teamMode,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this));
+        this.args=args;
+        this.parent=parent;
+        this.game=new _game.Game(_game._SKILLS_MOTO,this._HP_DEFAULT,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this));
     }
     getNumber(){
         if(io.sockets.adapter.rooms[this.name]==undefined)return 0;
         return Object.keys(io.sockets.adapter.rooms[this.name].sockets).length;
     }
     join(socket,nickname,team){
-        this.sendRecentLog(socket);
-        socket.emit("joined",{"id":nickname,"team":team,"teamMode":this.teamMode});
-        this.log("connected:"+nickname);
-        this.game.showPlayers();
-    
-        socket.on('chat',function(data){
-            this.chat(data);
-            if(data.message.startsWith("!")) this.command(data.message.slice(1));
-        }.bind(this));
-        socket.on('disconnect',((data)=>{
-            this.game.players.filter(p=>p.hasOwnProperty("socket")).filter(p=>p.socket==socket).forEach(function(player){
-                this.log("disconnected:"+player.nickname);
-                this.game.killPlayer(player.nickname);
-            }.bind(this));
-            if(this.getNumber()==0)this.closeGame();
-            showRoomState();
-        }).bind(this));
-
-        if(this.teamMode){
-            this.game.joinPlayer(new Human(nickname,team,this.game,socket));
+        if(!this.args.hasOwnProperty("teamMode")||this.args.teamMode){
+            var newPlayer=(new Human(nickname,team,this.game,socket));
         }else{
-            this.game.joinPlayer(new Human(nickname,socket.id,this.game,socket));
+            var newPlayer=(new Human(nickname,socket.id,this.game,socket));
+        }
+        if(this.game.joinPlayer(newPlayer)){
+            socket.emit("joined",{"id":nickname,"team":team,"teamMode":this.teamMode});
+            this.sendRecentLog(socket);
+            this.log("connected:"+nickname);
+            this.game.showPlayers();
+            socket.on('chat',function(data){
+                this.chat(data);
+                if(data.message.startsWith("!")) this.command(data.message.slice(1));
+            }.bind(this));
+            socket.on('disconnect',((data)=>{
+                this.game.players.filter(p=>p.hasOwnProperty("socket")).filter(p=>p.socket==socket).forEach(function(player){
+                    this.log("disconnected:"+player.nickname);
+                    this.game.killPlayer(player.nickname);
+                }.bind(this));
+                if(this.getNumber()==0)this.closeGame();
+                showRoomState();
+            }).bind(this));
+            return true;
+        }else{
+            return false;
         }
     }
     
@@ -129,7 +149,7 @@ class Room{
         this.game.players.filter(p=>p.hasOwnProperty("socket")).map(player=>{
             player.socket.emit("goRobby",{});
         });
-        delete rooms[this.name];
+        delete this.parent[this.name];
     }
 
     okawari(){
@@ -137,7 +157,7 @@ class Room{
         this.game.players.filter(p=>p.hasOwnProperty("socket")).map(player=>{
             player.socket.emit("goRoom",{name:newRoom});
         });
-        delete rooms[this.name];
+        delete this.parent[this.name];
     }
 
     command(_com){
@@ -199,4 +219,21 @@ function Human(nickname,team,game,socket){
     this.socket.on("command",function(data){
         this.onCommand(data.command)
     }.bind(this));
+}
+
+function generateUuid() {
+    // https://github.com/GoogleChrome/chrome-platform-analytics/blob/master/src/internal/identifier.js
+    // const FORMAT: string = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx";
+    let chars = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".split("");
+    for (let i = 0, len = chars.length; i < len; i++) {
+        switch (chars[i]) {
+            case "x":
+                chars[i] = Math.floor(Math.random() * 16).toString(16);
+                break;
+            case "y":
+                chars[i] = (Math.floor(Math.random() * 4) + 8).toString(16);
+                break;
+        }
+    }
+    return chars.join("");
 }
