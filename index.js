@@ -13,6 +13,9 @@ var taimanRooms={};
 app.get('/',function(req,res){
     res.sendFile(__dirname+'/docs/index.html');
 });
+app.get('/make.html',function(req,res){
+    res.sendFile(__dirname+'/docs/make.html');
+});
 app.get('/rooms/:roomid',function(req,res){
     res.sendFile(__dirname+'/docs/game.html');
 });
@@ -24,6 +27,9 @@ io.on('connection',function(socket){
     });
     socket.on("joinRoom",data=>{
         joinRoom(data.roomname,socket,data.nickname,data.team);
+    });
+    socket.on("joinTaiman",data=>{
+        joinTaiman(socket,data.nickname,data.team);
     });
     socket.on('robbyChat',function(data){
         io.to("robby").emit("message",data);
@@ -59,19 +65,23 @@ function joinRoom(roomname,socket,nickname,team){
         socket.emit("goRobby",{});
     }
 }
-function joinTaiman(socket,nickname,team){
-    let keta=4;
-    let roomname;
-    do{roomname="room"+randomID(keta);}while(rooms.hasOwnProperty(roomname))
-    rooms[roomname]=new Room(roomname,taimanRooms,{teamMode:false});
+function joinTaiman(socket,nickname){
+    let available=taimanRooms.filter(r=>r.game.players.length+r.game.waiting.length<2);
+    if(available.length>0){
+        var room=available[0];
+    }else{
+        let name=generateUuid();
+        taimanRooms[name]=new TaimanRoom(name,taimanRooms);
+    }
+    room.join(socket,nickname,socket.id);
 }
 
 function showRoomState(){
     io.to("robby").emit("roomStates",Object.keys(rooms).map(k=>rooms[k]).map(room=>({name:room.name,number:room.getNumber()})));
 }
 class TaimanRoom extends Room{
-    constructor(parent){
-        super(generateUuid(),parent,{teamMode:false,maxPlayers:2});
+    constructor(name,parent){
+        super(name,parent,{teamMode:false,maxPlayers:2});
     }
 }
 class Room{
