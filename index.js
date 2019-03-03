@@ -22,7 +22,7 @@ io.on('connection',function(socket){
     socket.join("robby");
     showRoomState();
     socket.on("makeRoom",data=>{
-        makeRoomAndJoin(socket);
+        makeRoomAndJoin(socket,data.name,data.args);
     });
     socket.on("joinRoom",data=>{
         joinRoom(data.roomname,socket,data.nickname,data.team);
@@ -48,12 +48,12 @@ function randomID(keta){
 function makeRoom(name,args){
     rooms[name]=new Room(name,rooms,args);
 }
-function makeRoomAndJoin(socket){
-    let keta=4;
-    let roomname;
-    do{roomname="room"+randomID(keta);}while(rooms.hasOwnProperty(roomname))
-    makeRoom(roomname);
-    socket.emit("goRoom",{name:roomname});
+function makeRoomAndJoin(socket,name,args){
+    if(rooms.hasOwnProperty(name)){
+        socket.emit("roomExists",{});
+    }
+    makeRoom(name,args);
+    socket.emit("goRoom",{name:name});
 }
 function joinRoom(roomname,socket,nickname,team){
     if(rooms.hasOwnProperty(roomname)){
@@ -197,7 +197,7 @@ class Room{
 }
 class TaimanRoom extends Room{
     constructor(name,parent){
-        super(name,parent,{teamMode:false,maxPlayers:2,hp:1,hidden:true});
+        super(name,parent,{teamMode:false,maxPlayers:2,hidden:true});
     }
 }
 /*function resetGame(){

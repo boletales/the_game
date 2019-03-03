@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta encording="utf-8">
+        <title>chat-test</title>
+        <script type="text/javascript" src="./socket.io/socket.io.js"></script>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body{
+                width:100%;
+            }
+        </style>
+    </head>
+    <body>
+        <form id="chat" action="#" onsubmit="makeRoom()">
+                <input id="name" value="room">
+                チーム戦:<input id="team" type="checkbox">
+                <input type="submit" value="作成">
+        </form>
+        <p id="warning" style="color:red"></p>
+        <a href="../../">ロビーに戻る</a>
+        
+        <script>
+            document.getElementById("name").value="room"+randomID(3);
+            let socket = io.connect();
+            socket.on("roomExists",data=>{
+                document.getElementById("warning")="もう使われている部屋名です";
+            });
+            function randomID(keta){
+                return ("0".repeat(keta)+Math.floor(Math.random()*Math.pow(10,keta))).slice(-keta);
+            }
+            function makeRoom(){
+                socket.emit("makeRoom",{
+                    name:document.getElementById("name").value
+                    ,args:{teamMode:document.getElementById("team").value}})
+                ;
+            }
+            socket.on("goRoom",data=>{
+                location.href="./rooms/"+data.name;
+            });
+            function randomID(keta){
+                return ("0".repeat(keta)+Math.floor(Math.random()*(10**keta))).slice(-keta);
+            }
+        </script>
+    </body>
+</html>
