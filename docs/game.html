@@ -39,7 +39,7 @@
                 }
                 if(!data.teamMode){
                     var team=nickname;
-                }else if(!urlVars.team==undefined){
+                }else if(!(urlVars.team==undefined)){
                     var team=urlVars.team;
                 }else{
                     var team=prompt("チームを入力してください","a");
