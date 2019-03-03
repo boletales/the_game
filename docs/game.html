@@ -26,8 +26,8 @@
             let defaultColor="#000";
             let getColor=(team)=>(teamColor.hasOwnProperty(team)?teamColor[team]:defaultColor);
             let socket = io.connect();
-            
-            socket.emit("getRoomData",{name:location.pathname.split("/").reverse()[0]});
+            let roomname=decodeURIComponent(location.pathname.split("/").reverse()[0]);
+            socket.emit("getRoomData",{name:roomname});
 
             socket.on("roomData",data=>{
                 debugger;
@@ -44,7 +44,7 @@
                 }else{
                     var team=prompt("チームを入力してください","a");
                 }
-                socket.emit("joinRoom",{roomname:location.pathname.split("/").reverse()[0],nickname:nickname,team:team});
+                socket.emit("joinRoom",{roomname:roomname,nickname:nickname,team:team});
                 
             })
             socket.on("input_command", function(data){
@@ -71,7 +71,7 @@
                 location.href="../../"
             });
             socket.on("goRoom", function(data){
-                location.href="./"+data.name;
+                location.href="./"+encodeURIComponent(data.name);
             });
             socket.on("okawari", function(data){
                 location.href=location.pathname+"?nickname="+data.nickname+"&team="+data.team;
