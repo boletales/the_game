@@ -41,7 +41,7 @@
                 socket.emit("makeRoom",{});
             }
             function joinTaiman(){
-
+                socket.emit("joinTaiman",{});
             }
             socket.on("goRoom",data=>{
                 location.href="./rooms/"+data.name;

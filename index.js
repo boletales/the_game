@@ -7,8 +7,7 @@ const _TIMEOUT_SECONDS=240;
 var events = require('events');
 var eventEmitter = new events.EventEmitter();
 eventEmitter.setMaxListeners(40);
-var rooms={};
-var taimanRooms={};
+rooms={};
 
 app.get('/',function(req,res){
     res.sendFile(__dirname+'/docs/index.html');
@@ -23,17 +22,22 @@ io.on('connection',function(socket){
     socket.join("robby");
     showRoomState();
     socket.on("makeRoom",data=>{
-        makeRoom(socket);
+        makeRoomAndJoin(socket);
     });
     socket.on("joinRoom",data=>{
         joinRoom(data.roomname,socket,data.nickname,data.team);
     });
     socket.on("joinTaiman",data=>{
-        joinTaiman(socket,data.nickname,data.team);
+        joinTaiman(socket);
     });
     socket.on('robbyChat',function(data){
         io.to("robby").emit("message",data);
-    }.bind(this));
+    });
+    socket.on("getRoomData",data=>{
+        if(rooms.hasOwnProperty(data.name)){
+            socket.emit(rooms[data.name].showData(socket));
+        }
+    });
 });
 http.listen(process.env.PORT || 80);
 console.log('It works!!');
@@ -41,12 +45,14 @@ console.log('It works!!');
 function randomID(keta){
     return ("0".repeat(keta)+Math.floor(Math.random()*Math.pow(10,keta))).slice(-keta);
 }
-function makeRoom(){
+function makeRoom(name,args){
+    rooms[name]=new Room(name,rooms,args);
+}
+function makeRoomAndJoin(socket){
     let keta=4;
     let roomname;
     do{roomname="room"+randomID(keta);}while(rooms.hasOwnProperty(roomname))
-    rooms[roomname]=new Room(roomname);
-    showRoomState();
+    makeRoom(roomname);
     socket.emit("goRoom",{name:roomname});
 }
 function joinRoom(roomname,socket,nickname,team){
@@ -62,35 +68,31 @@ function joinRoom(roomname,socket,nickname,team){
         socket.emit("goRobby",{});
     }
 }
-function joinTaiman(socket,nickname){
-    let available=taimanRooms.filter(r=>r.game.players.length+r.game.waiting.length<2);
+function joinTaiman(socket){
+    let available=Object.values(rooms).filter(r=>r.game.players.length+r.game.waiting.length<2);
     if(available.length>0){
         var room=available[0];
     }else{
         let name=generateUuid();
-        var room=new TaimanRoom(name,taimanRooms);
-        taimanRooms[name]=room;
+        var room=new TaimanRoom(name,rooms);
+        rooms[name]=room;
     }
     socket.emit("goRoom",{name:room.name});
 }
 
 function showRoomState(){
-    io.to("robby").emit("roomStates",Object.keys(rooms).map(k=>rooms[k]).map(room=>({name:room.name,number:room.getNumber()})));
-}
-class TaimanRoom extends Room{
-    constructor(name,parent){
-        super(name,parent,{teamMode:false,maxPlayers:2});
-    }
+    io.to("robby").emit("roomStates",Object.keys(rooms).map(k=>rooms[k])
+        .filter(room=>!room.hidden).map(room=>({name:room.name,number:room.getNumber()})));
 }
 class Room{
     constructor(name,parent,args={}){
-        this._HP_DEFAULT=6;
         this.recentLog=[];
         this.recentLogMax=20;
         this.name=name;
         this.args=args;
         this.parent=parent;
-        this.game=new _game.Game(_game._SKILLS_MOTO,this._HP_DEFAULT,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this));
+        this.hidden=args.hasOwnProperty("hidden")&&args.hidden;
+        this.game=new _game.Game(_game._SKILLS_MOTO,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this));
     }
     getNumber(){
         if(io.sockets.adapter.rooms[this.name]==undefined)return 0;
@@ -104,9 +106,7 @@ class Room{
         }
         if(this.game.joinPlayer(newPlayer)){
             socket.emit("joined",{"id":nickname,"team":team,"teamMode":this.teamMode});
-            this.sendRecentLog(socket);
             this.log("connected:"+nickname);
-            this.game.showPlayers();
             socket.on('chat',function(data){
                 this.chat(data);
                 if(data.message.startsWith("!")) this.command(data.message.slice(1));
@@ -125,6 +125,12 @@ class Room{
         }
     }
     
+    showData(socket){
+        this.sendRecentLog(socket);
+        this.game.showPlayers();
+        socket.emit("roomData",{teamMode:this.game.teamMode,available:this.game.aki()});
+    }
+
     log(str){
         this.chat({"name":"★system","message":str});
     }
@@ -157,15 +163,16 @@ class Room{
         this.game.players.filter(p=>p.hasOwnProperty("socket")).map(player=>{
             player.socket.emit("goRobby",{});
         });
-        delete this.parent[this.name];
+        if(rooms[this.name]==this){
+            delete rooms[this.name];
+        }
     }
 
     okawari(){
-        let newRoom=makeRoom();
         this.game.players.filter(p=>p.hasOwnProperty("socket")).map(player=>{
-            player.socket.emit("goRoom",{name:newRoom});
+            player.socket.emit("okawari",{nickname:player.nickname,team:player.team});
         });
-        delete this.parent[this.name];
+        makeRoom(this.name,this.args);
     }
 
     command(_com){
@@ -186,6 +193,11 @@ class Room{
             default:
                 break;
         }
+    }
+}
+class TaimanRoom extends Room{
+    constructor(name,parent){
+        super(name,parent,{teamMode:false,maxPlayers:2,hp:1,hidden:true});
     }
 }
 /*function resetGame(){

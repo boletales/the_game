@@ -12,7 +12,7 @@
         </style>
     </head>
     <body>
-        <form id="chat" action="#" style="float:left;width:50%">
+        <form id="chat" action="#" style="float:left">
             <input id="msg">
             <input type="submit"  value="送信">
         </form>
@@ -25,18 +25,28 @@
             let teamColor={"a":"#a00","b":"#0a0"};
             let defaultColor="#000";
             let getColor=(team)=>(teamColor.hasOwnProperty(team)?teamColor[team]:defaultColor);
-            let nickname=prompt("名前を入力してください","名無し"+randomID(3));
-            let team=prompt("チームを入力してください","a");
             let socket = io.connect();
-            socket.emit("joinRoom",{roomname:location.href.split("/").reverse()[0],nickname:nickname,team:team});
-            socket.on("message", function(data){
-                document.getElementById("output").innerText+=data.name+"≫"+data.message+"\n";
-                document.getElementById("output").scrollTop = document.getElementById("output").scrollHeight;
-            });
-            document.getElementById("chat").onsubmit=function(e){
-                socket.emit("chat", {name : name,message : document.getElementById("msg").value});
-                e.preventDefault();
-            };
+            
+            socket.emit("getRoomData",{name:location.pathname.split("/").reverse()[0]});
+
+            socket.on("roomData",data=>{
+                debugger;
+                let urlVars=getUrlVars();
+                if(urlVars.nickname!=undefined){
+                    var nickname=urlVars.nickname;
+                }else{
+                    var nickname=prompt("名前を入力してください","名無し"+randomID(3));
+                }
+                if(!data.teamMode){
+                    var team=nickname;
+                }else if(urlVars.team!=undefined){
+                    var team=nickname;
+                }else{
+                    var team=prompt("チームを入力してください","a");
+                }
+                socket.emit("joinRoom",{roomname:location.pathname.split("/").reverse()[0],nickname:nickname,team:team});
+                
+            })
             socket.on("input_command", function(data){
                 document.getElementById("command").innerHTML=data.message+">";
                 data.commands.forEach(com => {
@@ -46,6 +56,14 @@
             socket.on("clear_command", function(data){
                 document.getElementById("command").innerHTML="…待機…";
             });
+            socket.on("message", function(data){
+                document.getElementById("output").innerText+=data.name+"≫"+data.message+"\n";
+                document.getElementById("output").scrollTop = document.getElementById("output").scrollHeight;
+            });
+            document.getElementById("chat").onsubmit=function(e){
+                socket.emit("chat", {name : name,message : document.getElementById("msg").value});
+                e.preventDefault();
+            };
             socket.on("joined", function(data){
                 setName(data);
             });
@@ -54,6 +72,9 @@
             });
             socket.on("goRoom", function(data){
                 location.href="./"+data.name;
+            });
+            socket.on("okawari", function(data){
+                location.href=location.pathname+"?nickname="+data.nickname+"&team="+data.team;
             });
             socket.on("showPlayers", function(data){
                 document.getElementById("players").innerHTML="<span style='color:"+getColor(data.you.team)+";border-style: dotted;'>"+data.you.name+"≫"+data.you.state+"</span><br>";
@@ -79,6 +100,19 @@
                 return ("0".repeat(keta)+Math.floor(Math.random()*(10**keta))).slice(-keta);
             }
             BeforeUnloadEvent=socket.disconnect;
+
+            function getUrlVars(){
+                var vars = {}; 
+                var param = location.search.substring(1).split('&');
+                for(var i = 0; i < param.length; i++) {
+                    var keySearch = param[i].search(/=/);
+                    var key = '';
+                    if(keySearch != -1) key = param[i].slice(0, keySearch);
+                    var val = param[i].slice(param[i].indexOf('=', 0) + 1);
+                    if(key != '') vars[key] = decodeURI(val);
+                } 
+                return vars; 
+            }
         </script>
     </body>
 </html>

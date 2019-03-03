@@ -19,7 +19,6 @@ _SKILLS_MOTO={
             defensePhase:function(user,players,decisions,damages,args){
                 damages.forEach(d=>user.hp-=Math.max(0,d-1));
             },
-            dmg:(p,o,od,at)=>Math.max(at-1,0)
         },
 
     atk:{id:2,name:"攻撃",args:[{message:"対象入力",type:"opponent"}],
@@ -72,10 +71,12 @@ exports._SKILLS_MOTO=_SKILLS_MOTO;
 
 exports._HP_DEFAULT=6;
 class Game{
-    constructor(skills,hp,args,closeGame,okawari,log,showPlayers=function(){}){
+    constructor(skills,args,closeGame,okawari,log,showPlayers=function(){}){
         this.log=log;
         this.teamMode   = args.hasOwnProperty("teamMode")   ?args.teamMode   :true;
         this.maxPlayers = args.hasOwnProperty("maxPlayers") ?args.maxPlayers :Infinity;
+        this.maxPlayers = args.hasOwnProperty("maxPlayers") ?args.maxPlayers :Infinity;
+        this._HP        = args.hasOwnProperty("hp")         ?args.hp         :6;
         this.startnumber=2;
         this.todoMoto=[
             {start:function(cb){
@@ -106,7 +107,6 @@ class Game{
             }
         ];
         this._SKILLS=skills;
-        this._HP=hp;
         this.players=[];
         this.waiting=[];
         this.turns=0;
@@ -115,7 +115,7 @@ class Game{
         this.newresult={};
         this.closeGame=closeGame;
         this.okawari=okawari;
-        this.showPlayers=showPlayers;
+        this.showPlayers=(()=>showPlayers(this.players)).bind(this);
     }
     reset(){
         this.turns=0;
@@ -244,7 +244,7 @@ class Game{
                 if(this.teamMode){
                     this.log("勝者...🎉 チーム「"+livingTeams[0]+"」 🎉");
                 }else{
-                    this.log("勝者...🎉 "+players.filter(v=>v.hp>0)[0]+" 🎉");
+                    this.log("勝者...🎉 "+players.filter(v=>v.hp>0)[0].nickname+" 🎉");
                 }
             }else{
                 this.log("勝者...なし");
@@ -272,8 +272,11 @@ class Game{
             player.clearCommand();
         });
     }
+    aki(){
+        return this.players.length+this.waiting.length < this.maxPlayers;
+    }
     joinPlayer(player,start=true){
-        if(this.players.length+this.waiting.length>=this.maxPlayers){
+        if(!this.aki()){
             return false;
         }
         if(this.turns==0){
@@ -313,7 +316,7 @@ function Player(id,nickname,team,game){
     }.bind(this);
 
     this.state=function(){
-        return "♥".repeat(this.hp)+"   "+"☯".repeat(this.charge);
+        return "♥".repeat(Math.max(this.hp,0))+"   "+"☯".repeat(Math.max(this.charge,0));
     }
 
     this.refreshBuffs=function(){
