@@ -23,7 +23,7 @@ io.on('connection',function(socket){
     socket.join("robby");
     showRoomState();
     socket.on("makeRoom",data=>{
-        makeRoomAndJoin(socket);
+        makeRoom(socket);
     });
     socket.on("joinRoom",data=>{
         joinRoom(data.roomname,socket,data.nickname,data.team);
@@ -41,16 +41,13 @@ console.log('It works!!');
 function randomID(keta){
     return ("0".repeat(keta)+Math.floor(Math.random()*Math.pow(10,keta))).slice(-keta);
 }
-function makeRoomAndJoin(socket){
-    socket.emit("roomMade",{name:makeRoom()});
-}
 function makeRoom(){
     let keta=4;
     let roomname;
     do{roomname="room"+randomID(keta);}while(rooms.hasOwnProperty(roomname))
     rooms[roomname]=new Room(roomname);
     showRoomState();
-    return roomname;
+    socket.emit("goRoom",{name:roomname});
 }
 function joinRoom(roomname,socket,nickname,team){
     if(rooms.hasOwnProperty(roomname)){
@@ -71,9 +68,10 @@ function joinTaiman(socket,nickname){
         var room=available[0];
     }else{
         let name=generateUuid();
-        taimanRooms[name]=new TaimanRoom(name,taimanRooms);
+        var room=new TaimanRoom(name,taimanRooms);
+        taimanRooms[name]=room;
     }
-    room.join(socket,nickname,socket.id);
+    socket.emit("goRoom",{name:room.name});
 }
 
 function showRoomState(){
