@@ -47,7 +47,7 @@ _SKILLS_MOTO={
     wav:{id:4,name:"光線",args:[{message:"対象入力",type:"opponent"}],
             attackPhase:function(user,players,decisions,args){
                 let damages=players.map(p=>0);
-                if(user.charge>=3){
+                if(this.requirement(user)){
                     user.charge-=3;
                     let target=players.findIndex(p=>p.id==args[0]);
                     damages[target] = _SKILLS_MOTO.wav.pow;
@@ -55,7 +55,7 @@ _SKILLS_MOTO={
                 return damages;
             },
             beam:true,
-            requirement:(p)=>(p.charge>0),pow:3,
+            requirement:(p)=>(p.charge>=3),pow:3,
             defensePhase:_DEFENSE_DEFAULT
         },
     
