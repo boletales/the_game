@@ -1,11 +1,14 @@
 function log(str){
-    document.getElementById("output").innerHTML+=str;
+    document.getElementById("output").innerHTML+=str+"\n";
     document.getElementById("output").scrollTop = document.getElementById("output").scrollHeight;
 }
 sendCommand=function(){};
-function Human(name){
-    Player.call(this,name);
-    this.input=commandInput.bind(this,this);
+_game=exports;
+function Human(nickname){
+    _game.Player.call(this,nickname,nickname,nickname,game);
+    this.input=function(callBack){
+        this.game.commandInput(this,[],[{message:"行動入力",type:"action"}],undefined,callBack/*,timeout*/);
+    }.bind(this);
     this.reqCommand=function(onCommand,message,commands){
         document.getElementById("command").innerHTML=message+"≫";
         commands.forEach(com => {
@@ -20,6 +23,16 @@ function Human(name){
         sendCommand=void(0);
     }
 }
+game=new _game.Game(_game._SKILLS_MOTO,{},()=>undefined,()=>undefined,log,()=>undefined);
+players=[new Human("p1"),new CPUnon("c1")];
+players.forEach(p=>game.joinPlayer(p,false));
+game.init();
 
-players=[new Human("p1"),new Random("r1"),new Random("r2"),new CPU1("c1"),new CPU1("c2"),new CPU2("z1"),new CPU2("z2")];
-init();
+
+
+function CPUnon(nickname){
+    _game.Player.call(this,nickname,nickname,nickname,game);
+    this.decision=function(o){
+        return decision([_game._SKILLS_MOTO.non]);
+    };
+}

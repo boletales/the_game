@@ -1,3 +1,5 @@
+exports={};
+
 _ATTACK_DEFAULT=(user,players,decisions,args)=>players.map(p=>0);
 _DEFENSE_DEFAULT=(user,players,decisions,damages,args)=>damages.forEach(d=>user.hp-=d);
 exports._ATTACK_DEFAULT=_ATTACK_DEFAULT;
