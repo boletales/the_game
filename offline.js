@@ -32,7 +32,5 @@ game.init();
 
 function CPUnon(nickname){
     _game.Player.call(this,nickname,nickname,nickname,game);
-    this.decision=function(o){
-        return decision([_game._SKILLS_MOTO.non]);
-    };
+    //this.input=()=>{};
 }

@@ -77,6 +77,7 @@ _SKILLS_MOTO={
 exports._SKILLS_MOTO=_SKILLS_MOTO;
 
 exports._HP_DEFAULT=6;
+const _INPUT_CANCEL="!cancel";
 class Game{
     constructor(skills,args,closeGame,okawari,log,showPlayers=function(){}){
         this.log=log;
@@ -86,6 +87,7 @@ class Game{
         this._HP        = args.hasOwnProperty("hp")         ?args.hp         :6;
         this.startnumber=2;
         this.todoMoto=[
+            //cb:callback
             {start:function(cb){
                 this.log("★第"+this.turns+"ターン★");
                 this.players=this.players.concat(this.waiting);
@@ -153,17 +155,17 @@ class Game{
         }
     }
 
-    commandInput(from,args,argsleft,backToPrev,callBack,timeout){
+    commandInput(from,argsinput,argsleft,backToPrev,callBack,timeout){
         switch (argsleft[0].type) {
+            //行動
             case "action":
-                var options=Object.keys(this._SKILLS).filter(command=>
-                    !this._SKILLS[command].hasOwnProperty("requirement")
-                    ||this._SKILLS[command].requirement(from)
-                );
+                var options=Object.keys(this._SKILLS).filter(command=>this.checkRec(from,this._SKILLS[command]));
                 var optionnames=options.map(s=>this._SKILLS[s].name);
-                var optionargs=(n)=>this._SKILLS[n].args;
                 var optionconv=(n)=>this._SKILLS[n];
+                var optionargs=(n)=>n.args;
                 break;
+
+            //対象（敵）
             case "opponent":
                 var options=this.players.filter(p=>p.team!==from.team).map(p=>p.id);
                 var optionnames=this.players.filter(p=>p.team!==from.team).map(p=>p.nickname);
@@ -171,34 +173,49 @@ class Game{
             default:
                 break;
         }
-        let backToThis=function (from,args,argsleft,backToPrev,callBack,timeout){
-            this.commandInput(from,args,argsleft,backToPrev,callBack,timeout)
-        }.bind(this,from,args,argsleft,backToPrev,callBack,timeout);
-        let onCommand=function (from,callBack,args,argsleft,optionargs,backToThis,backToPrev,optionconv,timeout,input){
+        //次のステップのコマンドがキャンセルされたとき、このステップに戻る関数
+        let backToThis=function (from,argsinput,argsleft,backToPrev,callBack,timeout){
+            this.commandInput(from,argsinput,argsleft,backToPrev,callBack,timeout)
+        }.bind(this,from,argsinput,argsleft,backToPrev,callBack,timeout);
+
+
+        //コマンド入力がされたら
+        //初めのクソ長い引数はすべてbindされているので実質 function onCommand(input){}
+        //from:入力者 , callback:入力終了時に呼び出し , argsinput:すでに入力された事項 , argsleft:これから入力される事項
+        //残りは他参照
+        let onCommand=function (from,callBack,argsinput,argsleft,optionargs,optionconv,backToThis,backToPrev,timeout,input){
             from.clearCommand();
-            if(input=="!cancel"){
+            //キャンセルなら前のステップに戻る
+            if(input==_INPUT_CANCEL){
                 backToPrev();
                 return;
             }
 
-            var newargs=[];
-            if(optionargs!=undefined)var newargs=optionargs(input);
+            let argsleft_new=argsleft.concat().slice(1);
+            //optionconv:入力を変換("atk"->this._SKILLS["atk"])
             if(optionconv!=undefined)input=optionconv(input);
-            if(argsleft.length+newargs.length<=1){
-                callBack(decision(args.concat(input)));
+
+
+            let argsinput_new=argsinput.concat(input);
+            //optionargs:入力された行動のとる引数(ex. 「攻撃」なら攻撃対象)
+            if(optionargs!=undefined)argsleft_new=argsleft_new.concat(optionargs(input));
+
+            if(argsleft_new.length==0){
+                //入力すべき事項が残っていないなら決定
+                callBack(decision(argsinput_new));
                 if(timeout!=undefined)clearTimeout(timeout);
                 from.sleepcount=0;
             }else{
-                this.commandInput(from,args.concat(input),argsleft.concat(newargs).slice(1),backToThis,callBack,timeout);
+                //残っているなら次の入力を求める
+                this.commandInput(from,argsinput_new,argsleft_new,backToThis,callBack,timeout);
             }
-        }.bind(this,from,callBack,args,argsleft,optionargs,backToThis,backToPrev,optionconv,timeout);
+        }.bind(this,from,callBack,argsinput,argsleft,optionargs,optionconv,backToThis,backToPrev,timeout);
         
-        if(args.length==0){
-            from.reqCommand(onCommand,argsleft[0].message,options.map((c,i)=>{return {"name":optionnames[i],"command":c}}));
-        }else{
-            from.reqCommand(onCommand,argsleft[0].message,
-                [{"name":"キャンセル","command":"!cancel"}].concat(options.map((c,i)=>{return {"name":optionnames[i],"command":c}})));
+        if(argsinput.length>0){
+            optionnames=["キャンセル"].concat(optionnames);
+            options=[_INPUT_CANCEL].concat(options);
         }
+        from.reqCommand(onCommand,argsleft[0].message,options.map((c,i)=>{return {"name":optionnames[i],"command":c}}));
 
         
     }
@@ -207,10 +224,9 @@ class Game{
         this.log("~~~~~");
         //条件処理
         for(let from=0;from<decisions.length;from++){
-            if( decisions[from].skill.hasOwnProperty("reqirement") &&
-                decisions[from].skill.requirement(players[from])){
-                    decisions[from].skill=this._SKILLS.non;
-                }
+            if(!this.checkRec(players[from],decisions[from].skill)){
+                decisions[from].skill=this._SKILLS.non;
+            }
         }
 
         let damages=players.map(p=>[]);
@@ -301,6 +317,9 @@ class Game{
         if(this.players.length>=this.startnumber){
             this.init();
         }
+    }
+    checkRec(player,skill){
+        return !skill.hasOwnProperty("requirement")||skill.requirement(player);
     }
 }
 exports.Game=Game;
