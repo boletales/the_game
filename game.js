@@ -17,7 +17,12 @@ _SKILLS_MOTO={
     def:{id:1,name:"防御",args:[], 
             attackPhase:_ATTACK_DEFAULT,
             defensePhase:function(user,players,decisions,damages,args){
-                damages.forEach(d=>user.hp-=Math.max(0,d-1));
+                damages.forEach(d=>{
+                    if(d>0){
+                        user.hp-=d-1;
+                        user.charge+=1;
+                    }
+                });
             },
         },
 
@@ -33,7 +38,7 @@ _SKILLS_MOTO={
     chr:{id:3,name:"溜め",args:[],
             attackPhase:function(user,players,decisions,args){
                 let damages=players.map(p=>0);
-                user.charge++;
+                user.charge+=3;
                 return damages;
             },
             defensePhase:_DEFENSE_DEFAULT
@@ -42,8 +47,8 @@ _SKILLS_MOTO={
     wav:{id:4,name:"光線",args:[{message:"対象入力",type:"opponent"}],
             attackPhase:function(user,players,decisions,args){
                 let damages=players.map(p=>0);
-                if(user.charge>0){
-                    user.charge--;
+                if(user.charge>=3){
+                    user.charge-=3;
                     let target=players.findIndex(p=>p.id==args[0]);
                     damages[target] = _SKILLS_MOTO.wav.pow;
                 }
@@ -250,7 +255,7 @@ class Game{
                 this.log("勝者...なし");
             }
             this.log("10秒後に次の試合");
-            setTimeout(this.okawari,10000)
+            setTimeout(this.okawari,10000);
             return false;
         }
     }
