@@ -13,14 +13,14 @@
     </head>
     <body>
         <form id="chat" action="#" style="float:left">
-                <input id="name" value="名無し">
-                <input id="msg">
-                <input type="submit"  value="送信">
+            <input id="name" type=hidden>
+            <input id="msg">
+            <input type="submit"  value="送信">
         </form>
         <pre id="messages" style="padding: 5px;width: 100%;height: 20rem;overflow:auto;border-style: dotted;background-color: #eee"></pre>
         
         <button id="make" onclick="location.href='make.html'">部屋追加</button>
-        <button id="taiman" onclick="joinTaiman()">1vs1</button>
+        <button id="taiman" onclick="joinTaiman()">1vs1(0人待ち)</button>
         <table id="rooms">
         </table>
         
@@ -29,9 +29,14 @@
             socket.on("roomStates",data=>{
                 let table=document.getElementById("rooms");
                 table.innerHTML="<tr><th>部屋名</th><th>参加</th></tr>";
-                data.forEach(room => {
+                data.rooms.forEach(room => {
                     table.innerHTML+= "<tr><td>"+room.name+"("+room.number+"人)</th><td><a href=./rooms/"+room.name+">参加</th></tr>";
                 });
+                if(data.taiman){
+                    document.getElementById("taiman").innerHTML="1vs1(1人待ち)";
+                }else{
+                    document.getElementById("taiman").innerHTML="1vs1(0人待ち)";
+                }
             });
             document.getElementById("name").value="名無し"+randomID(3);
             function randomID(keta){
