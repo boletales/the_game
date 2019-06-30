@@ -7,10 +7,10 @@ const _SKILLS={
     //forone:対象は一人か (falseなら自分用の技か全体攻撃)
     //pow:威力(攻撃技専用)
     non:{id:0,mes:"スカ",forone:false,},
-    def:{id:1,mes:"防御",forone:false,                                                            dmg:(p,o,od,at)=>Math.max(at-1,0)},
+    def:{id:1,mes:"防御",forone:false,                                                            dmg:(p,o,od,at)=>{if(at>0){p.charge++};return Math.max(at-1,0);}},
     atk:{id:2,mes:"攻撃",forone:true ,atk:(p,o,od)=>_SKILLS.atk.pow ,pow:1},
-    chr:{id:3,mes:"溜め",forone:false,                                                            act:p=>p.charge++},
-    wav:{id:4,mes:"光線",forone:true ,atk:(p,o,od)=>(od.id==_SKILLS.mir.id ? 0 : _SKILLS.wav.pow),act:p=>p.charge-- ,req:(p)=>(p.charge>0),pow:3},
+    chr:{id:3,mes:"溜め",forone:false,                                                            act:p=>p.charge+=3},
+    wav:{id:4,mes:"光線",forone:true ,atk:(p,o,od)=>(od.id==_SKILLS.mir.id ? 0 : _SKILLS.wav.pow),act:p=>p.charge-=3 ,req:(p)=>(p.charge>=3),pow:3},
     mir:{id:5,mes:"反射",forone:false,atk:(p,o,od)=>(od.id==_SKILLS.wav.id ? _SKILLS.wav.pow : 0),dmg:(p,o,od,at)=>(od.id==_SKILLS.wav.id ? 0 : at)},
     //sui:{id:7,mes:"自殺"                                                                ,act:p=>(p.hp=0)}
 };
