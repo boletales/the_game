@@ -45,7 +45,7 @@
                 }
                 socket.emit("joinRoom",{roomname:roomname,nickname:nickname,team:team});
                 
-            })
+            });
             socket.on("input_command", function(data){
                 document.getElementById("command").innerHTML=data.message+">";
                 data.commands.forEach(com => {

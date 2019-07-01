@@ -1,4 +1,4 @@
-exports={};
+if(process==undefined)exports={};
 
 _ATTACK_DEFAULT=(user,players,decisions,args)=>players.map(p=>0);
 _DEFENSE_DEFAULT=(user,players,decisions,damages,args)=>damages.forEach(d=>user.hp-=d);
@@ -141,7 +141,6 @@ class Game{
         this.tick();
     }
     tick(){
-        1+1;
         for(let id in this.todo[0]){
             this.todo[0][id](function(id,jobs,input){
                 this.newresult[id]=input;
