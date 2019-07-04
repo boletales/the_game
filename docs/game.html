@@ -12,16 +12,21 @@
         </style>
     </head>
     <body>
-        <span id="anataha" style="color:#555"></span><span id="team" style="font-size:100%"></span><span id="name" style="font-size:140%"></span>
-        <form id="chat" action="">
+        <a href="../../">ロビーに戻る</a><br>
+        <span id="kokoha" style="color:#555"></span><span id="roomname" style="font-size:140%"></span>　<span id="anataha" style="color:#555"></span><span id="team" style="font-size:100%"></span><span id="name" style="font-size:140%"></span>
+        
+        <form id="chat" action="" align="right">
+            部屋内チャット:
             <input id="msg">
             <input type="submit"  value="送信">
         </form>
         <pre id="output" style="padding: 5px;width: 100%;height: 20rem;overflow:auto;border-style: dotted;background-color: #eee"></pre>
-        <pre id="command" style="padding: 5px;width: 100%;;background-color: #ffd"></pre><br>
+        
+        <pre id="command" style="padding: 5px;width: 100%;;background-color: #ffd">次のターンまでお待ちください</pre><br>
         <div id="players" style="padding: 5px;width: 100%;;background-color: #eee"></div><br>
-        <a href="../../">ロビーに戻る</a><br><br><br>
+        <br><br>
 
+        <h2>全体チャット</h2>
         <form id="gchat" action="" style="float:left">
             <input id="gmsg">
             <input type="submit"  value="送信">
@@ -39,6 +44,8 @@
 
             socket.on("roomData",data=>{
                 roomname=data.name;
+                document.getElementById("kokoha").innerHTML="ここは ";
+                document.getElementById("roomname").innerHTML=roomname;
                 let urlVars=getUrlVars();
                 if(urlVars.nickname!=undefined){
                     var nickname=urlVars.nickname;
