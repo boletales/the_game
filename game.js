@@ -262,7 +262,7 @@ class Game{
         }
         this.showPlayers(players);
         this.log("~~~~~");
-        if(livingTeams.length>1){
+        if(livingTeams.length>1 || this.waiting.length>0){
             return true;
         }else{
             this.log("試合終了");
