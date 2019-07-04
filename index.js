@@ -121,7 +121,7 @@ class Room{
             socket.on('disconnect',((data)=>{
                 this.game.players.filter(p=>p.hasOwnProperty("socket")).filter(p=>p.socket==socket).forEach(function(player){
                     this.log("disconnected:"+player.nickname);
-                    this.game.killPlayer(player.nickname);
+                    this.game.killPlayer(player.id);
                 }.bind(this));
                 if(this.getNumber()==0)this.closeGame();
                 showRoomState();
@@ -224,6 +224,7 @@ class TaimanRoom extends Room{
 function Human(nickname,team,game,socket){
     _game.Player.call(this,socket.id,nickname,team,game);
     this.socket=socket;
+    this.isHuman=true;
     this.sleepcount=0;
     this.input=function(callBack){
         /*let timeout=setTimeout(function(callBack){

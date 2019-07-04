@@ -95,7 +95,7 @@ class Game{
             //cb:callback
             {start:function(cb){
                 this.log("★第"+this.turns+"ターン★");
-                this.players=this.players.concat(this.waiting);
+                this.players=this.players.concat(this.waiting.filter(p=>!p.isHuman||p.socket.connected));
                 this.waiting=[];
                 this.todo[1]={};
                 this.players.forEach(p=>this.todo[1][p.id]=(cb=>{
@@ -283,8 +283,8 @@ class Game{
     checkRec(player,skill){
         return !skill.hasOwnProperty("requirement")||skill.requirement(player);
     }
-    killPlayer(name){
-        this.players.filter(p=>p.nickname==name).forEach(player=>{
+    killPlayer(id){
+        this.players.filter(p=>p.id==id).forEach(player=>{
             player.hp=0;
             player.input=function(cb){
                 cb(new decision([this._SKILLS.non]));
