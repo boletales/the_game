@@ -31,16 +31,17 @@
             }
             function makeRoom(){
                 socket.emit("makeRoom",{
-                    name:document.getElementById("name").value
-                    ,args:{teamMode:document.getElementById("team").checked}})
+                    name:document.getElementById("name").value,
+                    args:{teamMode:document.getElementById("team").checked}})
                 ;
             }
             socket.on("goRoom",data=>{
-                location.href="./rooms/"+encodeURIComponent(data.name);
+                location.href="./rooms/"+encodeURIComponent(data.id);
             });
             function randomID(keta){
                 return ("0".repeat(keta)+Math.floor(Math.random()*(10**keta))).slice(-keta);
             }
+            
         </script>
     </body>
 </html>

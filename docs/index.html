@@ -30,7 +30,7 @@
                 let table=document.getElementById("rooms");
                 table.innerHTML="<tr><th>部屋名</th><th>参加</th></tr>";
                 data.rooms.forEach(room => {
-                    table.innerHTML+= "<tr><td>"+room.name+"("+room.number+"人)</th><td><a href=./rooms/"+room.name+">参加</th></tr>";
+                    table.innerHTML+= "<tr><td>"+room.name+"("+room.number+"人)</th><td><a href=./rooms/"+room.id+">参加</th></tr>";
                 });
                 if(data.taiman){
                     document.getElementById("taiman").innerHTML="1vs1(1人待ち)";
@@ -38,7 +38,7 @@
                     document.getElementById("taiman").innerHTML="1vs1(0人待ち)";
                 }
             });
-            document.getElementById("name").value="名無し"+randomID(3);
+            document.getElementById("gname").value="名無し"+randomID(3);
             function randomID(keta){
                 return ("0".repeat(keta)+Math.floor(Math.random()*Math.pow(10,keta))).slice(-keta);
             }
@@ -52,8 +52,8 @@
                 location.href="./rooms/"+encodeURIComponent(data.name);
             })
             socket.on("globalMessage", function(data){
-                document.getElementById("rmessages").innerHTML+=data.name+"≫"+data.message+"\n";
-                document.getElementById("rmessages").scrollTop = document.getElementById("output").scrollHeight;
+                document.getElementById("gmessages").innerHTML+=data.name+"≫"+data.message+"\n";
+                document.getElementById("gmessages").scrollTop = document.getElementById("output").scrollHeight;
             });
             document.getElementById("gchat").onsubmit=function(e){
                 socket.emit("globalChat", {name : document.getElementById("gname").value+"@ロビー",message : document.getElementById("gmsg").value});

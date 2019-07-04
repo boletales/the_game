@@ -135,7 +135,6 @@ class Game{
         this.turns=0;
         this.players=[];
         this.waiting=[];
-        this.playercount=0;
         this.closeGame();
     }
     init(){
@@ -281,6 +280,9 @@ class Game{
             return false;
         }
     }
+    checkRec(player,skill){
+        return !skill.hasOwnProperty("requirement")||skill.requirement(player);
+    }
     killPlayer(name){
         this.players.filter(p=>p.nickname==name).forEach(player=>{
             player.hp=0;
@@ -322,8 +324,8 @@ class Game{
             this.init();
         }
     }
-    checkRec(player,skill){
-        return !skill.hasOwnProperty("requirement")||skill.requirement(player);
+    countJoined(){
+        return this.players.length+this.waiting.length;
     }
 }
 exports.Game=Game;

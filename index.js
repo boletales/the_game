@@ -25,7 +25,7 @@ io.on('connection',function(socket){
         makeRoomAndJoin(socket,data.name,data.args);
     });
     socket.on("joinRoom",data=>{
-        joinRoom(data.roomname,socket,data.nickname,data.team);
+        joinRoom(data.roomid,socket,data.nickname,data.team);
     });
     socket.on("joinTaiman",data=>{
         joinTaiman(socket);
@@ -34,8 +34,8 @@ io.on('connection',function(socket){
         io.emit("globalMessage",data);
     });
     socket.on("getRoomData",data=>{
-        if(rooms.hasOwnProperty(data.name)){
-            socket.emit(rooms[data.name].showData(socket));
+        if(rooms.hasOwnProperty(data.id)){
+            socket.emit(rooms[data.id].showData(socket));
         }
     });
 });
@@ -46,19 +46,17 @@ function randomID(keta){
     return ("0".repeat(keta)+Math.floor(Math.random()*Math.pow(10,keta))).slice(-keta);
 }
 function makeRoom(name,args){
-    rooms[name]=new Room(name,rooms,args);
+    let r=new Room(name,rooms,args);
+    rooms[r.id]=r;
+    return r.id;
 }
 function makeRoomAndJoin(socket,name,args){
-    if(rooms.hasOwnProperty(name)){
-        socket.emit("roomExists",{});
-    }
-    makeRoom(name,args);
-    socket.emit("goRoom",{name:name});
+    socket.emit("goRoom",{id:makeRoom(name,args)});
 }
-function joinRoom(roomname,socket,nickname,team){
-    if(rooms.hasOwnProperty(roomname)){
-        socket.join(roomname);
-        if(rooms[roomname].join(socket,nickname,team)){
+function joinRoom(roomid,socket,nickname,team){
+    if(rooms.hasOwnProperty(roomid)){
+        socket.join(roomid);
+        if(rooms[roomid].join(socket,nickname,team)){
             showRoomState();
         }else{
             socket.emit("goRobby",{});
@@ -69,7 +67,7 @@ function joinRoom(roomname,socket,nickname,team){
     }
 }
 function joinTaiman(socket){
-    let available=Object.values(rooms).filter(r=>r.taiman).filter(r=>r.game.players.length+r.game.waiting.length<2);
+    let available=Object.values(rooms).filter(r=>r.taiman).filter(r=>r.game.countJoined()<2);
     if(available.length>0){
         var room=available[0];
     }else{
@@ -77,14 +75,14 @@ function joinTaiman(socket){
         var room=new TaimanRoom(name,rooms);
         rooms[name]=room;
     }
-    socket.emit("goRoom",{name:room.name});
+    socket.emit("goRoom",{name:room.id});
 }
 
 function showRoomState(){
-    var avr= Object.values(rooms).filter(r=>r.game.players.length>0);
+    var avr= Object.values(rooms).filter(r=>r.game.countJoined()>0);
     io.to("robby").emit("roomStates",{
-        rooms:  avr.filter(room=>!room.hidden).map(room=>({name:room.name,number:room.getNumber()})),
-        taiman: avr.filter(r=>r.taiman).filter(r=>r.game.players.length+r.game.waiting.length<2).length>0,
+        rooms:  avr.filter(room=>!room.hidden).map(room=>({name:room.name,id:room.id,number:room.getNumber()})),
+        taiman: avr.filter(r=>r.taiman).filter(r=>r.game.countJoined()<2).length>0,
     });
 }
 class Room{
@@ -92,6 +90,7 @@ class Room{
         this.recentLog=[];
         this.recentLogMax=20;
         this.name=name;
+        this.id=generateUuid();
         this.args=args;
         this.taiman=this.args.taiman;
         this.parent=parent;
@@ -100,8 +99,11 @@ class Room{
         this.teamMode=this.game.teamMode;
     }
     getNumber(){
-        if(io.sockets.adapter.rooms[this.name]==undefined)return 0;
-        return Object.keys(io.sockets.adapter.rooms[this.name].sockets).length;
+        if(io.sockets.adapter.rooms[this.id]==undefined){
+            delete rooms[this.id];
+            return 0;
+        }
+        return Object.keys(io.sockets.adapter.rooms[this.id].sockets).length;
     }
     join(socket,nickname,team){
         if(!this.args.hasOwnProperty("teamMode")||this.args.teamMode){
@@ -133,7 +135,7 @@ class Room{
     showData(socket){
         this.sendRecentLog(socket);
         this.game.showPlayers();
-        socket.emit("roomData",{teamMode:this.game.teamMode,available:this.game.aki()});
+        socket.emit("roomData",{name:this.name,teamMode:this.game.teamMode,available:this.game.aki()});
     }
 
     log(str){
@@ -142,7 +144,7 @@ class Room{
 
     chat(data){
         data.time=new Date();
-        io.to(this.name).emit('message',data);
+        io.to(this.id).emit('message',data);
         process.stdout.write(this.name+":"+data.name+"≫"+data.message+"\n");
         this.recentLog.push(data);
         if(this.recentLog.length>this.recentLogMax)this.recentLog.shift();
