@@ -93,10 +93,10 @@ class Room{
         this.name=name;
         this.args=args;
         this.parent=parent;
-        this.taiman=args.taiman;
         this.hidden=args.hasOwnProperty("hidden")&&args.hidden;
         this.game=new _game.Game(_game._SKILLS_MOTO,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this));
         this.teamMode=this.game.teamMode;
+        this.taiman=!this.teamMode;
     }
     getNumber(){
         if(io.sockets.adapter.rooms[this.name]==undefined)return 0;
