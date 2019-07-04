@@ -84,7 +84,7 @@ function showRoomState(){
     var avr= Object.values(rooms).filter(r=>r.game.players.length>0);
     io.to("robby").emit("roomStates",{
         rooms:  avr.filter(room=>!room.hidden).map(room=>({name:room.name,number:room.getNumber()})),
-        taiman: avr.filter(r=>r.taiman).filter(r=>r.game.players.length+r.game.waiting.length<2).length>0;
+        taiman: avr.filter(r=>r.taiman).filter(r=>r.game.players.length+r.game.waiting.length<2).length>0,
     });
 }
 class Room{
