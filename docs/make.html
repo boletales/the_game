@@ -32,7 +32,7 @@
             function makeRoom(){
                 socket.emit("makeRoom",{
                     name:document.getElementById("name").value
-                    ,args:{teamMode:document.getElementById("team").value}})
+                    ,args:{teamMode:document.getElementById("team").value==true}})
                 ;
             }
             socket.on("goRoom",data=>{
