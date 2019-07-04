@@ -81,9 +81,10 @@ function joinTaiman(socket){
 }
 
 function showRoomState(){
+    let avr= Object.values(rooms).filter(r=>r.game.player.length>0);
     io.to("robby").emit("roomStates",{
-        rooms:Object.keys(rooms).map(k=>rooms[k]).filter(room=>!room.hidden).map(room=>({name:room.name,number:room.getNumber()})),
-        taiman: Object.values(rooms).filter(r=>r.taiman).filter(r=>r.game.players.length+r.game.waiting.length<2).length>0
+        rooms:  avr.filter(room=>!room.hidden).map(room=>({name:room.name,number:room.getNumber()})),
+        taiman: avr.filter(r=>r.taiman).filter(r=>r.game.players.length+r.game.waiting.length<2).length>0;
     });
 }
 class Room{
