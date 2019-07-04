@@ -74,8 +74,7 @@ _SKILLS_MOTO={
             },
             defensePhase:function(user,players,decisions,damages,args){
                 _DEFENSE_DEFAULT(user,players,decisions,damages.map((d,i)=>
-                decisions[i].skill.hasOwnProperty("beam")?0:d),args);
-                ;
+                (decisions[i].skill.hasOwnProperty("beam") && decisions[i].args[0]==user.id)?0:d),args);
             },
         }
     //sui:{id:7,name:"自殺"                                                                ,act:p=>(p.hp=0)}
