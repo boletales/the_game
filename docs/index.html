@@ -12,12 +12,12 @@
         </style>
     </head>
     <body>
-        <form id="rchat" action="#" style="float:left">
-            <input id="name" type=hidden>
-            <input id="rmsg">
+        <form id="gchat" action="#" style="float:left">
+            <input id="gname">
+            <input id="gmsg">
             <input type="submit"  value="送信">
         </form>
-        <pre id="rmessages" style="padding: 5px;width: 100%;height: 20rem;overflow:auto;border-style: dotted;background-color: #eee"></pre>
+        <pre id="gmessages" style="padding: 5px;width: 100%;height: 20rem;overflow:auto;border-style: dotted;background-color: #eee"></pre>
         
         <button id="make" onclick="location.href='make.html'">部屋追加</button>
         <button id="taiman" onclick="joinTaiman()">1vs1(0人待ち)</button>
@@ -51,13 +51,14 @@
             socket.on("goRoom",data=>{
                 location.href="./rooms/"+encodeURIComponent(data.name);
             })
-            socket.on("robbyMessage", function(data){
+            socket.on("globalMessage", function(data){
                 document.getElementById("rmessages").innerHTML+=data.name+"≫"+data.message+"\n";
                 document.getElementById("rmessages").scrollTop = document.getElementById("output").scrollHeight;
             });
-            document.getElementById("rchat").onsubmit=function(e){
-                socket.emit("robbyChat", {name : document.getElementById("rname").value,message : document.getElementById("rmsg").value});
+            document.getElementById("gchat").onsubmit=function(e){
+                socket.emit("globalChat", {name : document.getElementById("gname").value+"@ロビー",message : document.getElementById("gmsg").value});
                 e.preventDefault();
+                return false;
             };
         </script>
     </body>

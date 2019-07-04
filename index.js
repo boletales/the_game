@@ -30,8 +30,8 @@ io.on('connection',function(socket){
     socket.on("joinTaiman",data=>{
         joinTaiman(socket);
     });
-    socket.on('robbyChat',function(data){
-        io.emit("robbyMessage",data);
+    socket.on('globalChat',function(data){
+        io.emit("globalMessage",data);
     });
     socket.on("getRoomData",data=>{
         if(rooms.hasOwnProperty(data.name)){

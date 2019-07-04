@@ -22,21 +22,23 @@
         <div id="players" style="padding: 5px;width: 100%;;background-color: #eee"></div><br>
         <a href="../../">ロビーに戻る</a><br><br><br>
 
-        <form id="rchat" action="#" style="float:left">
-            <input id="name" type=hidden>
-            <input id="rmsg">
+        <form id="gchat" action="" style="float:left">
+            <input id="gmsg">
             <input type="submit"  value="送信">
         </form>
-        <pre id="rmessages" style="padding: 5px;width: 100%;height: 20rem;overflow:auto;border-style: dotted;background-color: #eee"></pre>
+        <pre id="gmessages" style="padding: 5px;width: 100%;height: 20rem;overflow:auto;border-style: dotted;background-color: #eee"></pre>
         <script>
             let teamColor={"a":"#a00","b":"#0a0"};
             let defaultColor="#000";
             let getColor=(team)=>(teamColor.hasOwnProperty(team)?teamColor[team]:defaultColor);
             let socket = io.connect();
-            let roomname=decodeURIComponent(location.pathname.split("/").reverse()[0]);
-            socket.emit("getRoomData",{name:roomname});
+            let roomid=decodeURIComponent(location.pathname.split("/").reverse()[0]);
+            let roomname;
+            let name;
+            socket.emit("getRoomData",{name:roomid});
 
             socket.on("roomData",data=>{
+                roomname=data.roomname;
                 let urlVars=getUrlVars();
                 if(urlVars.nickname!=undefined){
                     var nickname=urlVars.nickname;
@@ -50,7 +52,7 @@
                 }else{
                     var team=prompt("チームを入力してください","a");
                 }
-                socket.emit("joinRoom",{roomname:roomname,nickname:nickname,team:team});
+                socket.emit("joinRoom",{roomname:roomid,nickname:nickname,team:team});
                 
             });
             socket.on("input_command", function(data){
@@ -69,6 +71,7 @@
             document.getElementById("chat").onsubmit=function(e){
                 socket.emit("chat", {name : name,message : document.getElementById("msg").value});
                 e.preventDefault();
+                return false;
             };
             socket.on("joined", function(data){
                 setName(data);
@@ -106,13 +109,14 @@
                 return ("0".repeat(keta)+Math.floor(Math.random()*(10**keta))).slice(-keta);
             }
 
-            socket.on("robbyMessage", function(data){
-                document.getElementById("rmessages").innerHTML+=data.name+"≫"+data.message+"\n";
-                document.getElementById("rmessages").scrollTop = document.getElementById("output").scrollHeight;
+            socket.on("globalMessage", function(data){
+                document.getElementById("gmessages").innerHTML+=data.name+"≫"+data.message+"\n";
+                document.getElementById("gmessages").scrollTop = document.getElementById("gmessages").scrollHeight;
             });
-            document.getElementById("rchat").onsubmit=function(e){
-                socket.emit("robbyChat", {name : document.getElementById("rname").value,message : document.getElementById("rmsg").value});
+            document.getElementById("gchat").onsubmit=function(e){
+                socket.emit("globalChat", {name : name+"@"+roomname,message : document.getElementById("gmsg").value});
                 e.preventDefault();
+                return false;
             };
 
             BeforeUnloadEvent=socket.disconnect;
