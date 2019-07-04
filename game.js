@@ -26,9 +26,12 @@ _SKILLS_MOTO={
                     }
                 });
             },
+            message(decision,at,df,decisions){
+
+            }
         },
 
-    atk:{id:2,name:"攻撃",args:[{message:"対象入力",type:"opponent"}],
+    atk:{id:2,name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
             attackPhase:function(user,players,decisions,args){
                 let damages=players.map(p=>0);
                 damages[players.findIndex(p=>p.id==args[0])] = _SKILLS_MOTO.atk.pow;
@@ -46,7 +49,7 @@ _SKILLS_MOTO={
             defensePhase:_DEFENSE_DEFAULT
         },
 
-    wav:{id:4,name:"光線",args:[{message:"対象入力",type:"opponent"}],
+    wav:{id:4,name:"光線",args:[{message:"対象入力",type:"opponent",name:"to"}],
             attackPhase:function(user,players,decisions,args){
                 let damages=players.map(p=>0);
                 if(this.requirement(user)){
@@ -243,22 +246,27 @@ class Game{
         for(let from=0;from<decisions.length;from++){
             decisions[from].skill.defensePhase(players[from],players,decisions,damages[from],decisions[from].args);
         }
+
+
+        //結果表示
         this.log("~~~~~");
-        //hp表示
         let livingTeams=[];
         players.filter(v=>v.hp>0).forEach(p=>livingTeams.indexOf(p.team)==-1&&livingTeams.push(p.team));
 
         for(let i=0;i<decisions.length;i++){
-            if(decisions[i].args.hasOwnProperty("to")){
-                this.log(players[i].nickname+" : "+decisions[i].skill.name+"⇢"+decisions[i].args.to);
+            let dstr="   "+damages.map(d=>d[i]).filter(d=>d>0).map((v,i)=>"<- "+v+"ダメージ "+decisions[i].user.nickname+"("+decisions[i].args[0].name+")").join("  ");
+            let oppindex=decisions[i].skill.args.findIndex(a=>a.name=="to");
+            if(oppindex!=-1){
+                this.log(players[i].nickname+" : "+decisions[i].skill.name+"⇢"+players.find(p=>p.id==decisions[i].args[oppindex]).nickname+dstr);
             }else{
-                this.log(players[i].nickname+" : "+decisions[i].skill.name);
+                this.log(players[i].nickname+" : "+decisions[i].skill.name+dstr);
             }
             if(players[i].hp<=0){
                 this.log("  死亡...");
             }else{
                 this.log("  "+players[i].state());
             }
+            this.log("");
         }
         this.showPlayers(players);
         this.log("~~~~~");
