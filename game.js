@@ -58,7 +58,13 @@ _SKILLS_MOTO={
             },
             beam:true,
             requirement:(p)=>(p.charge>=3),pow:3,
-            defensePhase:_DEFENSE_DEFAULT
+            defensePhase:function(user,players,decisions,damages,args){
+                damages.forEach(d=>{
+                    if(d>1){
+                        user.hp-=d;
+                    }
+                });
+            },
         },
     
     mir:{id:5,name:"反射",args:[],
