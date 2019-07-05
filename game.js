@@ -1,7 +1,7 @@
 if(process==undefined)exports={};
 
 _ATTACK_DEFAULT=(user,players,decisions,args)=>players.map(p=>0);
-_DEFENSE_DEFAULT=(user,players,decisions,damages,args)=>damages.forEach(d=>user.hp-=d);
+_DEFENSE_DEFAULT=(user,players,decisions,attacks,args)=>attacks;
 exports._ATTACK_DEFAULT=_ATTACK_DEFAULT;
 exports._DEFENSE_DEFAULT=_DEFENSE_DEFAULT;
 _SKILLS_MOTO={
@@ -18,53 +18,50 @@ _SKILLS_MOTO={
 
     def:{id:1,name:"防御",args:[], 
             attackPhase:_ATTACK_DEFAULT,
-            defensePhase:function(user,players,decisions,damages,args){
-                damages.forEach(d=>{
+            defensePhase:function(user,players,decisions,attacks,args){
+                return attacks.map(d=>{
                     if(d>0){
-                        user.hp-=d-1;
                         user.charge+=1;
+                        return d-1;
                     }
                 });
             },
-            message(decision,at,df,decisions){
-
-            }
         },
 
     atk:{id:2,name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
             attackPhase:function(user,players,decisions,args){
-                let damages=players.map(p=>0);
-                damages[players.findIndex(p=>p.id==args[0])] = _SKILLS_MOTO.atk.pow;
-                return damages;
+                let attacks=players.map(p=>0);
+                attacks[players.findIndex(p=>p.id==args[0])] = _SKILLS_MOTO.atk.pow;
+                return attacks;
             },pow:1,
             defensePhase:_DEFENSE_DEFAULT
         },
 
     chr:{id:3,name:"溜め",args:[],
             attackPhase:function(user,players,decisions,args){
-                let damages=players.map(p=>0);
+                let attacks=players.map(p=>0);
                 user.charge+=3;
-                return damages;
+                return attacks;
             },
             defensePhase:_DEFENSE_DEFAULT
         },
 
     wav:{id:4,name:"光線",args:[{message:"対象入力",type:"opponent",name:"to"}],
             attackPhase:function(user,players,decisions,args){
-                let damages=players.map(p=>0);
+                let attacks=players.map(p=>0);
                 if(this.requirement(user)){
                     user.charge-=3;
                     let target=players.findIndex(p=>p.id==args[0]);
-                    damages[target] = _SKILLS_MOTO.wav.pow;
+                    attacks[target] = _SKILLS_MOTO.wav.pow;
                 }
-                return damages;
+                return attacks;
             },
             beam:true,
             requirement:(p)=>(p.charge>=3),pow:3,
-            defensePhase:function(user,players,decisions,damages,args){
-                damages.forEach(d=>{
+            defensePhase:function(user,players,decisions,attacks,args){
+                return attacks.map(d=>{
                     if(d>1){
-                        user.hp-=d;
+                        return d;
                     }
                 });
             },
@@ -75,8 +72,8 @@ _SKILLS_MOTO={
                 return decisions.map(d=>
                     d.skill.hasOwnProperty("beam")?d.skill.pow:0);
             },
-            defensePhase:function(user,players,decisions,damages,args){
-                _DEFENSE_DEFAULT(user,players,decisions,damages.map((d,i)=>
+            defensePhase:function(user,players,decisions,attacks,args){
+                return _DEFENSE_DEFAULT(user,players,decisions,attacks.map((d,i)=>
                 (decisions[i].skill.hasOwnProperty("beam") && decisions[i].args[0]==user.id)?0:d),args);
             },
         }
@@ -235,17 +232,22 @@ class Game{
             }
         }
 
-        let damages=players.map(p=>[]);
+        let attacks=players.map(p=>[]);
         //攻撃処理
         for(let from=0;from<decisions.length;from++){
             decisions[from].skill.attackPhase(players[from],players,decisions,decisions[from].args).forEach((damage,i) => {
-                damages[i].push(damage);
+                attacks[i].push(damage);
             });
         }
+
         //防御処理
-        for(let from=0;from<decisions.length;from++){
-            decisions[from].skill.defensePhase(players[from],players,decisions,damages[from],decisions[from].args);
+        let damages=[];
+        for(let to=0;to<decisions.length;to++){
+            damages.push(decisions[to].skill.defensePhase(players[to],players,decisions,attacks[to],decisions[to].args));
         }
+
+        //ダメージを与える
+        players.forEach((p,i)=>p.hp-=damages[i].reduce((a,c)=>a+c,0));
 
 
         //結果表示
@@ -254,17 +256,17 @@ class Game{
         players.filter(v=>v.hp>0).forEach(p=>livingTeams.indexOf(p.team)==-1&&livingTeams.push(p.team));
 
         for(let i=0;i<decisions.length;i++){
-            let dstr="   "+damages.map(d=>d[i]).filter(d=>d>0).map((v,i)=>"<- "+v+"ダメージ "+decisions[i].user.nickname+"("+decisions[i].args[0].name+")").join("  ");
+            let dstr=" "+damages[i].map((v,j)=>[v,"←「"+players[j].nickname+"」の≪"+decisions[j].skill.name+"≫("+v+"dmg.)"]).filter(d=>d[0]>0).map(d=>d[1]).join("  ");
             let oppindex=decisions[i].skill.args.findIndex(a=>a.name=="to");
             if(oppindex!=-1){
-                this.log(players[i].nickname+" : "+decisions[i].skill.name+"⇢"+players.find(p=>p.id==decisions[i].args[oppindex]).nickname+dstr);
+                this.log(players[i].nickname+":≪"+decisions[i].skill.name+"≫⇢「"+players.find(p=>p.id==decisions[i].args[oppindex]).nickname+"」");
             }else{
-                this.log(players[i].nickname+" : "+decisions[i].skill.name+dstr);
+                this.log(players[i].nickname+":≪"+decisions[i].skill.name+"≫");
             }
             if(players[i].hp<=0){
-                this.log("  死亡...");
+                this.log("  死亡..."+dstr);
             }else{
-                this.log("  "+players[i].state());
+                this.log("  "+players[i].state()+dstr);
             }
             this.log("");
         }

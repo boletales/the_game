@@ -49,7 +49,7 @@
                 socket.emit("joinTaiman",{});
             }
             socket.on("goRoom",data=>{
-                location.href="./rooms/"+encodeURIComponent(data.name);
+                location.href="./rooms/"+encodeURIComponent(data.id);
             })
             socket.on("globalMessage", function(data){
                 document.getElementById("gmessages").innerHTML+=data.name+"≫"+data.message+"\n";

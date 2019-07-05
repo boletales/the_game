@@ -67,15 +67,16 @@ function joinRoom(roomid,socket,nickname,team){
     }
 }
 function joinTaiman(socket){
-    let available=Object.values(rooms).filter(r=>r.taiman).filter(r=>r.game.countJoined()<2);
+    let trooms=Object.values(rooms).filter(r=>r.taiman);
+    let available=trooms.filter(r=>r.game.countJoined()<2);
     if(available.length>0){
         var room=available[0];
     }else{
-        let name=generateUuid();
+        let name="1vs1 No."+(trooms.length+1);
         var room=new TaimanRoom(name,rooms);
-        rooms[name]=room;
+        rooms[room.id]=room;
     }
-    socket.emit("goRoom",{name:room.id});
+    socket.emit("goRoom",{id:room.id});
 }
 
 function showRoomState(){
