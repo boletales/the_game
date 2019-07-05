@@ -44,6 +44,7 @@
             let roomname;
             let name;
             socket.emit("getRoomData",{id:roomid});
+            socket.emit("getGlobalLog",{});
 
             socket.on("roomData",data=>{
                 roomname=data.name;

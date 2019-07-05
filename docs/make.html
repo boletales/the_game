@@ -38,6 +38,9 @@
             socket.on("goRoom",data=>{
                 location.href="./rooms/"+encodeURIComponent(data.id);
             });
+            socket.on("goRobby", function(data){
+                location.href="./"
+            });
             function randomID(keta){
                 return ("0".repeat(keta)+Math.floor(Math.random()*(10**keta))).slice(-keta);
             }

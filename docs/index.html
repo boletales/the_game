@@ -26,6 +26,7 @@
         
         <script>
             let socket = io.connect();
+            socket.emit("getGlobalLog",{});
             socket.on("roomStates",data=>{
                 let table=document.getElementById("rooms");
                 table.innerHTML="<tr><th>部屋名</th><th>参加</th></tr>";
@@ -51,9 +52,12 @@
             socket.on("goRoom",data=>{
                 location.href="./rooms/"+encodeURIComponent(data.id);
             })
+            socket.on("goRobby", function(data){
+                location.href="./"
+            });
             socket.on("globalMessage", function(data){
                 document.getElementById("gmessages").innerHTML+=data.name+"≫"+data.message+"\n";
-                document.getElementById("gmessages").scrollTop = document.getElementById("output").scrollHeight;
+                document.getElementById("gmessages").scrollTop = document.getElementById("gmessages").scrollHeight;
             });
             document.getElementById("gchat").onsubmit=function(e){
                 socket.emit("globalChat", {name : document.getElementById("gname").value+"@ロビー",message : document.getElementById("gmsg").value});

@@ -9,6 +9,9 @@ var eventEmitter = new events.EventEmitter();
 eventEmitter.setMaxListeners(40);
 rooms={};
 
+let globalRecentLog=[];
+let globalRecentLogMax=20;
+
 app.get('/',function(req,res){
     res.sendFile(__dirname+'/docs/index.html');
 });
@@ -17,6 +20,12 @@ app.get('/make.html',function(req,res){
 });
 app.get('/rooms/:roomid',function(req,res){
     res.sendFile(__dirname+'/docs/game.html');
+});
+app.get('/clear',function(req,res){
+    globalRecentLog=[];
+    rooms={};
+    io.emit("goRobby",{});
+    res.redirect('/');
 });
 io.on('connection',function(socket){
     socket.join("robby");
@@ -32,6 +41,11 @@ io.on('connection',function(socket){
     });
     socket.on('globalChat',function(data){
         io.emit("globalMessage",data);
+        globalRecentLog.push(data);
+        if(globalRecentLog.length>globalRecentLogMax)globalRecentLog.shift();
+    });
+    socket.on('getGlobalLog',function(data){
+        sendGlobalRecentLog(socket);
     });
     socket.on("getRoomData",data=>{
         if(rooms.hasOwnProperty(data.id)){
@@ -41,6 +55,12 @@ io.on('connection',function(socket){
 });
 http.listen(process.env.PORT || 80);
 console.log('It works!!');
+
+function sendGlobalRecentLog(socket){
+    globalRecentLog.forEach(data=>
+            socket.emit("globalMessage",data)
+        ); 
+}
 
 function randomID(keta){
     return ("0".repeat(keta)+Math.floor(Math.random()*Math.pow(10,keta))).slice(-keta);
@@ -72,7 +92,7 @@ function joinTaiman(socket){
     if(available.length>0){
         var room=available[0];
     }else{
-        let name="1vs1 No."+(trooms.length+1);
+        let name="タイマン"+("000"+(trooms.length+1)).slice(-3);
         var room=new TaimanRoom(name,rooms);
         rooms[room.id]=room;
     }
