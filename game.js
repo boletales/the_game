@@ -23,6 +23,8 @@ _SKILLS_MOTO={
                     if(d>0){
                         user.charge+=1;
                         return d-1;
+                    }else{
+                        return 0;
                     }
                 });
             },
@@ -62,6 +64,8 @@ _SKILLS_MOTO={
                 return attacks.map(d=>{
                     if(d>1){
                         return d;
+                    }else{
+                        return 0;
                     }
                 });
             },
