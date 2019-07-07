@@ -1,4 +1,6 @@
-if(process==undefined)exports={};
+if(typeof process == 'undefined'){
+    var exports={};
+}
 
 _ATTACK_DEFAULT=(user,players,decisions,args)=>players.map(p=>0);
 _DEFENSE_DEFAULT=(user,players,decisions,attacks,args)=>attacks;
@@ -86,14 +88,16 @@ _SKILLS_MOTO={
 exports._SKILLS_MOTO=_SKILLS_MOTO;
 
 exports._HP_DEFAULT=6;
-const _INPUT_CANCEL="!cancel";
 class Game{
-    constructor(skills,args,closeGame,okawari,log,showPlayers=function(){}){
+    constructor(skills,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},needokawari=true){
         this.log=log;
-        this.teamMode   = args.hasOwnProperty("teamMode")   ?args.teamMode   :true;
-        this.maxPlayers = args.hasOwnProperty("maxPlayers") ?args.maxPlayers :Infinity;
-        this._HP        = args.hasOwnProperty("hp")         ?args.hp         :6;
-        this.startnumber= args.hasOwnProperty("startnumber")?args.startnumber:2;
+        this.noticewinner= noticewinner;
+        this.needokawari = needokawari;
+        this.teamMode    = args.hasOwnProperty("teamMode")   ?args.teamMode   :true;
+        this.maxPlayers  = args.hasOwnProperty("maxPlayers") ?args.maxPlayers :Infinity;
+        this._HP         = args.hasOwnProperty("hp")         ?args.hp         :6;
+        this.startnumber = args.hasOwnProperty("startnumber")?args.startnumber:2;
+        this.maxTurns    = args.hasOwnProperty("maxTurns")   ?args.maxTurns   :Infinity;
         this.todoMoto=[
             //cb:callback
             {start:function(cb){
@@ -122,7 +126,7 @@ class Game{
                         this.todo=this.todo.concat(this.todoMoto);
                         this.players=this.players.filter(v=>v.hp>0);
                         this.turns++;
-                        setTimeout(cb,100);
+                        setTimeout(cb,0);
                     }
                 }.bind(this)
             }
@@ -207,6 +211,7 @@ class Game{
     
 
     turn(players,decisions){
+        players.forEach(p=>p.noticeDecisions(players.map((pl,i)=>{return {"id":pl.id,"decision":decisions[i].skill.id};})));
         this.log("~~~~~");
         //条件処理
         for(let from=0;from<decisions.length;from++){
@@ -255,21 +260,26 @@ class Game{
         }
         this.showPlayers(players);
         this.log("~~~~~");
-        if(livingTeams.length>1 || this.waiting.length>0){
+        if((livingTeams.length>1 || this.waiting.length>0) && this.turns<this.maxTurns){
             return true;
         }else{
             this.log("試合終了");
-            if(livingTeams.length>0){
+            if(livingTeams.length==1){
                 if(this.teamMode){
                     this.log("勝者...🎉 チーム「"+livingTeams[0]+"」 🎉");
+                    this.noticewinner(livingTeams[0]);
                 }else{
                     this.log("勝者...🎉 "+players.filter(v=>v.hp>0)[0].nickname+" 🎉");
+                    this.noticewinner(players.filter(v=>v.hp>0)[0].id);
                 }
             }else{
                 this.log("勝者...なし");
+                this.noticewinner(null);
             }
-            this.log("10秒後に次の試合");
-            setTimeout(this.okawari,10000);
+            if(this.needokawari){
+                this.log("10秒後に次の試合");
+                setTimeout(this.okawari,10000);
+            }
             return false;
         }
     }
@@ -344,9 +354,14 @@ function Player(id,nickname,team,game){
     this.game=game;
     this.buffs=[];
     this.newBuffs=[];
-    this.decision=function(o){return new _game.decision([game._SKILLS.non])}.bind(this);
-    this.reqDecision=function(cb){
-        cb(this.decision(players.filter(v=>v!==this)))
+    this.decision=function(player,supporter,opponents,candidates){return new _game.decision([game._SKILLS.non])}.bind(this);
+    this.reqDecision=function(callBack,candidates){
+        callBack(this.decision(
+            this,
+            players.filter(v=>v.team==this.team&&v!==this),
+            players.filter(v=>v.team!=this.team),
+
+        ));
     }.bind(this);
 
     this.state=function(){
@@ -357,10 +372,67 @@ function Player(id,nickname,team,game){
         this.buffs=this.buffs.map(b=>b.tick()).filter(b=>b.effective);
         this.buffs=this.buffs.concat(this.newBuffs);
     }
+    this.clearCommand=function(){};
+
+    this.noticeDecisions=function(decisions){};
 }
+
 function array_shuffle(arr){
     let newarr=[];
     arr.forEach(v=>newarr.splice(Math.floor((newarr.length+1)*Math.random()),0,v));
     return newarr;
 }
 exports.Player=Player;
+
+
+
+//param: [action][data]
+let actions=Object.keys(_SKILLS_MOTO).length-1;
+let datas= 5+Object.keys(_SKILLS_MOTO).length/*+Object.keys(_SKILLS_MOTO).length*/ ;
+function TaimanAi(id,game,param){
+    _game.Player.call(this,id,id,id,game);
+    this.param=param;
+    this.decisionCountMe   =Array(Object.keys(_SKILLS_MOTO).length).fill(0);
+    this.decisionCountEnemy=Array(Object.keys(_SKILLS_MOTO).length).fill(0);
+    this.data=Array(Object.keys(_SKILLS_MOTO).length).fill(0);
+    this.noticeDecisions=function(decisions){
+        this.decisionCountMe   =Array(Object.keys(_SKILLS_MOTO).length).fill(0);
+        this.decisionCountEnemy=Array(Object.keys(_SKILLS_MOTO).length).fill(0);
+        this.decisionCountMe   [decisions.find(d=>d.id==this.id).decision]++;
+        this.decisionCountEnemy[decisions.find(d=>d.id!=this.id).decision]++;
+    };
+    this.decision=function(player,supporter,opponents,candidates){
+        return this.game.genDecision(this.ai(opponents[0].id,
+                    [   
+                        1,
+                        player.hp,
+                        player.charge,
+                        opponents[0].hp,
+                        opponents[0].charge
+                    ].concat(this.decisionCountEnemy)));
+    }.bind(this);
+    this.ai=function(opponentid,data){
+        let probs=MxV(this.param,data).map(v=>Math.max(v,0));
+        let sum=probs.reduce((p,c)=>p+c,0);
+        if(sum==0){
+            return ["atk",opponentid];
+        }else{
+            let rx=Math.random()*sum;
+            let decid=1;//行動番号
+            for(let i=0;i<probs.length;i++){
+                rx-=probs[i];
+                if(rx>0)decid++;
+            }
+            let decstr=Object.keys(this.game._SKILLS)[decid];
+            if(this.game._SKILLS[decstr].args.length>0){
+                return [decstr,opponentid];
+            }else{
+                return [decstr];
+            }
+        }
+    }
+}
+function MxV(matrix,cvec){
+    return matrix.map(rvec=>rvec.reduce((prev,current,i,rvec)=>prev+rvec[i]*cvec[i],0));
+}
+exports.TaimanAi=TaimanAi;

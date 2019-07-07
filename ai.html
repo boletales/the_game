@@ -1,0 +1,104 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <meta charset="UTF-8"> 
+    </head>
+    <body>
+        <pre id="p1"></pre>
+        1st
+        <table id="t1" border="1"></table>
+        2nd
+        <table id="t2" border="1"></table>
+        <script src="game.js"></script>
+        <script>
+            _game=exports;
+            let winner=null;
+            function generation(parents,gen,genmax,num,time,next,mut){
+                let params=parents.concat();
+                let points=Array(num).fill(0);
+                endcount=0;
+                allcount=0;
+                _gen=gen;
+                for(;params.length<num;){
+                    if(Math.random()<mut){
+                        params.push(mutation(crossover(parents),0.5));
+                    }else{
+                        params.push(crossover(parents));
+                    }
+                }
+                for(let i=0;i<params.length-1;i++){
+                    for(let j=i+1;j<params.length;j++){
+                        versus(params[i],params[j],((i,j,points,gen,result)=>{
+                            if(_gen==gen){
+                                if(result==0){points[i]++;endcount++;}
+                                else if(result==1){points[j]++;endcount++;}
+                                else{points[i]--;points[j]--;}
+                                allcount++;
+                            }
+                        }).bind(null,i,j,points,gen));
+                    }
+                }
+                setTimeout(((points,params,gen,genmax,num,time)=>{
+                    let result=points.map((p,i)=>{return{"point":p,"param":params[i]};}).sort((a,b)=>b.point-a.point);
+                    console.log(result.map(r=>r.point));
+                    console.log(gen+"世代 (残り"+(genmax-gen)+"世代)  試合:"+round(endcount/(num*(num-1)/2),3)+"  終了"+round(allcount/(num*(num-1)/2),3));
+                    if(gen==genmax){
+                        document.getElementById("t1").innerHTML=paramtotable(result[0].param);
+                        document.getElementById("t2").innerHTML=paramtotable(result[1].param);
+                        document.getElementById("p1").innerText=JSON.stringify(result[0].param);
+                        winner=result[0].param;
+                    }else{
+                        generation(result.concat().slice(0,next).map(r=>r.param),gen+1,genmax,num,time,next,mut);
+                    }
+                }).bind(null,points,params,gen,genmax,num,time,next),time,mut);
+            }
+
+            function versus(p0,p1,callback){
+                game=new _game.Game(_game._SKILLS_MOTO,{maxTurns:40},()=>{},()=>{},()=>{},()=>{},callback,false);
+                players=[new TaimanAi(0,game,p0),new TaimanAi(1,game,p1)];
+                players.forEach(p=>game.joinPlayer(p,false));
+                game.init();
+            }
+            function paramtostr(param){
+                return param.map(p=>p.map(v=>(" "+round(v,2)).slice(-5)).join(",")).join("\n");
+            }
+            function paramtotable(param){
+                return "<tr><th></th><th>定数</th><th>自命</th><th>自溜</th><th>敵命</th><th>敵溜</th></tr>"+
+                    param.map((p,i)=>"<tr><td>"+Object.values(_game._SKILLS_MOTO)[i+1].name+"</td>"+p.map(v=>"<td>"+round(v,2)+"</td>").join("")+"</tr>").join("\n");
+            }
+            function round(n,keta=0){
+                return Math.round(n*(10**keta))/(10**keta);
+            }
+            function genRandomParamForAi(){
+                return Array(actions).fill([]).map(v=>Array(datas).fill(0).map(v=>Math.random()*2-1));
+                
+                /*if(Math.random()>0.5)*/
+                //return Array(5).fill(null).map(v=>[1,0,0,0,0]);
+
+                //return [[1,1,0,0,1],[3,0,0,0,-1],[5,0,-1,0,0],[0,0,3,0,0],[0,0,0,0,3]];
+            }
+            function mutation(parent,max){
+                return parent.map(v=>v.map(v=>v+(Math.random()*2-1)*max));
+            }
+            function crossover(parents){
+                let newone=Array(actions).fill(null).map(v=>Array(datas).fill(0));
+                for(let i=0;i<newone.length;i++){
+                    for(let j=0;j<newone[i].length;j++){
+                        newone[i][j]=parents[Math.floor(Math.random()*parents.length)][i][j];
+                    }
+                }
+                return newone;
+            }
+            function challenge(challenger){
+                wc=[0,0];
+                for(let i=0;i<100;i++){
+                    versus(winner,challenger,(r)=>wc[r]++);
+                }
+                setTimeout(()=>console.log("challenger:"+round(wc[1]/(wc[0]+wc[1])*100 ,1)+"%"),500);
+            }
+
+            generation(Array(5).fill(null).map(v=>genRandomParamForAi()),1,20,50,1000,10,0.1);
+            //crossover(Array(5).fill(null).map(v=>genRandomParamForAi()))
+        </script>
+    </body>
+</html>

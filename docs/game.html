@@ -145,7 +145,7 @@
                 //次のステップのコマンドがキャンセルされたとき、このステップに戻る関数
                 let backToThis=function (argsinput,argsdata,backToPrev,callBack){
                     reqCommand(argsinput,argsdata,backToPrev,callBack);
-                }.bind(argsinput,argsdata,backToPrev,callBack);
+                }.bind(this,argsinput,argsdata,backToPrev,callBack);
 
                 //コマンド入力がされたら
                 //初めの長い引数はおおかたbindされているので実質 function onCommand(input){}

@@ -1,16 +1,110 @@
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 <html>
     <head>
-        <meta charset="UTF-8"> 
+        <meta encording="utf-8">
+        <title>chat-test</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body{
+                width:100%;
+            }
+            .output{
+                padding: 5px;width: 100%;height: 20rem;overflow:auto;border-style: dotted;background-color: #eee
+            }
+        </style>
     </head>
     <body>
-        <input id="input">
-        <button id="send">send</button>
-        <span id="anataha" style="color:#555"></span><span id="team" style="font-size:100%"></span><span id="name" style="font-size:140%"></span>
-        <pre id="output" style="padding: 5px;width: 100%;height: 20rem;overflow:auto;border-style: dotted;background-color: #eee"></pre>
-        <pre id="command" style="padding: 5px;width: 100%;;background-color: #ffd"></pre><br>
-        <div id="players" style="padding: 5px;width: 100%;;background-color: #eee"></div><br>
+        <pre id="output" class="output"></pre>
+        
+        <pre id="command" style="padding: 5px;width: 100%;background-color: #ffd">次のターンまでお待ちください</pre>
+        <div id="players" style="padding: 5px;width: 100%;background-color: #eee"></div>
+        
+
+        <a href="../../">ロビーに戻る</a><br><br><br>
+        
         <script src="game.js"></script>
-        <script src="offline.js"></script>
+        <script>
+            let teamColor={"a":"#a00","b":"#0a0"};
+            let defaultColor="#000";
+            let getColor=(team)=>(teamColor.hasOwnProperty(team)?teamColor[team]:defaultColor);
+            let name;
+            let preCommand=document.getElementById("command");
+            function clearCommand(){
+                document.getElementById("command").innerHTML="…待機…";
+            }
+            function showPlayers(data){
+                document.getElementById("players").innerHTML="<span style='color:"+getColor(data.you.team)+";border-style: dotted;'>"+data.you.name+"≫"+data.you.state+"</span><br>";
+                data.others.forEach(player=>{
+                    document.getElementById("players").innerHTML+="<span style='color:"+getColor(player.team)+"'>"+player.name+"≫"+player.state+"</span><br>";
+                })
+            };
+            function log(str){
+                document.getElementById("output").innerHTML+=str+"\n";
+                document.getElementById("output").scrollTop = document.getElementById("output").scrollHeight;
+            }
+            sendCommand=function(){};
+            _game=exports;
+            function Human(nickname,game){
+                _game.Player.call(this,nickname,nickname,nickname,game);
+                this.isHuman=true;
+                this.reqDecision=function(callBack,candidates){
+                    reqCommand([],candidates,()=>{},((input)=>this.onAction({"action":input})).bind(this));
+                    this.onAction=function(data){
+                        callBack(this.game.genDecision(data.action));
+                    }.bind(this);
+                }.bind(this);
+                this.onAction=function(){};
+                this.clearCommand=function(){
+                    clearCommand();
+                    this.onAction=function(){};
+                }
+            }
+
+            let onCommand=()=>{};
+            const _INPUT_CANCEL="!cancel";
+            function reqCommand(argsinput,argsdata,backToPrev,callBack){
+                //次のステップのコマンドがキャンセルされたとき、このステップに戻る関数
+                let backToThis=function (argsinput,argsdata,backToPrev,callBack){
+                    reqCommand(argsinput,argsdata,backToPrev,callBack);
+                }.bind(this,argsinput,argsdata,backToPrev,callBack);
+
+                //コマンド入力がされたら
+                //初めの長い引数はおおかたbindされているので実質 function onCommand(input){}
+                //callback:入力終了時に呼び出し , argsinput:すでに入力された事項 , argsleft:これから入力される事項
+                onCommand=function (argsinput,argsdata,backToPrev,callBack,input){
+                    clearCommand();
+                    //キャンセルなら前のステップに戻る
+                    if(!argsdata.candidates.hasOwnProperty(input)){
+                        backToPrev();
+                        return;
+                    }
+                    let argsinput_new=argsinput.concat(input);
+                    let argsdata_new=argsdata.candidates[input].args;
+
+                    if(argsdata_new==null){
+                        callBack(argsinput_new);
+                    }else{
+                        //残っているなら次の入力を求める
+                        reqCommand(argsinput_new,argsdata_new,backToThis,callBack);
+                    }
+                }.bind(this,argsinput,argsdata,backToPrev,callBack);
+                
+                preCommand.innerHTML=argsdata.message+">";
+                if(argsinput.length>0) preCommand.innerHTML+="<span onclick=onCommand('') style='color:#008;border-bottom: dotted;'>キャンセル</span> ";
+                Object.keys(argsdata.candidates).forEach(cank=>{
+                    preCommand.innerHTML+="<span onclick=onCommand('"+cank+"') style='color:#008;border-bottom: dotted;'>"+argsdata.candidates[cank].name+"</span> ";
+                });
+            }
+
+            game=new _game.Game(_game._SKILLS_MOTO,{},()=>undefined,()=>undefined,log,()=>undefined);
+            players=[new Human("p1",game),new TaimanAi("c1",game,
+            
+
+[[-0.728375147487711,-0.6493545218714154,-0.5640996293990292,0.5392373389574262,0.46607970152631073,0.05651559764673164,-0.29805430269249944,-1.2416485754023618,0.02058477762389843,-0.8072200590672594,-0.689195712340759],[0.5129658368212938,-0.4763622950540807,0.9919692363226835,-0.9080326513866199,-0.5175378656222456,0.01777791313078525,0.32869711736308715,0.8369504553154181,-0.44504686549014294,0.3669815227134473,-0.09082382207188844],[-0.3280291502002449,0.33024899563683496,-0.9477388441348722,0.3462230130910504,0.051030898092568666,-0.5454596291760727,1.6593284529149455,-0.4834659263224679,-0.4801770290238335,0.37473882927344304,-0.2907102458034325],[0.6917556595855261,0.38084016749156846,0.9755113811857057,-0.6609900090755657,1.0322535069405432,-1.2143111084962726,-0.8310568275925438,1.7152789369201755,0.8570234999278907,-0.5922112307094242,-0.8095842221326286],[0.9709671567922893,0.15814193115183395,0.8998836962499684,1.1776247999252978,0.37310069300702464,-0.2126872823632111,-0.4953292102878858,-0.8970861501022059,-0.033352496460972825,0.163377453886688,0.08034979687171395]]
+
+            )];
+            players.forEach(p=>game.joinPlayer(p,false));
+            game.init();
+        </script>
     </body>
 </html>
