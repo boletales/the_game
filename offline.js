@@ -6,9 +6,9 @@ sendCommand=function(){};
 _game=exports;
 function Human(nickname){
     _game.Player.call(this,nickname,nickname,nickname,game);
-    this.input=function(callBack){
-        this.game.commandInput(this,[],[{message:"行動入力",type:"action"}],undefined,callBack/*,timeout*/);
-    }.bind(this);
+    this.reqDecision=function(callBack){
+        this.game.reqCommandPlayer(this,[],[{message:"行動入力",type:"action"}],undefined,callBack/*,timeout*/);
+    }.bind(this);request
     this.reqCommand=function(onCommand,message,commands){
         document.getElementById("command").innerHTML=message+"≫";
         commands.forEach(com => {
@@ -32,5 +32,5 @@ game.init();
 
 function CPUnon(nickname){
     _game.Player.call(this,nickname,nickname,nickname,game);
-    //this.input=()=>{};
+    //this.reqDecision=()=>{};
 }

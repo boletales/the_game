@@ -247,14 +247,8 @@ function Human(nickname,team,game,socket){
     this.socket=socket;
     this.isHuman=true;
     this.sleepcount=0;
-    this.input=function(callBack){
-        /*let timeout=setTimeout(function(callBack){
-            this.clearCommand();
-            this.sleepcount++;
-            if(this.sleepcount>=2){this.hp=0;}
-            callBack(new _game.decision([this.game._SKILLS.non]));
-        }.bind(this,callBack),_TIMEOUT_SECONDS*1000);*/
-        this.game.commandInput(this,[],[{message:"行動入力",type:"action"}],undefined,callBack/*,timeout*/);
+    this.reqDecision=function(callBack){
+        this.game.reqCommandPlayer(this,[],[{message:"行動入力",type:"action"}],undefined,callBack);
     }.bind(this);
     this.onCommand=function(){};
     this.reqCommand=function(onCommand,message,commands){
