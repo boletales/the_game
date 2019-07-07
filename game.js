@@ -105,15 +105,27 @@ class Game{
                 this.players=this.players.concat(this.waiting.filter(p=>!p.isHuman||p.socket.connected));
                 this.waiting=[];
                 this.todo[1]={};
-                this.players.forEach(p=>
-                    this.todo[1][p.id]=
-                        (cb=>{
-                            p.reqDecision(((input)=>{
-                                    log("行動決定:"+p.nickname+"("+(Object.keys(this.newresult).length+1)+"/"+Object.keys(this.todo[0]).length+")");
-                                    cb(input);
+                this.players.forEach(p=>{
+                        if(p.isHuman){
+                            this.todo[1][p.id]=
+                                (cb=>{
+                                    p.reqDecision(((input)=>{
+                                            log("行動決定:"+p.nickname+"("+(Object.keys(this.newresult).length+1)+"/"+Object.keys(this.todo[0]).length+")");
+                                            cb(input);
+                                        }).bind(this)
+                                    ,this.genCommandcandidates(p));
                                 }).bind(this)
-                            ,this.genCommandcandidates(p));
-                        }).bind(this)
+                        }else{
+                            this.todo[1][p.id]=
+                                (cb=>{
+                                    p.reqDecision(((input)=>{
+                                            log("行動決定:"+p.nickname+"("+(Object.keys(this.newresult).length+1)+"/"+Object.keys(this.todo[0]).length+")");
+                                            cb(input);
+                                        }).bind(this)
+                                    );
+                                }).bind(this)
+                        }
+                    }
                 );
                 this.showPlayers();
                 cb(null);
@@ -358,8 +370,8 @@ function Player(id,nickname,team,game){
     this.reqDecision=function(callBack,candidates){
         callBack(this.decision(
             this,
-            players.filter(v=>v.team==this.team&&v!==this),
-            players.filter(v=>v.team!=this.team),
+            this.game.players.filter(v=>v.team==this.team&&v!==this),
+            this.game.players.filter(v=>v.team!=this.team),
 
         ));
     }.bind(this);
@@ -388,18 +400,16 @@ exports.Player=Player;
 
 //param: [action][data]
 let actions=Object.keys(_SKILLS_MOTO).length-1;
-let datas= 5+Object.keys(_SKILLS_MOTO).length/*+Object.keys(_SKILLS_MOTO).length*/ ;
+let datas= 5+Object.keys(_SKILLS_MOTO).length*3/*+Object.keys(_SKILLS_MOTO).length*/ ;
 function TaimanAi(id,game,param){
-    _game.Player.call(this,id,id,id,game);
+    Player.call(this,id,id,id,game);
     this.param=param;
-    this.decisionCountMe   =Array(Object.keys(_SKILLS_MOTO).length).fill(0);
-    this.decisionCountEnemy=Array(Object.keys(_SKILLS_MOTO).length).fill(0);
+    this.decisionCounts      =[[0,0,0,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0]];
     this.data=Array(Object.keys(_SKILLS_MOTO).length).fill(0);
     this.noticeDecisions=function(decisions){
-        this.decisionCountMe   =Array(Object.keys(_SKILLS_MOTO).length).fill(0);
-        this.decisionCountEnemy=Array(Object.keys(_SKILLS_MOTO).length).fill(0);
-        this.decisionCountMe   [decisions.find(d=>d.id==this.id).decision]++;
-        this.decisionCountEnemy[decisions.find(d=>d.id!=this.id).decision]++;
+        this.decisionCounts.unshift([0,0,0,0,0,0]);
+        this.decisionCounts.pop();
+        this.decisionCounts[decisions.find(d=>d.id!=this.id).decision]++;
     };
     this.decision=function(player,supporter,opponents,candidates){
         return this.game.genDecision(this.ai(opponents[0].id,
@@ -409,7 +419,7 @@ function TaimanAi(id,game,param){
                         player.charge,
                         opponents[0].hp,
                         opponents[0].charge
-                    ].concat(this.decisionCountEnemy)));
+                    ].concat(this.decisionCounts[0]).concat(this.decisionCounts[1]).concat(this.decisionCounts[2])));
     }.bind(this);
     this.ai=function(opponentid,data){
         let probs=MxV(this.param,data).map(v=>Math.max(v,0));

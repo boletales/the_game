@@ -21,6 +21,7 @@
         
         <button id="make" onclick="location.href='make.html'">部屋追加</button>
         <button id="taiman" onclick="joinTaiman()">1vs1(0人待ち)</button>
+        <button id="aiman" onclick="joinAiman()">vsAI</button>
         <table id="rooms">
         </table>
         
@@ -48,6 +49,9 @@
             }
             function joinTaiman(){
                 socket.emit("joinTaiman",{});
+            }
+            function joinAiman(){
+                socket.emit("joinAiman",{});
             }
             socket.on("goRoom",data=>{
                 location.href="./rooms/"+encodeURIComponent(data.id);
