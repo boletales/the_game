@@ -246,22 +246,20 @@ function Human(nickname,team,game,socket){
     _game.Player.call(this,socket.id,nickname,team,game);
     this.socket=socket;
     this.isHuman=true;
-    this.sleepcount=0;
-    this.reqDecision=function(callBack){
-        this.game.reqCommandPlayer(this,[],[{message:"行動入力",type:"action"}],undefined,callBack);
+    this.reqDecision=function(callBack,candidates){
+        this.socket.emit('input_action',{"candidates":candidates});
+        this.onAction=function(data){
+            callBack(this.game.genDecision(data.action));
+        }.bind(this);
     }.bind(this);
-    this.onCommand=function(){};
-    this.reqCommand=function(onCommand,message,commands){
-        this.socket.emit('input_command',{"message":message,"commands":commands});
-        this.onCommand=onCommand;
-    }
+    this.onAction=function(){};
+    this.socket.on("action",function(data){
+        this.onAction(data)
+    }.bind(this));
     this.clearCommand=function(){
-        this.socket.on("command",function(){});
+        this.socket.on("action",function(){});
         this.socket.emit("clear_command",{});
     }
-    this.socket.on("command",function(data){
-        this.onCommand(data.command)
-    }.bind(this));
 }
 
 function generateUuid() {

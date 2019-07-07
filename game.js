@@ -108,7 +108,7 @@ class Game{
                                     log("行動決定:"+p.nickname+"("+(Object.keys(this.newresult).length+1)+"/"+Object.keys(this.todo[0]).length+")");
                                     cb(input);
                                 }).bind(this)
-                            ,this.genCommandCandidate(p));
+                            ,this.genCommandcandidates(p));
                         }).bind(this)
                 );
                 this.showPlayers();
@@ -166,18 +166,18 @@ class Game{
     }
 
 
-    genCommandCandidate(player){
+    genCommandcandidates(player){
         let expansion=function(args){
             if(args.length>0){
                 var arg=args[0];
             }else{
                 return undefined;
             }
-            let ret={"message":arg.message,"type":arg.type,"candidate":undefined};
+            let ret={"message":arg.message,"type":arg.type,"candidates":undefined};
             switch (arg.type) {
                 //行動（使用可能なスキル,スキルの引数）
                 case "action":
-                    ret.candidate=
+                    ret.candidates=
                         Object.keys(this._SKILLS).filter(command=>this.checkRec(player,this._SKILLS[command])).reduce(
                             function(a,skillname){
                                 a[skillname]={"name":this._SKILLS[skillname].name,"args":expansion(this._SKILLS[skillname].args.concat(args.slice(1)))}
@@ -188,7 +188,7 @@ class Game{
 
                 //対象（敵）
                 case "opponent":
-                    ret.candidate=
+                    ret.candidates=
                         this.players.filter(p=>p.team!==player.team).map(p=>p.id).reduce(
                             function(a,playerid){
                                 a[playerid]={"name":this.players.find(p=>p.id==playerid).nickname,"args":expansion(args.slice(1))}
@@ -204,73 +204,7 @@ class Game{
 
         return expansion([{message:"行動入力",type:"action"}]);
     }
-    //[from]にコマンド入力を要求する
-    //[argsinput]はすでに入力された事項
-    //[argsleft]はこれから入力されるべき事項
-    //[backToPrev]は前のステップに戻る関数
-    reqCommandPlayer(from,argsinput,argsleft,backToPrev,callBack){
-        switch (argsleft[0].type) {
-            //行動
-            case "action":
-                var options=Object.keys(this._SKILLS).filter(command=>this.checkRec(from,this._SKILLS[command]));
-                var optionnames=options.map(s=>this._SKILLS[s].name);
-                var optionconv=(n)=>this._SKILLS[n];
-                var optionargs=(n)=>n.args;
-                break;
-
-            //対象（敵）
-            case "opponent":
-                var options=this.players.filter(p=>p.team!==from.team).map(p=>p.id);
-                var optionnames=this.players.filter(p=>p.team!==from.team).map(p=>p.nickname);
-                break;
-            default:
-                break;
-        }
-        //次のステップのコマンドがキャンセルされたとき、このステップに戻る関数
-        let backToThis=function (from,argsinput,argsleft,backToPrev,callBack){
-            this.reqCommandPlayer(from,argsinput,argsleft,backToPrev,callBack)
-        }.bind(this,from,argsinput,argsleft,backToPrev,callBack);
-
-
-        //コマンド入力がされたら
-        //初めのクソ長い引数はすべてbindされているので実質 function onCommand(input){}
-        //from:入力者 , callback:入力終了時に呼び出し , argsinput:すでに入力された事項 , argsleft:これから入力される事項
-        //残りは他参照
-        let onCommand=function (from,callBack,argsinput,argsleft,optionargs,optionconv,backToThis,backToPrev,input){
-            from.clearCommand();
-            //キャンセルなら前のステップに戻る
-            if(input==_INPUT_CANCEL){
-                backToPrev();
-                return;
-            }
-
-            let argsleft_new=argsleft.concat().slice(1);
-            //optionconv:入力を変換("atk"->this._SKILLS["atk"])
-            if(optionconv!=undefined)input=optionconv(input);
-
-
-            let argsinput_new=argsinput.concat(input);
-            //optionargs:入力された行動のとる引数(ex. 「攻撃」なら攻撃対象)
-            if(optionargs!=undefined)argsleft_new=argsleft_new.concat(optionargs(input));
-
-            if(argsleft_new.length==0){
-                //入力すべき事項が残っていないなら決定
-                callBack(decision(argsinput_new));
-                from.sleepcount=0;
-            }else{
-                //残っているなら次の入力を求める
-                this.reqCommandPlayer(from,argsinput_new,argsleft_new,backToThis,callBack);
-            }
-        }.bind(this,from,callBack,argsinput,argsleft,optionargs,optionconv,backToThis,backToPrev);
-        
-        if(argsinput.length>0){
-            optionnames=["キャンセル"].concat(optionnames);
-            options=[_INPUT_CANCEL].concat(options);
-        }
-        from.reqCommand(onCommand,argsleft[0].message,options.map((c,i)=>{return {"name":optionnames[i],"command":c}}));
-
-        
-    }
+    
 
     turn(players,decisions){
         this.log("~~~~~");
@@ -385,6 +319,15 @@ class Game{
     }
     countJoined(){
         return this.players.length+this.waiting.length;
+    }
+    genDecision(args){
+        if(args==undefined || args.length==0){
+            return {skill:this._SKILLS.non,args:[]};
+        }else if(args.length==1){
+            return {skill:this._SKILLS[args[0]],args:[]};
+        }else{
+            return {skill:this._SKILLS[args[0]],args:args.slice(1)};
+        }
     }
 }
 exports.Game=Game;

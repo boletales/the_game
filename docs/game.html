@@ -43,6 +43,7 @@
             let roomid=decodeURIComponent(location.pathname.split("/").reverse()[0]);
             let roomname;
             let name;
+            let preCommand=document.getElementById("command");
             socket.emit("getRoomData",{id:roomid});
             socket.emit("getGlobalLog",{});
 
@@ -66,15 +67,12 @@
                 socket.emit("joinRoom",{roomid:roomid,nickname:nickname,team:team});
                 
             });
-            socket.on("input_command", function(data){
-                document.getElementById("command").innerHTML=data.message+">";
-                data.commands.forEach(com => {
-                    document.getElementById("command").innerHTML+="<span onclick=send('"+com.command+"') style='color:#008;border-bottom: dotted;'>"+com.name+"</span> ";                    
-                });
+            socket.on("input_action", function(data){
+                reqCommand([],data.candidates,()=>{},(input)=>socket.emit("action",{"action":input}));
             });
-            socket.on("clear_command", function(data){
+            function clearCommand(){
                 document.getElementById("command").innerHTML="…待機…";
-            });
+            }
             socket.on("message", function(data){
                 document.getElementById("output").innerText+=data.name+"≫"+data.message+"\n";
                 document.getElementById("output").scrollTop = document.getElementById("output").scrollHeight;
@@ -113,9 +111,6 @@
                     document.getElementById("team").innerHTML="";
                 }
             }
-            function send(command){
-                socket.emit("command",{"command":command});
-            }
             function randomID(keta){
                 return ("0".repeat(keta)+Math.floor(Math.random()*(10**keta))).slice(-keta);
             }
@@ -143,6 +138,41 @@
                     if(key != '') vars[key] = decodeURI(val);
                 } 
                 return vars; 
+            }
+            let onCommand=()=>{};
+            const _INPUT_CANCEL="!cancel";
+            function reqCommand(argsinput,argsdata,backToPrev,callBack){
+                //次のステップのコマンドがキャンセルされたとき、このステップに戻る関数
+                let backToThis=function (argsinput,argsdata,backToPrev,callBack){
+                    reqCommand(argsinput,argsdata,backToPrev,callBack);
+                }.bind(argsinput,argsdata,backToPrev,callBack);
+
+                //コマンド入力がされたら
+                //初めの長い引数はおおかたbindされているので実質 function onCommand(input){}
+                //callback:入力終了時に呼び出し , argsinput:すでに入力された事項 , argsleft:これから入力される事項
+                onCommand=function (argsinput,argsdata,backToPrev,callBack,input){
+                    clearCommand();
+                    //キャンセルなら前のステップに戻る
+                    if(!argsdata.candidates.hasOwnProperty(input)){
+                        backToPrev();
+                        return;
+                    }
+                    let argsinput_new=argsinput.concat(input);
+                    let argsdata_new=argsdata.candidates[input].args;
+
+                    if(argsdata_new==null){
+                        callBack(argsinput_new);
+                    }else{
+                        //残っているなら次の入力を求める
+                        reqCommand(argsinput_new,argsdata_new,backToThis,callBack);
+                    }
+                }.bind(this,argsinput,argsdata,backToPrev,callBack);
+                
+                preCommand.innerHTML=argsdata.message+">";
+                if(argsinput.length>0) preCommand.innerHTML+="<span onclick=onCommand('') style='color:#008;border-bottom: dotted;'>キャンセル</span> ";
+                Object.keys(argsdata.candidates).forEach(cank=>{
+                    preCommand.innerHTML+="<span onclick=onCommand('"+cank+"') style='color:#008;border-bottom: dotted;'>"+argsdata.candidates[cank].name+"</span> ";
+                });
             }
         </script>
     </body>
