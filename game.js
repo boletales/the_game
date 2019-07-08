@@ -401,9 +401,9 @@ exports.Player=Player;
 //param: [action][data]
 let actions=Object.keys(_SKILLS_MOTO).length-1;
 let datas= 5+Object.keys(_SKILLS_MOTO).length*3/*+Object.keys(_SKILLS_MOTO).length*/ ;
-function TaimanAi(id,game,params){
+function TaimanAi(id,game,param){
     Player.call(this,id,id,id,game);
-    this.params=params;
+    this.param=param;
     this.decisionCounts      =[[0,0,0,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0]];
     this.data=Array(Object.keys(_SKILLS_MOTO).length).fill(0);
     this.noticeDecisions=function(decisions){
@@ -422,7 +422,7 @@ function TaimanAi(id,game,params){
                     ].concat(this.decisionCounts[0]).concat(this.decisionCounts[1]).concat(this.decisionCounts[2])));
     }.bind(this);
     this.ai=function(opponentid,data){
-        let probs=MxV(this.param[Math.floor(Math.random()*this.params.length)],data).map(v=>Math.max(v,0));
+        let probs=MxV(this.param,data).map(v=>Math.max(v,0));
         let sum=probs.reduce((p,c)=>p+c,0);
         if(sum==0){
             return ["atk",opponentid];
