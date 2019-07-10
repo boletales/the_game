@@ -3,7 +3,8 @@ if(typeof process == 'undefined'){
 }
 
 _ATTACK_DEFAULT=(user,players,decisions,args)=>players.map(p=>0);
-_DEFENSE_DEFAULT=(user,players,decisions,attacks,args)=>attacks;
+_MIDDLE_DEFAULT=(user,players,decisions,attacksAll,args)=>{};
+_DEFENSE_DEFAULT=(user,players,decisions,attacksForMe,args)=>attacksForMe;
 exports._ATTACK_DEFAULT=_ATTACK_DEFAULT;
 exports._DEFENSE_DEFAULT=_DEFENSE_DEFAULT;
 _SKILLS_MOTO={
@@ -13,15 +14,16 @@ _SKILLS_MOTO={
     //act:技主=>使用時エフェクト
     //forone:対象は一人か (falseなら自分用の技か全体攻撃)
     //pow:威力(攻撃技専用)
-    non:{id:0,name:"スカ",args:[],
+    non:{name:"スカ",args:[],
         attackPhase :_ATTACK_DEFAULT,
         defensePhase:_DEFENSE_DEFAULT
     },
 
-    def:{id:1,name:"防御",args:[], 
+    def:{name:"防御",args:[], 
             attackPhase:_ATTACK_DEFAULT,
-            defensePhase:function(user,players,decisions,attacks,args){
-                return attacks.map(d=>{
+            middlePhase:_MIDDLE_DEFAULT,
+            defensePhase:function(user,players,decisions,attacksForMe,args){
+                return attacksForMe.map(d=>{
                     if(d>0){
                         user.charge+=1;
                         return d-1;
@@ -32,25 +34,27 @@ _SKILLS_MOTO={
             },
         },
 
-    atk:{id:2,name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
+    atk:{name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
                 attacks[players.findIndex(p=>p.id==args[0])] = _SKILLS_MOTO.atk.pow;
                 return attacks;
             },pow:1,
+            middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT
         },
 
-    chr:{id:3,name:"溜め",args:[],
+    chr:{name:"溜め",args:[],
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
                 user.charge+=3;
                 return attacks;
             },
+            middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT
         },
 
-    wav:{id:4,name:"光線",args:[{message:"対象入力",type:"opponent",name:"to"}],
+    wav:{name:"光線",args:[{message:"対象入力",type:"opponent",name:"to"}],
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
                 if(this.requirement(user)){
@@ -62,8 +66,9 @@ _SKILLS_MOTO={
             },
             beam:true,
             requirement:(p)=>(p.charge>=3),pow:3,
-            defensePhase:function(user,players,decisions,attacks,args){
-                return attacks.map(d=>{
+            middlePhase:_MIDDLE_DEFAULT,
+            defensePhase:function(user,players,decisions,attacksForMe,args){
+                return attacksForMe.map(d=>{
                     if(d>1){
                         return d;
                     }else{
@@ -73,21 +78,25 @@ _SKILLS_MOTO={
             },
         },
     
-    mir:{id:5,name:"反射",args:[],
-            attackPhase:function(user,players,decisions,args){
-                return decisions.map(d=>
-                    d.skill.hasOwnProperty("beam")?d.skill.pow:0);
+    mir:{name:"反射",args:[],
+            attackPhase:_ATTACK_DEFAULT,
+            middlePhase:function(user,players,decisions,attacksAll,args){
+                let myId=players.indexOf(user);
+                decisions.forEach((d,i)=>{
+                    if(d.skill.hasOwnProperty("beam")){
+                        attacksAll[i][myId]=attacksAll[myId][i];
+                        attacksAll[myId][i]=0;
+                    }
+                })
             },
-            defensePhase:function(user,players,decisions,attacks,args){
-                return _DEFENSE_DEFAULT(user,players,decisions,attacks.map((d,i)=>
-                (decisions[i].skill.hasOwnProperty("beam") && decisions[i].args[0]==user.id)?0:d),args);
-            },
+
+            defensePhase:_DEFENSE_DEFAULT,
         }
     //sui:{id:7,name:"自殺"                                                                ,act:p=>(p.hp=0)}
 };
 exports._SKILLS_MOTO=_SKILLS_MOTO;
-
 exports._HP_DEFAULT=6;
+
 class Game{
     constructor(skills,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},needokawari=true){
         this.log=log;
@@ -98,6 +107,14 @@ class Game{
         this._HP         = args.hasOwnProperty("hp")         ?args.hp         :6;
         this.startnumber = args.hasOwnProperty("startnumber")?args.startnumber:2;
         this.maxTurns    = args.hasOwnProperty("maxTurns")   ?args.maxTurns   :Infinity;
+        this._SKILLS=skills;
+        this._SKILLS.forEach((s,i)=>s.id=i);
+        this.players=[];
+        this.waiting=[];
+        this.turns=0;
+        this.closeGame=closeGame;
+        this.okawari=okawari;
+        this.showPlayers=(()=>showPlayers(this.players)).bind(this);
         this.todoMoto=[
             //cb:callback
             {start:function(cb){
@@ -143,16 +160,9 @@ class Game{
                 }.bind(this)
             }
         ];
-        this._SKILLS=skills;
-        this.players=[];
-        this.waiting=[];
-        this.turns=0;
         this.todo=this.todoMoto.map(v=>Object.assign(v));
         this.result={};
         this.newresult={};
-        this.closeGame=closeGame;
-        this.okawari=okawari;
-        this.showPlayers=(()=>showPlayers(this.players)).bind(this);
     }
     tick(){
         for(let id in this.todo[0]){
@@ -238,6 +248,11 @@ class Game{
             decisions[from].skill.attackPhase(players[from],players,decisions,decisions[from].args).forEach((damage,i) => {
                 attacks[i].push(damage);
             });
+        }
+        
+        //中間処理
+        for(let from=0;from<decisions.length;from++){
+            decisions[from].skill.middlePhase(players[from],players,decisions,attacks,decisions[from].args);
         }
 
         //防御処理
