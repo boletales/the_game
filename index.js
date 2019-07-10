@@ -249,7 +249,9 @@ const AIs=[
 class AimanRoom extends Room{
     constructor(name,parent){
         super(name,parent,{teamMode:false,maxPlayers:2,hidden:true,aiman:true});
-        this.game.joinPlayer(new _game.TaimanAi("名無しAI🤖",this.game,AIs[Math.floor(Math.random()*AIs.length)]));
+        let id=Math.floor(Math.random()*AIs.length);
+        this.game.joinPlayer(new _game.TaimanAi("名無しAI🤖"+id,this.game,AIs[id]));
+        //this.game.joinPlayer(new _game.TaimanAi("名無しAI🤖",this.game,AIs));
     }
 }
 /*function resetGame(){
