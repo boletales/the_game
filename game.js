@@ -16,6 +16,7 @@ _SKILLS_MOTO={
     //pow:威力(攻撃技専用)
     non:{name:"スカ",args:[],
         attackPhase :_ATTACK_DEFAULT,
+        middlePhase:_MIDDLE_DEFAULT,
         defensePhase:_DEFENSE_DEFAULT
     },
 
@@ -94,21 +95,101 @@ _SKILLS_MOTO={
         }
     //sui:{id:7,name:"自殺"                                                                ,act:p=>(p.hp=0)}
 };
+
+_SKILLS_MOD_HEAL={
+
+    hea:{name:"回復",args:[], 
+            attackPhase:function(user,players,decisions,args){
+                let attacks=players.map(p=>0);
+                if(this.requirement(user)){
+                    user.charge-=3;
+                    user.hp += 1;
+                }
+                return attacks;
+            },
+            beam:true,
+            requirement:(p)=>(p.charge>=3),pow:3,
+            middlePhase:_MIDDLE_DEFAULT,
+            defensePhase:_DEFENSE_DEFAULT,
+        },
+};
+
+_SKILLS_MOD_ATPLUS={
+    atk:{name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
+            attackPhase:function(user,players,decisions,args){
+                let attacks=players.map(p=>0);
+                attacks[players.findIndex(p=>p.id==args[0])] = _SKILLS_MOTO.atk.pow+user.buffs.str.getPower();
+                return attacks;
+            },pow:1,
+            middlePhase:_MIDDLE_DEFAULT,
+            defensePhase:_DEFENSE_DEFAULT
+        },
+
+    str:{name:"強化",args:[],
+            attackPhase:function(user,players,decisions,args){
+                user.buffs.str.levelUp();
+                let attacks=players.map(p=>0);
+                return attacks;
+            },
+            requirement:(p)=>(p.charge>=p.buffs.str.getCost()),
+            middlePhase:_MIDDLE_DEFAULT,
+            defensePhase:_DEFENSE_DEFAULT
+        },
+};
+const Buffs={
+    str:function(user){
+        this.tick=function(){};
+        this.level=0;
+        this.user=user;
+        this.id="str";
+        this.getPower=function(){
+            return this.level;
+        }.bind(this);
+        this.levelUp=function(){
+            if(this.user.charge>=this.getCost(this.level)){
+                this.user.charge-=this.getCost(this.level);
+                this.level++;
+            }
+        }.bind(this);
+        this.getCost=function(){
+            return this.level<2?(this.level+1)*3:Infinity;
+        }.bind(this);
+        this.state=function(){
+            return "⚔".repeat(this.level);
+        }.bind(this);
+    },
+}
+function mergeSkills(arraySkills){
+    let skills={};
+    arraySkills.forEach(_s=>{
+        Object.keys(_s).forEach(key=>skills[key]=Object.assign(_s[key]));
+    });
+    return skills;
+}
+
+function Rule(skills,hp){
+    this.skills=skills;
+    this.hp=hp;
+}
+let _RULE_OLD=new Rule(_SKILLS_MOTO,6);
+let _RULE_NEW=new Rule(mergeSkills([_SKILLS_MOTO,_SKILLS_MOD_HEAL,_SKILLS_MOD_ATPLUS]),7);
+exports._RULE_OLD=_RULE_OLD;
+exports._RULE_NEW=_RULE_NEW;
+
 exports._SKILLS_MOTO=_SKILLS_MOTO;
 exports._HP_DEFAULT=6;
-
 class Game{
-    constructor(skills,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},needokawari=true){
+    constructor(rule,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},needokawari=true){
         this.log=log;
         this.noticewinner= noticewinner;
         this.needokawari = needokawari;
+        this._HP         = rule.hp;
+        this._SKILLS     = rule.skills;
         this.teamMode    = args.hasOwnProperty("teamMode")   ?args.teamMode   :true;
         this.maxPlayers  = args.hasOwnProperty("maxPlayers") ?args.maxPlayers :Infinity;
-        this._HP         = args.hasOwnProperty("hp")         ?args.hp         :6;
         this.startnumber = args.hasOwnProperty("startnumber")?args.startnumber:2;
         this.maxTurns    = args.hasOwnProperty("maxTurns")   ?args.maxTurns   :Infinity;
-        this._SKILLS=skills;
-        this._SKILLS.forEach((s,i)=>s.id=i);
+        Object.values(this._SKILLS).forEach((s,i)=>s.id=i);
         this.players=[];
         this.waiting=[];
         this.turns=0;
@@ -234,6 +315,7 @@ class Game{
 
     turn(players,decisions){
         players.forEach(p=>p.noticeDecisions(players.map((pl,i)=>{return {"id":pl.id,"decision":decisions[i].skill.id};})));
+        players.forEach(p=>p.refreshBuffs());
         this.log("~~~~~");
         //条件処理
         for(let from=0;from<decisions.length;from++){
@@ -380,7 +462,7 @@ function Player(id,nickname,team,game){
     this.charge=0;
     this.game=game;
     this.buffs=[];
-    this.newBuffs=[];
+    Object.keys(Buffs).forEach((key=>this.buffs[key]=new Buffs[key](this)).bind(this));
     this.decision=function(player,supporter,opponents,candidates){return new _game.decision([game._SKILLS.non])}.bind(this);
     this.reqDecision=function(callBack,candidates){
         callBack(this.decision(
@@ -392,12 +474,11 @@ function Player(id,nickname,team,game){
     }.bind(this);
 
     this.state=function(){
-        return "♥".repeat(Math.max(this.hp,0))+"   "+"☯".repeat(Math.max(this.charge,0));
+        return "♥".repeat(Math.max(this.hp,0))+"   "+"☯".repeat(Math.max(this.charge,0))+"   "+Object.values(this.buffs).map(b=>b.state()).join(" ");
     }
 
     this.refreshBuffs=function(){
-        this.buffs=this.buffs.map(b=>b.tick()).filter(b=>b.effective);
-        this.buffs=this.buffs.concat(this.newBuffs);
+        this.buffs.forEach(b=>b.tick());
     }
     this.clearCommand=function(){};
 

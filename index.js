@@ -126,7 +126,7 @@ class Room{
         this.taiman=this.args.taiman;
         this.parent=parent;
         this.hidden=args.hasOwnProperty("hidden")&&args.hidden;
-        this.game=new _game.Game(_game._SKILLS_MOTO,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this));
+        this.game=new _game.Game(_game._RULE_NEW,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this));
         this.teamMode=this.game.teamMode;
     }
     getNumber(){
