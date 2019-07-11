@@ -41,6 +41,7 @@ _SKILLS_MOTO={
                 attacks[players.findIndex(p=>p.id==args[0])] = _SKILLS_MOTO.atk.pow;
                 return attacks;
             },pow:1,
+            weak:true,
             middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT
         },
@@ -69,11 +70,11 @@ _SKILLS_MOTO={
             requirement:(p)=>(p.charge>=3),pow:3,
             middlePhase:_MIDDLE_DEFAULT,
             defensePhase:function(user,players,decisions,attacksForMe,args){
-                return attacksForMe.map(d=>{
-                    if(d>1){
-                        return d;
-                    }else{
+                return attacksForMe.map((d,i)=>{
+                    if(decisions[i].weak){
                         return 0;
+                    }else{
+                        return d;
                     }
                 });
             },
@@ -121,6 +122,7 @@ _SKILLS_MOD_ATPLUS={
                 attacks[players.findIndex(p=>p.id==args[0])] = _SKILLS_MOTO.atk.pow+user.buffs.str.getPower();
                 return attacks;
             },pow:1,
+            weak:true,
             middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT
         },
@@ -141,9 +143,9 @@ _SKILLS_MOD_STUN={
             attackPhase:function(user,players,decisions,args){
                 let target=players.findIndex(p=>p.id==args[0]);
                 if(decisions[target].skill.reflect){
-                	user.buff.stu.level=1;
+                	user.buffs.stu.level++;
                 }else{
-                	players[target].buff.stu.level=1;
+                	players[target].buffs.stu.level++;
                 }
                 let attacks=players.map(p=>0);
                 return attacks;
@@ -200,7 +202,7 @@ function Rule(skills,hp){
     this.hp=hp;
 }
 let _RULE_OLD=new Rule(_SKILLS_MOTO,6);
-let _RULE_NEW=new Rule(mergeSkills([_SKILLS_MOTO,_SKILLS_MOD_HEAL,_SKILLS_MOD_ATPLUS]),7);
+let _RULE_NEW=new Rule(mergeSkills([_SKILLS_MOTO,_SKILLS_MOD_HEAL,_SKILLS_MOD_ATPLUS,_SKILLS_MOD_STUN]),7);
 exports._RULE_OLD=_RULE_OLD;
 exports._RULE_NEW=_RULE_NEW;
 
@@ -493,6 +495,13 @@ function Player(id,nickname,team,game){
     Object.keys(Buffs).forEach((key=>this.buffs[key]=new Buffs[key](this)).bind(this));
     this.decision=function(player,supporter,opponents,candidates){return new _game.decision([game._SKILLS.non])}.bind(this);
     this.reqDecision=function(callBack,candidates){
+        if(this.buffs.stu.level>0){
+        	callBack(new _game.decision([game._SKILLS.non]));
+        }else{
+            this.reqDecisionWrapped(callBack,candidates);
+        }
+    }
+    this.reqDecisionWrapped=function(callBack,candidates){
         callBack(this.decision(
             this,
             this.game.players.filter(v=>v.team==this.team&&v!==this),

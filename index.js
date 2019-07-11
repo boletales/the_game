@@ -272,7 +272,7 @@ function Human(nickname,team,game,socket){
     _game.Player.call(this,socket.id,nickname,team,game);
     this.socket=socket;
     this.isHuman=true;
-    this.reqDecision=function(callBack,candidates){
+    this.reqDecisionWrapped=function(callBack,candidates){
         this.socket.emit('input_action',{"candidates":candidates});
         this.onAction=function(data){
             callBack(this.game.genDecision(data.action));
