@@ -183,7 +183,7 @@ const Buffs={
     stu:function(user){
         this.tick=function(){
         	if(this.level>0)this.level--;
-        };
+        }.bind(this);
         this.level=0;
         this.user=user;
         this.id="stu";
@@ -521,7 +521,7 @@ function Player(id,nickname,team,game){
     }
 
     this.refreshBuffs=function(){
-        this.buffs.forEach(b=>b.tick());
+        Object.values(this.buffs).forEach(b=>b.tick());
     }
     this.clearCommand=function(){};
 
