@@ -90,8 +90,8 @@ _SKILLS_MOTO={
                     }
                 })
             },
-
             defensePhase:_DEFENSE_DEFAULT,
+            reflect:true,
         }
     //sui:{id:7,name:"自殺"                                                                ,act:p=>(p.hp=0)}
 };
@@ -136,6 +136,23 @@ _SKILLS_MOD_ATPLUS={
             defensePhase:_DEFENSE_DEFAULT
         },
 };
+_SKILLS_MOD_STUN={
+    stu:{name:"麻痺",args:[{message:"対象入力",type:"opponent",name:"to"}], 
+            attackPhase:function(user,players,decisions,args){
+                let target=players.findIndex(p=>p.id==args[0]);
+                if(decisions[target].skill.reflect){
+                	user.buff.stu.level=1;
+                }else{
+                	players[target].buff.stu.level=1;
+                }
+                let attacks=players.map(p=>0);
+                return attacks;
+            },
+            requirement:(p)=>(p.charge>=p.buffs.stu.getCost()),
+            middlePhase:_MIDDLE_DEFAULT,
+            defensePhase:_DEFENSE_DEFAULT
+        },
+}
 const Buffs={
     str:function(user){
         this.tick=function(){};
@@ -156,6 +173,17 @@ const Buffs={
         }.bind(this);
         this.state=function(){
             return "⚔".repeat(this.level);
+        }.bind(this);
+    },
+    stu:function(user){
+        this.tick=function(){
+        	if(this.level>0)this.level--;
+        };
+        this.level=0;
+        this.user=user;
+        this.id="stu";
+        this.state=function(){
+            return "".repeat(this.level);
         }.bind(this);
     },
 }
