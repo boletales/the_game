@@ -187,6 +187,9 @@ const Buffs={
         this.state=function(){
             return "".repeat(this.level);
         }.bind(this);
+        this.getCost=function(){
+            return 3;
+        }.bind(this);
     },
 }
 function mergeSkills(arraySkills){
