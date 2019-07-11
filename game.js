@@ -499,7 +499,7 @@ function Player(id,nickname,team,game){
     this.decision=function(player,supporter,opponents,candidates){return new _game.decision([game._SKILLS.non])}.bind(this);
     this.reqDecision=function(callBack,candidates){
         if(this.buffs.stu.level>0){
-        	callBack(new _game.decision([game._SKILLS.non]));
+        	callBack(new decision([this.game._SKILLS.non]));
         }else{
             this.reqDecisionWrapped(callBack,candidates);
         }
