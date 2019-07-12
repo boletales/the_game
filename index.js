@@ -207,10 +207,10 @@ class Room{
     }
 
     okawari(){
-        this.game.players.filter(p=>p.hasOwnProperty("socket")).map(player=>{
-            player.socket.emit("okawari",{nickname:player.nickname,team:player.team});
-        });
-        makeRoom(this.name,this.args);
+        let roomid=makeRoom(this.name,this.args);
+        this.game.players.filter(p=>p.hasOwnProperty("socket")).map(((roomid,player)=>{
+            player.socket.emit("okawari",{nickname:player.nickname,team:player.team,roomid:roomid});
+        }).bind(null,roomid));
     }
 
     command(_com){

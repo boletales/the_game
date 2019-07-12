@@ -92,7 +92,7 @@
                 location.href="./"+encodeURIComponent(data.name);
             });
             socket.on("okawari", function(data){
-                location.href=location.pathname+"?nickname="+data.nickname+"&team="+data.team;
+                location.href="./"+data.roomid+"?nickname="+data.nickname+"&team="+data.team;
             });
             socket.on("showPlayers", function(data){
                 document.getElementById("players").innerHTML="<span style='color:"+getColor(data.you.team)+";border-style: dotted;'>"+data.you.name+"≫"+data.you.state+"</span><br>";
