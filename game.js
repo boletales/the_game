@@ -71,7 +71,7 @@ _SKILLS_MOTO={
             middlePhase:_MIDDLE_DEFAULT,
             defensePhase:function(user,players,decisions,attacksForMe,args){
                 return attacksForMe.map((d,i)=>{
-                    if(decisions[i].weak){
+                    if(decisions[i].skill.weak){
                         return 0;
                     }else{
                         return d;
