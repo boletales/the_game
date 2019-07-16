@@ -3,6 +3,7 @@
     <head>
         <meta encording="utf-8">
         <title>Chakra!</title>
+        <link rel="main.css">
         <script type="text/javascript" src="../../socket.io/socket.io.js"></script>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
@@ -16,10 +17,10 @@
     </head>
     <body>
         <span id="kokoha" style="color:#555"></span><span id="roomname" style="font-size:140%"></span>　<span id="anataha" style="color:#555"></span><span id="team" style="font-size:100%"></span><span id="name" style="font-size:140%"></span>
-        
+        <input type="button" value="この部屋へのリンクをコピー" onclick="execCopy(window.location.host+window.location.pathname)">
         <form id="chat" action="">
             <input id="msg">
-            <input type="submit"  value="部屋内チャット">
+            <input type="submit" value="部屋内チャット">
         </form>
         <pre id="output" class="output"></pre>
         
@@ -175,6 +176,39 @@
                     preCommand.innerHTML+="<span onclick=onCommand('"+cank+"') style='color:#008;border-bottom: dotted;'>"+argsdata.candidates[cank].name+"</span> ";
                 });
             }
+
+            //from:https://qiita.com/simiraaaa/items/2e7478d72f365aa48356
+            function execCopy(string){
+
+                // 空div 生成
+                var tmp = document.createElement("div");
+                // 選択用のタグ生成
+                var pre = document.createElement('pre');
+
+                // 親要素のCSSで user-select: none だとコピーできないので書き換える
+                pre.style.webkitUserSelect = 'auto';
+                pre.style.userSelect = 'auto';
+
+                tmp.appendChild(pre).textContent = string;
+
+                // 要素を画面外へ
+                var s = tmp.style;
+                s.position = 'fixed';
+                s.right = '200%';
+
+                // body に追加
+                document.body.appendChild(tmp);
+                // 要素を選択
+                document.getSelection().selectAllChildren(tmp);
+
+                // クリップボードにコピー
+                var result = document.execCommand("copy");
+
+                // 要素削除
+                document.body.removeChild(tmp);
+
+                return result;
+}
         </script>
     </body>
 </html>

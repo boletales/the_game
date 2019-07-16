@@ -15,6 +15,7 @@
         <form id="chat" action="#" onsubmit="makeRoom()">
                 <input id="name" value="room">
                 チーム戦:<input id="team" type="checkbox">
+                プラベ:<input id="hidden" type="checkbox">
                 <input type="submit" value="作成">
         </form>
         <p id="warning" style="color:red"></p>
@@ -32,7 +33,7 @@
             function makeRoom(){
                 socket.emit("makeRoom",{
                     name:document.getElementById("name").value,
-                    args:{teamMode:document.getElementById("team").checked}})
+                    args:{teamMode:document.getElementById("team").checked,hidden:document.getElementById("hidden").checked}})
                 ;
             }
             socket.on("goRoom",data=>{
