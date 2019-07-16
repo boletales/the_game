@@ -209,7 +209,7 @@ function Rule(skills,hp){
 }
 let _RULE_OLD=new Rule(_SKILLS_MOTO,6);
 let _RULE_NEW=new Rule(mergeSkills([_SKILLS_MOTO,_SKILLS_MOD_HEAL,_SKILLS_MOD_ATPLUS,/*_SKILLS_MOD_STUN,*/])
-                        ,6);
+                        ,7);
 exports._RULE_OLD=_RULE_OLD;
 exports._RULE_NEW=_RULE_NEW;
 
