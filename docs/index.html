@@ -14,7 +14,7 @@
     <body>
         <form id="gchat" action="#" style="float:left">
             <input id="gname">
-            <input id="gmsg">
+            <input id="gmsg" style="width:40%">
             <input type="submit"  value="送信">
         </form>
         <pre id="gmessages" style="padding: 5px;width: 100%;height: 20rem;overflow:auto;border-style: dotted;background-color: #eee"></pre>
@@ -65,6 +65,7 @@
             });
             document.getElementById("gchat").onsubmit=function(e){
                 socket.emit("globalChat", {name : document.getElementById("gname").value+"@ロビー",message : document.getElementById("gmsg").value});
+                document.getElementById("gmsg").value="";
                 e.preventDefault();
                 return false;
             };
