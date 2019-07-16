@@ -208,8 +208,16 @@ class Room{
 
     okawari(){
         let roomid=makeRoom(this.name,this.args);
-        this.game.players.filter(p=>p.hasOwnProperty("socket")).map(((roomid,player)=>{
-            player.socket.emit("okawari",{nickname:player.nickname,team:player.team,roomid:roomid});
+        let humans=Object.keys(io.sockets.adapter.rooms[this.id].sockets);
+        rooms[roomid].game.setStartnumber(humans.length);
+        humans.map(((roomid,socketid)=>{
+            let socket=io.sockets.sockets[socketid];
+            let player=this.game.players.find(p=>p.socket==socket);
+            if(player){
+                socket.emit("okawari",{nickname:player.nickname,team:player.team,roomid:roomid});
+            }else{
+                socket.emit("okawari",{roomid:roomid});
+            } 
         }).bind(null,roomid));
     }
 
