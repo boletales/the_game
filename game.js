@@ -209,7 +209,7 @@ function Rule(skills,hp){
 }
 let _RULE_OLD=new Rule(_SKILLS_MOTO,6);
 let _RULE_NEW=new Rule(mergeSkills([_SKILLS_MOTO,_SKILLS_MOD_HEAL,_SKILLS_MOD_ATPLUS,/*_SKILLS_MOD_STUN,*/])
-                        ,1);
+                        ,6);
 exports._RULE_OLD=_RULE_OLD;
 exports._RULE_NEW=_RULE_NEW;
 
@@ -230,6 +230,7 @@ class Game{
         this.players=[];
         this.waiting=[];
         this.turns=0;
+        this.acceptingTurn=-1;
         this.closeGame=closeGame;
         this.okawari=okawari;
         this.showPlayers=(()=>showPlayers(this.players)).bind(this);
@@ -240,6 +241,7 @@ class Game{
                 this.players=this.players.concat(this.waiting.filter(p=>!p.isHuman||p.socket.connected));
                 this.waiting=[];
                 this.todo[1]={};
+                this.acceptingTurn=this.turns;
                 this.players.forEach(p=>{
                         if(p.isHuman){
                             this.todo[1][p.id]=
@@ -266,7 +268,10 @@ class Game{
                 cb(null);
             }.bind(this)},
             {/*入力待ち*/},
-            {turn:function(cb){return cb(this.turn(this.players,this.players.map(p=>this.result[p.id])))}.bind(this)},
+            {turn:function(cb){
+                this.acceptingTurn=-1;
+                return cb(this.turn(this.players,this.players.map(p=>this.result[p.id])))}.bind(this)
+            },
             {nextTurn:
                 function(cb){
                     if(this.result.turn){
@@ -502,19 +507,29 @@ function Player(id,nickname,team,game){
     Object.keys(Buffs).forEach((key=>this.buffs[key]=new Buffs[key](this)).bind(this));
     this.decision=function(player,supporter,opponents,candidates){return new _game.decision([game._SKILLS.non])}.bind(this);
     this.reqDecision=function(callBack,candidates){
-        if(this.buffs.stu.level>0){
+        if(this.buffs.stu.level>0){//麻痺
         	callBack(new decision([this.game._SKILLS.non]));
         }else{
-            this.reqDecisionWrapped(callBack,candidates);
+            //遅刻入力対策
+        	if(this.game.hasOwnProperty("timeout") && this.game.timeout!=-1){
+                setTimeout(callBack.bind(null,new decision([this.game._SKILLS.non])),this.game.timeout);
+            }
+            let cbw=(function(turnstart,callBack,...args){
+                if(turnstart==this.acceptingTurn){
+                    callBack.apply(null,args);
+                }
+            }).bind(this,this.acceptingTurn,callBack);
+            this.reqDecisionWrapped(cbw,candidates);
         }
     }
     this.reqDecisionWrapped=function(callBack,candidates){
-        callBack(this.decision(
-            this,
-            this.game.players.filter(v=>v.team==this.team&&v!==this),
-            this.game.players.filter(v=>v.team!=this.team),
-
-        ));
+        callBack(
+            this.decision(
+                this,
+                this.game.players.filter(v=>v.team==this.team&&v!==this),
+                this.game.players.filter(v=>v.team!=this.team),
+            )
+        );
     }.bind(this);
 
     this.state=function(){
