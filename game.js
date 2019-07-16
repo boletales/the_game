@@ -26,7 +26,7 @@ _SKILLS_MOTO={
             defensePhase:function(user,players,decisions,attacksForMe,args){
                 return attacksForMe.map(d=>{
                     if(d>0){
-                        user.charge+=1;
+                        user.charge+=d+1;
                         return d-1;
                     }else{
                         return 0;
@@ -174,7 +174,7 @@ const Buffs={
             }
         }.bind(this);
         this.getCost=function(){
-            return this.level<2?(this.level+1)*3:Infinity;
+            return this.level<2?(this.level+1)*3+1:Infinity;
         }.bind(this);
         this.state=function(){
             return "⚔".repeat(this.level);
