@@ -208,17 +208,19 @@ class Room{
 
     okawari(){
         let roomid=makeRoom(this.name,this.args);
-        let humans=Object.keys(io.sockets.adapter.rooms[this.id].sockets);
-        rooms[roomid].game.setStartnumber(humans.length);
-        humans.map(((roomid,socketid)=>{
-            let socket=io.sockets.sockets[socketid];
-            let player=this.game.players.find(p=>p.socket==socket);
-            if(player){
-                socket.emit("okawari",{nickname:player.nickname,team:player.team,roomid:roomid});
-            }else{
-                socket.emit("okawari",{roomid:roomid});
-            } 
-        }).bind(null,roomid));
+        if(io.sockets.adapter.rooms[this.id]!=undefined){
+            let humans=Object.keys(io.sockets.adapter.rooms[this.id].sockets);
+            rooms[roomid].game.setStartnumber(humans.length);
+            humans.map(((roomid,socketid)=>{
+                let socket=io.sockets.sockets[socketid];
+                let player=this.game.players.find(p=>p.socket==socket);
+                if(player){
+                    socket.emit("okawari",{nickname:player.nickname,team:player.team,roomid:roomid});
+                }else{
+                    socket.emit("okawari",{roomid:roomid});
+                } 
+            }).bind(null,roomid));
+        }
     }
 
     command(_com){
