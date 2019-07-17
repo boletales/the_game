@@ -102,6 +102,9 @@
                     document.getElementById("players").innerHTML+="<span style='color:"+getColor(player.team)+"'>"+player.name+"≫"+player.state+"</span><br>";
                 })
             });
+            socket.on("playerStatus", function(data){
+                console.log(data);
+            });
             
             function setName(data){
                 name=data.id;

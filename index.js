@@ -18,10 +18,10 @@ app.get('/',function(req,res){
 app.get('/make.html',function(req,res){
     res.sendFile(__dirname+'/docs/make.html');
 });
-app.get('/rooms/v/:roomid',function(req,res){
+app.get('/rooms/:roomid',function(req,res){
     res.sendFile(__dirname+'/docs/visualizer.html');
 });
-app.get('/rooms/:roomid',function(req,res){
+app.get('/rooms/n/:roomid',function(req,res){
     res.sendFile(__dirname+'/docs/game.html');
 });
 app.get('/clear',function(req,res){
@@ -129,7 +129,7 @@ class Room{
         this.taiman=this.args.taiman;
         this.parent=parent;
         this.hidden=args.hasOwnProperty("hidden")&&args.hidden;
-        this.game=new _game.Game(_game._RULE_NEW,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this));
+        this.game=new _game.Game(_game._RULE_NEW,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this),()=>{},true,this.sendPlayerStatus.bind(this));
         this.teamMode=this.game.teamMode;
     }
     getNumber(){
@@ -198,6 +198,9 @@ class Room{
                     ,you:{name:player.nickname,state:player.state(),team:player.team}
                 });
         });
+    }
+    sendPlayerStatus(data){
+        io.to(this.id).emit('playerStatus',data);
     }
 
     closeGame(){

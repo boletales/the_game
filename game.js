@@ -235,7 +235,7 @@ exports._RULE_NEW=_RULE_NEW;
 exports._SKILLS_MOTO=_SKILLS_MOTO;
 exports._HP_DEFAULT=6;
 class Game{
-    constructor(rule,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},needokawari=true){
+    constructor(rule,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},needokawari=true,sendPlayerStatus=function(){}){
         this.log=log;
         this.noticewinner= noticewinner;
         this.needokawari = needokawari;
@@ -245,6 +245,7 @@ class Game{
         this.maxPlayers  = args.hasOwnProperty("maxPlayers") ?args.maxPlayers :Infinity;
         this.startnumber = args.hasOwnProperty("startnumber")?args.startnumber:2;
         this.maxTurns    = args.hasOwnProperty("maxTurns")   ?args.maxTurns   :Infinity;
+        this.sendPlayerStatus=sendPlayerStatus;
         Object.values(this._SKILLS).forEach((s,i)=>s.id=i);
         this.players=[];
         this.waiting=[];
@@ -287,6 +288,7 @@ class Game{
                     }
                 );
                 this.showPlayers();
+                this.sendPlayerStatus({"players":this.getPlayersStatus()});
                 cb(null);
             }.bind(this)},
             {/*入力待ち*/},
@@ -416,6 +418,7 @@ class Game{
         //ダメージを与える
         players.forEach((p,i)=>p.hp-=damages[i].reduce((a,c)=>a+c,0));
 
+        this.sendPlayerStatus({"turn":true,"decisions":decisions,"attacks":attacks,"damages":damages,"players":this.getPlayersStatus()});
 
         //結果表示
         this.log("~~~~~");
@@ -518,6 +521,25 @@ class Game{
             return {skill:this._SKILLS[args[0]],args:args.slice(1)};
         }
     }
+    _getSomeData(keys,moto){
+        let data={};
+        keys.forEach(k=>{
+            data[k]=moto[k];
+        });
+        return data;
+    }
+    getPlayersStatus(){
+        let keys=["hp","team","id","nickname","charge","buffs","isHuman"];
+        return this.players.map(p=>{
+            let data=this._getSomeData(keys,p);
+            let buffkeys=["level","id"];
+            data.buffs=Object.keys(p.buffs).reduce(((acc,buffname)=>{
+                acc[buffname]=this._getSomeData(buffkeys,p.buffs[buffname]);
+                return acc;
+            }).bind(this),{});
+            return data;
+        });
+    }
 }
 exports.Game=Game;
 function decision(args){
@@ -531,7 +553,7 @@ function Player(id,nickname,team,game){
     this.nickname=nickname;
     this.charge=0;
     this.game=game;
-    this.buffs=[];
+    this.buffs={};
     Object.keys(Buffs).forEach((key=>this.buffs[key]=new Buffs[key](this)).bind(this));
     this.decision=function(player,supporter,opponents,candidates){return new _game.decision([game._SKILLS.non])}.bind(this);
     this.reqDecision=function(callBack,candidates){
