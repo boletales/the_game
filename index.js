@@ -18,6 +18,9 @@ app.get('/',function(req,res){
 app.get('/make.html',function(req,res){
     res.sendFile(__dirname+'/docs/make.html');
 });
+app.get('/rooms/v/:roomid',function(req,res){
+    res.sendFile(__dirname+'/docs/visualizer.html');
+});
 app.get('/rooms/:roomid',function(req,res){
     res.sendFile(__dirname+'/docs/game.html');
 });
