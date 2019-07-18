@@ -27,10 +27,11 @@ _SKILLS_MOTO={
             attackPhase:_ATTACK_DEFAULT,
             middlePhase:_MIDDLE_DEFAULT,
             defensePhase:function(user,players,decisions,attacksForMe,args){
-                return attacksForMe.map(d=>{
+                user.charge+=1;
+                return attacksForMe.map((d,i)=>{
                     if(d>0){
-                        user.charge+=d+1;
-                        return d-1;
+                        user.charge+=d;
+                        return decisions[i].beam ? d : Math.floor(d*0.5);
                     }else{
                         return 0;
                     }
@@ -43,11 +44,11 @@ _SKILLS_MOTO={
     atk:{name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
-                attacks[players.findIndex(p=>p.id==args[0])] = _SKILLS_MOTO.atk.pow;
+                attacks[players.findIndex(p=>p.id==args[0])] = _SKILLS_MOTO.atk.pow+user.buffs.str.getPower();
                 return attacks;
             },pow:1,
             getCost:(p)=>(0),
-            requirement:(p)=>(true),
+            requirement:_REQUIREMENT_DEFAULT,
             weak:true,
             middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT
@@ -112,12 +113,12 @@ _SKILLS_MOTO={
 
 _SKILLS_MOD_HEAL={
 
-    hea:{name:"回復",args:[], 
+    hea:{name:"回復",args:[{message:"対象入力",type:"supporter",name:"to"}], 
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
                 if(this.requirement(this,user)){
                     user.charge-=this.getCost(user);
-                    user.hp += 3;
+                    players.find(p=>p.id==args[0]).hp += 3;
                 }
                 return attacks;
             },
@@ -131,18 +132,6 @@ _SKILLS_MOD_HEAL={
 };
 
 _SKILLS_MOD_ATPLUS={
-    atk:{name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
-            attackPhase:function(user,players,decisions,args){
-                let attacks=players.map(p=>0);
-                attacks[players.findIndex(p=>p.id==args[0])] = _SKILLS_MOTO.atk.pow+user.buffs.str.getPower();
-                return attacks;
-            },pow:1,
-            getCost:(p)=>(0),
-            requirement:_REQUIREMENT_DEFAULT,
-            weak:true,
-            middlePhase:_MIDDLE_DEFAULT,
-            defensePhase:_DEFENSE_DEFAULT
-        },
 
     str:{name:"強化",args:[],
             attackPhase:function(user,players,decisions,args){
@@ -364,6 +353,16 @@ class Game{
                 case "opponent":
                     ret.candidates=
                         this.players.filter(p=>p.team!==player.team).map(p=>p.id).reduce(
+                            function(a,playerid){
+                                a[playerid]={"name":this.players.find(p=>p.id==playerid).nickname,"args":expansion(args.slice(1)),"available":true};
+                                return a;
+                            }.bind(this)
+                        ,{});
+                    break;
+                //対象（味方）
+                case "supporter":
+                    ret.candidates=
+                        this.players.filter(p=>p.team==player.team).map(p=>p.id).reduce(
                             function(a,playerid){
                                 a[playerid]={"name":this.players.find(p=>p.id==playerid).nickname,"args":expansion(args.slice(1)),"available":true};
                                 return a;
