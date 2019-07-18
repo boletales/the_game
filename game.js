@@ -27,7 +27,6 @@ _SKILLS_MOTO={
             attackPhase:_ATTACK_DEFAULT,
             middlePhase:_MIDDLE_DEFAULT,
             defensePhase:function(user,players,decisions,attacksForMe,args){
-                user.charge+=1;
                 return attacksForMe.map((d,i)=>{
                     if(d>0){
                         user.charge+=d;
