@@ -139,7 +139,10 @@ _SKILLS_MOD_ATPLUS={
                 let attacks=players.map(p=>0);
                 return attacks;
             },
-            getCost:(p)=>(p.buffs.str.getCost()),
+            getCost:(p)=>{
+                let costs=[4,7,12];
+                return (p.buffs.str.lv < costs.length) ? costs[p.buffs.str.lv] : Infinity;
+            },
             requirement:_REQUIREMENT_DEFAULT,
             middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT
@@ -149,7 +152,7 @@ _SKILLS_MOD_STUN={
     stu:{name:"麻痺",args:[{message:"対象入力",type:"opponent",name:"to"}], 
             attackPhase:function(user,players,decisions,args){
                 if(this.requirement(this,user)){
-                	user.charge-=3;
+                	user.charge-=this.getCost();
                     let target=players.findIndex(p=>p.id==args[0]);
                     if(decisions[target].skill.reflect){
                     	user.buffs.stu.level++;
@@ -181,9 +184,6 @@ const Buffs={
                 this.level++;
             }
         }.bind(this);
-        this.getCost=function(){
-            return this.level<2?(this.level+1)*3+1:Infinity;
-        }.bind(this);
         this.state=function(){
             return "⚔".repeat(this.level);
         }.bind(this);
@@ -197,9 +197,6 @@ const Buffs={
         this.id="stu";
         this.state=function(){
             return "⚡️".repeat(this.level);
-        }.bind(this);
-        this.getCost=function(){
-            return 3;
         }.bind(this);
     },
 }
