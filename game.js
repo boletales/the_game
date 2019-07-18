@@ -38,12 +38,13 @@ _SKILLS_MOTO={
             },
             getCost:(p)=>(0),
             requirement:_REQUIREMENT_DEFAULT.bind(this),
+            def:true,
         },
 
     atk:{name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
-                attacks[players.findIndex(p=>p.id==args[0])] = _SKILLS_MOTO.atk.pow+user.buffs.str.getPower();
+                attacks[players.findIndex(p=>p.id==args[0])] = this.pow+user.buffs.str.getPower();
                 return attacks;
             },pow:1,
             getCost:(p)=>(0),
@@ -86,14 +87,14 @@ _SKILLS_MOTO={
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
                 if(this.requirement(this,user)){
-                    user.charge-=3;
+                    user.charge-=this.getCost(user);
                     let target=players.findIndex(p=>p.id==args[0]);
-                    attacks[target] = _SKILLS_MOTO.wav.pow;
+                    attacks[target] = this.pow;
                 }
                 return attacks;
             },
             beam:true,
-            requirement:(p)=>(p.charge>=3),pow:3,
+            pow:3,
             middlePhase:_MIDDLE_DEFAULT,
             defensePhase:function(user,players,decisions,attacksForMe,args){
                 return attacksForMe.map((d,i)=>{
@@ -124,7 +125,6 @@ _SKILLS_MOD_HEAL={
             beam:true,
             getCost:(p)=>(6),
             requirement:_REQUIREMENT_DEFAULT,
-            pow:3,
             middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT,
         },
@@ -164,7 +164,57 @@ _SKILLS_MOD_STUN={
             middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT
         },
-}
+};
+
+_SKILLS_MOD_SMASH={
+
+    sma:{name:"強打",args:[{message:"対象入力",type:"opponent",name:"to"}],
+            attackPhase:function(user,players,decisions,args){
+                let attacks=players.map(p=>0);
+                if(this.requirement(this,user)){
+                    user.charge-=this.getCost(user);
+                    attacks[players.findIndex(p=>p.id==args[0])] = this.pow+user.buffs.str.getPower();
+                    if(!decisions[players.findIndex(p=>p.id==args[0])].skill.def){
+                        let opp=players.find(p=>p.id==args[0]);
+                        opp.charge=Math.max(opp.charge-3,0);
+                    }
+                }
+                return attacks;
+            },
+            pow:1,
+            getCost:(p)=>(3),
+            requirement:_REQUIREMENT_DEFAULT,
+            weak:true,
+            middlePhase:_MIDDLE_DEFAULT,
+            defensePhase:_DEFENSE_DEFAULT
+        },
+};
+
+_SKILLS_MOD_EXPLODE={
+
+    exp:{name:"爆発",args:[],
+            attackPhase:function(user,players,decisions,args){
+                let attacks=players.map(p=>0);
+                if(this.requirement(this,user)){
+                    user.charge-=this.getCost(user);
+                    let at=this.pow+user.buffs.str.getPower();
+                    user.game.players.forEach((p,i)=>{
+                        if(p.team!=user.team){
+                            attacks[i]=at;
+                        }
+                    });
+                }
+                return attacks;
+            },
+            pow:1,
+            getCost:((p)=>(_SKILLS_MOD_EXPLODE.exp.countOpponents(p)*(_SKILLS_MOD_EXPLODE.exp.pow+p.buffs.str.getPower()))),
+            countOpponents:((user)=>user.game.players.filter(p=>p.team!=user.team).length),
+            requirement:_REQUIREMENT_DEFAULT,
+            weak:true,
+            middlePhase:_MIDDLE_DEFAULT,
+            defensePhase:_DEFENSE_DEFAULT
+        },
+};
 const Buffs={
     str:function(user){
         this.tick=function(){};
@@ -185,7 +235,7 @@ const Buffs={
         }.bind(this);
         
         this.getCost=(()=>{
-            let costs=[4,7,12];
+            let costs=[4,7,10];
             return (this.user.buffs.str.level < costs.length) ? costs[this.user.buffs.str.level] : Infinity;
         }).bind(this);
     },
@@ -214,8 +264,14 @@ function Rule(skills,hp){
     this.hp=hp;
 }
 let _RULE_OLD=new Rule(_SKILLS_MOTO,6);
-let _RULE_NEW=new Rule(mergeSkills([_SKILLS_MOTO,_SKILLS_MOD_HEAL,_SKILLS_MOD_ATPLUS,/*_SKILLS_MOD_STUN,*/])
-                        ,7);
+let _RULE_NEW=new Rule(mergeSkills([   
+                            _SKILLS_MOTO,
+                            _SKILLS_MOD_HEAL,
+                            _SKILLS_MOD_ATPLUS,
+                            _SKILLS_MOD_SMASH,
+                            _SKILLS_MOD_EXPLODE,
+                            /*_SKILLS_MOD_STUN,*/
+                        ]),7);
 exports._RULE_OLD=_RULE_OLD;
 exports._RULE_NEW=_RULE_NEW;
 
