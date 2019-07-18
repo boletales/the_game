@@ -27,10 +27,11 @@ _SKILLS_MOTO={
             attackPhase:_ATTACK_DEFAULT,
             middlePhase:_MIDDLE_DEFAULT,
             defensePhase:function(user,players,decisions,attacksForMe,args){
-                return attacksForMe.map(d=>{
+                user.charge+=1;
+                return attacksForMe.map((d,i)=>{
                     if(d>0){
-                        user.charge+=d+1;
-                        return d-1;
+                        user.charge+=d;
+                        return decisions[i].beam ? d : Math.floor(d*0.5);
                     }else{
                         return 0;
                     }
@@ -144,7 +145,7 @@ _SKILLS_MOD_ATPLUS={
             defensePhase:_DEFENSE_DEFAULT
         },
 
-    str:{name:"強化",args:[],
+    str:{name:"強化",args:[{message:"対象入力",type:"opponent",name:"to"}],
             attackPhase:function(user,players,decisions,args){
                 user.buffs.str.levelUp();
                 let attacks=players.map(p=>0);
@@ -364,6 +365,16 @@ class Game{
                 case "opponent":
                     ret.candidates=
                         this.players.filter(p=>p.team!==player.team).map(p=>p.id).reduce(
+                            function(a,playerid){
+                                a[playerid]={"name":this.players.find(p=>p.id==playerid).nickname,"args":expansion(args.slice(1)),"available":true};
+                                return a;
+                            }.bind(this)
+                        ,{});
+                    break;
+                //対象（味方）
+                case "supporter":
+                    ret.candidates=
+                        this.players.filter(p=>p.team==player.team).map(p=>p.id).reduce(
                             function(a,playerid){
                                 a[playerid]={"name":this.players.find(p=>p.id==playerid).nickname,"args":expansion(args.slice(1)),"available":true};
                                 return a;
