@@ -44,11 +44,11 @@ _SKILLS_MOTO={
     atk:{name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
-                attacks[players.findIndex(p=>p.id==args[0])] = _SKILLS_MOTO.atk.pow;
+                attacks[players.findIndex(p=>p.id==args[0])] = _SKILLS_MOTO.atk.pow+user.buffs.str.getPower();
                 return attacks;
             },pow:1,
             getCost:(p)=>(0),
-            requirement:(p)=>(true),
+            requirement:_REQUIREMENT_DEFAULT,
             weak:true,
             middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT
@@ -113,12 +113,12 @@ _SKILLS_MOTO={
 
 _SKILLS_MOD_HEAL={
 
-    hea:{name:"回復",args:[], 
+    hea:{name:"回復",args:[{message:"対象入力",type:"supporter",name:"to"}], 
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
                 if(this.requirement(this,user)){
                     user.charge-=this.getCost(user);
-                    user.hp += 3;
+                    players.find(p=>p.id==args[0]).hp += 3;
                 }
                 return attacks;
             },
@@ -132,20 +132,8 @@ _SKILLS_MOD_HEAL={
 };
 
 _SKILLS_MOD_ATPLUS={
-    atk:{name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
-            attackPhase:function(user,players,decisions,args){
-                let attacks=players.map(p=>0);
-                attacks[players.findIndex(p=>p.id==args[0])] = _SKILLS_MOTO.atk.pow+user.buffs.str.getPower();
-                return attacks;
-            },pow:1,
-            getCost:(p)=>(0),
-            requirement:_REQUIREMENT_DEFAULT,
-            weak:true,
-            middlePhase:_MIDDLE_DEFAULT,
-            defensePhase:_DEFENSE_DEFAULT
-        },
 
-    str:{name:"強化",args:[{message:"対象入力",type:"opponent",name:"to"}],
+    str:{name:"強化",args:[],
             attackPhase:function(user,players,decisions,args){
                 user.buffs.str.levelUp();
                 let attacks=players.map(p=>0);
