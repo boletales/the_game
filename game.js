@@ -5,6 +5,7 @@ if(typeof process == 'undefined'){
 _ATTACK_DEFAULT=(user,players,decisions,args)=>players.map(p=>0);
 _MIDDLE_DEFAULT=(user,players,decisions,attacksAll,args)=>{};
 _DEFENSE_DEFAULT=(user,players,decisions,attacksForMe,args)=>attacksForMe;
+_REQUIREMENT_DEFAULT=(skill,p)=>(p.charge>=skill.getCost(p));
 exports._ATTACK_DEFAULT=_ATTACK_DEFAULT;
 exports._DEFENSE_DEFAULT=_DEFENSE_DEFAULT;
 _SKILLS_MOTO={
@@ -17,7 +18,9 @@ _SKILLS_MOTO={
     non:{name:"スカ",args:[],
         attackPhase :_ATTACK_DEFAULT,
         middlePhase:_MIDDLE_DEFAULT,
-        defensePhase:_DEFENSE_DEFAULT
+        defensePhase:_DEFENSE_DEFAULT,
+        getCost:(p)=>(0),
+        requirement:_REQUIREMENT_DEFAULT,
     },
 
     def:{name:"防御",args:[], 
@@ -33,6 +36,8 @@ _SKILLS_MOTO={
                     }
                 });
             },
+            getCost:(p)=>(0),
+            requirement:_REQUIREMENT_DEFAULT.bind(this),
         },
 
     atk:{name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
@@ -41,6 +46,8 @@ _SKILLS_MOTO={
                 attacks[players.findIndex(p=>p.id==args[0])] = _SKILLS_MOTO.atk.pow;
                 return attacks;
             },pow:1,
+            getCost:(p)=>(0),
+            requirement:(p)=>(true),
             weak:true,
             middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT
@@ -52,14 +59,33 @@ _SKILLS_MOTO={
                 user.charge+=3;
                 return attacks;
             },
+            getCost:(p)=>(0),
+            requirement:_REQUIREMENT_DEFAULT,
             middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT
         },
+    
+    mir:{name:"反射",args:[],
+            attackPhase:_ATTACK_DEFAULT,
+            middlePhase:function(user,players,decisions,attacksAll,args){
+                let myId=players.indexOf(user);
+                decisions.forEach((d,i)=>{
+                    if(d.skill.hasOwnProperty("beam")){
+                        attacksAll[i][myId]=attacksAll[myId][i];
+                        attacksAll[myId][i]=0;
+                    }
+                })
+            },
+            getCost:(p)=>(0),
+            requirement:(p)=>(true),
+            defensePhase:_DEFENSE_DEFAULT,
+            reflect:true,
+        },
 
-    wav:{name:"光線",args:[{message:"対象入力",type:"opponent",name:"to"}],
+        wav:{name:"光線",args:[{message:"対象入力",type:"opponent",name:"to"}],
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
-                if(this.requirement(user)){
+                if(this.requirement(this,user)){
                     user.charge-=3;
                     let target=players.findIndex(p=>p.id==args[0]);
                     attacks[target] = _SKILLS_MOTO.wav.pow;
@@ -78,22 +104,9 @@ _SKILLS_MOTO={
                     }
                 });
             },
+            getCost:(p)=>(3),
+            requirement:_REQUIREMENT_DEFAULT,
         },
-    
-    mir:{name:"反射",args:[],
-            attackPhase:_ATTACK_DEFAULT,
-            middlePhase:function(user,players,decisions,attacksAll,args){
-                let myId=players.indexOf(user);
-                decisions.forEach((d,i)=>{
-                    if(d.skill.hasOwnProperty("beam")){
-                        attacksAll[i][myId]=attacksAll[myId][i];
-                        attacksAll[myId][i]=0;
-                    }
-                })
-            },
-            defensePhase:_DEFENSE_DEFAULT,
-            reflect:true,
-        }
     //sui:{id:7,name:"自殺"                                                                ,act:p=>(p.hp=0)}
 };
 
@@ -102,14 +115,16 @@ _SKILLS_MOD_HEAL={
     hea:{name:"回復",args:[], 
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
-                if(this.requirement(user)){
+                if(this.requirement(this,user)){
                     user.charge-=3;
                     user.hp += 1;
                 }
                 return attacks;
             },
             beam:true,
-            requirement:(p)=>(p.charge>=3),pow:3,
+            getCost:(p)=>(3),
+            requirement:_REQUIREMENT_DEFAULT,
+            pow:3,
             middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT,
         },
@@ -122,6 +137,8 @@ _SKILLS_MOD_ATPLUS={
                 attacks[players.findIndex(p=>p.id==args[0])] = _SKILLS_MOTO.atk.pow+user.buffs.str.getPower();
                 return attacks;
             },pow:1,
+            getCost:(p)=>(0),
+            requirement:_REQUIREMENT_DEFAULT,
             weak:true,
             middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT
@@ -133,7 +150,8 @@ _SKILLS_MOD_ATPLUS={
                 let attacks=players.map(p=>0);
                 return attacks;
             },
-            requirement:(p)=>(p.charge>=p.buffs.str.getCost()),
+            getCost:(p)=>(p.buffs.str.getCost()),
+            requirement:_REQUIREMENT_DEFAULT,
             middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT
         },
@@ -141,7 +159,7 @@ _SKILLS_MOD_ATPLUS={
 _SKILLS_MOD_STUN={
     stu:{name:"麻痺",args:[{message:"対象入力",type:"opponent",name:"to"}], 
             attackPhase:function(user,players,decisions,args){
-                if(this.requirement(user)){
+                if(this.requirement(this,user)){
                 	user.charge-=3;
                     let target=players.findIndex(p=>p.id==args[0]);
                     if(decisions[target].skill.reflect){
@@ -153,7 +171,8 @@ _SKILLS_MOD_STUN={
                 let attacks=players.map(p=>0);
                 return attacks;
             },
-            requirement:(p)=>(p.charge>=3),
+            getCost:(p)=>(3),
+            requirement:_REQUIREMENT_DEFAULT,
             middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT
         },
@@ -327,10 +346,16 @@ class Game{
                 //行動（使用可能なスキル,スキルの引数）
                 case "action":
                     ret.candidates=
-                        Object.keys(this._SKILLS).filter(command=>this.checkRec(player,this._SKILLS[command])).reduce(
-                            function(a,skillname){
-                                a[skillname]={"name":this._SKILLS[skillname].name,"args":expansion(this._SKILLS[skillname].args.concat(args.slice(1)))}
-                                return a;
+                        Object.keys(this._SKILLS).reduce(
+                            function(acc,skillname){
+                                let available=this.checkRec(player,this._SKILLS[skillname]);
+                                acc[skillname]={
+                                    "name":this._SKILLS[skillname].name,
+                                    "args":expansion(this._SKILLS[skillname].args.concat(args.slice(1))),
+                                    "cost":this._SKILLS[skillname].getCost(player),
+                                    "available":available
+                                };
+                                return acc;
                             }.bind(this)
                         ,{});
                     break;
@@ -340,7 +365,7 @@ class Game{
                     ret.candidates=
                         this.players.filter(p=>p.team!==player.team).map(p=>p.id).reduce(
                             function(a,playerid){
-                                a[playerid]={"name":this.players.find(p=>p.id==playerid).nickname,"args":expansion(args.slice(1))}
+                                a[playerid]={"name":this.players.find(p=>p.id==playerid).nickname,"args":expansion(args.slice(1)),"available":true};
                                 return a;
                             }.bind(this)
                         ,{});
@@ -435,7 +460,7 @@ class Game{
         }
     }
     checkRec(player,skill){
-        return !skill.hasOwnProperty("requirement")||skill.requirement(player);
+        return (skill.requirement.bind(null,skill))(player);
     }
     killPlayer(id){
         this.players.filter(p=>p.id==id).forEach(player=>{

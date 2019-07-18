@@ -173,7 +173,14 @@
                 preCommand.innerHTML=argsdata.message+">";
                 if(argsinput.length>0) preCommand.innerHTML+="<span onclick=onCommand('') style='color:#008;border-bottom: dotted;'>キャンセル</span> ";
                 Object.keys(argsdata.candidates).forEach(cank=>{
-                    preCommand.innerHTML+="<span onclick=onCommand('"+cank+"') style='color:#008;border-bottom: dotted;'>"+argsdata.candidates[cank].name+"</span> ";
+                    let candidate=argsdata.candidates[cank];
+                    let coststr="";
+                    if(candidate.hasOwnProperty("cost")&&candidate.cost>0)coststr="("+candidate.cost+")"
+                    if(candidate.available){
+                        preCommand.innerHTML+="<span onclick=onCommand('"+cank+"') style='color:#008;border-bottom: dotted;'>"+candidate.name+coststr+"</span> ";
+                    }else{
+                        preCommand.innerHTML+="<span style='color:#555;text-decoration: line-through;'>"+candidate.name+coststr+"</span> ";
+                    }
                 });
             }
 
