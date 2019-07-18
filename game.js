@@ -116,13 +116,13 @@ _SKILLS_MOD_HEAL={
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
                 if(this.requirement(this,user)){
-                    user.charge-=3;
-                    user.hp += 1;
+                    user.charge-=this.getCost(user);
+                    user.hp += 3;
                 }
                 return attacks;
             },
             beam:true,
-            getCost:(p)=>(3),
+            getCost:(p)=>(6),
             requirement:_REQUIREMENT_DEFAULT,
             pow:3,
             middlePhase:_MIDDLE_DEFAULT,
