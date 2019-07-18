@@ -31,7 +31,7 @@ _SKILLS_MOTO={
                 return attacksForMe.map((d,i)=>{
                     if(d>0){
                         user.charge+=d;
-                        return decisions[i].beam ? d : Math.floor(d*0.5);
+                        return decisions[i].skill.beam ? d : Math.floor(d*0.5);
                     }else{
                         return 0;
                     }
@@ -139,10 +139,7 @@ _SKILLS_MOD_ATPLUS={
                 let attacks=players.map(p=>0);
                 return attacks;
             },
-            getCost:(p)=>{
-                let costs=[4,7,12];
-                return (p.buffs.str.lv < costs.length) ? costs[p.buffs.str.lv] : Infinity;
-            },
+            getCost:(p)=>p.buffs.str.getCost(),
             requirement:_REQUIREMENT_DEFAULT,
             middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT
@@ -187,6 +184,11 @@ const Buffs={
         this.state=function(){
             return "⚔".repeat(this.level);
         }.bind(this);
+        
+        this.getCost=(()=>{
+            let costs=[4,7,12];
+            return (this.user.buffs.str.level < costs.length) ? costs[this.user.buffs.str.level] : Infinity;
+        }).bind(this);
     },
     stu:function(user){
         this.tick=function(){
