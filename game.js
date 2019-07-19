@@ -320,7 +320,10 @@ class Game{
             //cb:callback
             {start:function(cb){
                 this.log("★第"+this.turns+"ターン★");
-                this.players=this.players.concat(this.waiting.filter(p=>!p.isHuman||p.socket.connected));
+                this.waiting.filter(p=>!p.isHuman||p.socket.connected).forEach(p=>{
+                    this.players.push(p);
+                    this.log("「"+p.nickname+"」参戦！！");
+                });
                 this.waiting=[];
                 this.todo[1]={};
                 this.acceptingTurn=this.turns;
