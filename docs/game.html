@@ -16,7 +16,7 @@
         </style>
     </head>
     <body>
-        <span id="kokoha" style="color:#555"></span><span id="roomname" style="font-size:140%"></span>　<span id="anataha" style="color:#555"></span><span id="team" style="font-size:100%"></span><span id="name" style="font-size:140%"></span>
+        <span id="kokoha" style="color:#555"></span><span id="roomname" style="font-size:140%"></span>　<span id="anataha" style="color:#555"></span><span id="team" style="font-size:100%"></span><span id="name" style="font-size:140%"></span><br>
         <input type="button" value="この部屋へのリンクをコピー" onclick="execCopy(window.location.host+window.location.pathname)">
         <form id="chat" action="">
             <input id="msg">
@@ -81,6 +81,7 @@
             });
             document.getElementById("chat").onsubmit=function(e){
                 socket.emit("chat", {name : name,message : document.getElementById("msg").value});
+                document.getElementById("msg").value="";
                 e.preventDefault();
                 return false;
             };
@@ -123,6 +124,7 @@
             });
             document.getElementById("gchat").onsubmit=function(e){
                 socket.emit("globalChat", {name : name+"@"+roomname,message : document.getElementById("gmsg").value});
+                document.getElementById("gmsg").value="";
                 e.preventDefault();
                 return false;
             };

@@ -21,6 +21,9 @@ app.get('/make.html',function(req,res){
 app.get('/rooms/:roomid',function(req,res){
     res.sendFile(__dirname+'/docs/game.html');
 });
+app.get('/rooms/spectate/:roomid',function(req,res){
+    res.sendFile(__dirname+'/docs/spectate.html');
+});
 app.get('/clear',function(req,res){
     globalRecentLog=[];
     rooms={};
@@ -35,6 +38,9 @@ io.on('connection',function(socket){
     });
     socket.on("joinRoom",data=>{
         joinRoom(data.roomid,socket,data.nickname,data.team);
+    });
+    socket.on("spectate",data=>{
+        socket.join(data.roomid);
     });
     socket.on("joinTaiman",data=>{
         joinTaiman(socket);
