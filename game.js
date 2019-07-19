@@ -68,7 +68,7 @@ _SKILLS_MOTO={
     
     mir:{name:"反射",args:[],
             attackPhase:_ATTACK_DEFAULT,
-            middlePhase:function(user,players,decisions,attacksAll,args){
+            middlephase:function(user,players,decisions,attacksAll,args){
                 let myId=players.indexOf(user);
                 decisions.forEach((d,i)=>{
                     if(d.skill.hasOwnProperty("beam")){
@@ -176,7 +176,7 @@ _SKILLS_MOD_SMASH={
                     attacks[players.findIndex(p=>p.id==args[0])] = this.pow+user.buffs.str.getPower();
                     if(!decisions[players.findIndex(p=>p.id==args[0])].skill.def){
                         let opp=players.find(p=>p.id==args[0]);
-                        opp.charge=Math.max(opp.charge-3,0);
+                        opp.buffs.chd.levelUp(3);
                     }
                 }
                 return attacks;
@@ -185,7 +185,10 @@ _SKILLS_MOD_SMASH={
             getCost:(p)=>(3),
             requirement:_REQUIREMENT_DEFAULT,
             weak:true,
-            middlePhase:_MIDDLE_DEFAULT,
+            middlePhase:function(user,players,decisions,attacksAll,args){
+                let opp=players.find(p=>p.id==args[0]);
+                opp.buffs.chd.tick();
+            },
             defensePhase:_DEFENSE_DEFAULT
         },
 };
@@ -249,6 +252,23 @@ const Buffs={
         this.state=function(){
             return "⚡️".repeat(this.level);
         }.bind(this);
+    },
+    chd:function(user){
+        this.tick=function(){
+        	if(this.level>0){
+			user.charge=Math.max(user.charge-this.level,0);
+			this.level=0;
+		}
+        }.bind(this);
+        this.level=0;
+        this.user=user;
+        this.id="chd";
+        this.state=function(){
+            return "";
+        }.bind(this);
+	this.levelUp=function(level){
+            this.level+=level;
+	}
     },
 }
 function mergeSkills(arraySkills){
