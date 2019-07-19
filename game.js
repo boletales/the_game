@@ -68,7 +68,7 @@ _SKILLS_MOTO={
     
     mir:{name:"反射",args:[],
             attackPhase:_ATTACK_DEFAULT,
-            middlephase:function(user,players,decisions,attacksAll,args){
+            middlePhase:function(user,players,decisions,attacksAll,args){
                 let myId=players.indexOf(user);
                 decisions.forEach((d,i)=>{
                     if(d.skill.hasOwnProperty("beam")){
