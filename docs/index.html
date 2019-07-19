@@ -31,9 +31,9 @@
             socket.emit("getGlobalLog",{});
             socket.on("roomStates",data=>{
                 let table=document.getElementById("rooms");
-                table.innerHTML="<tr><th>部屋名</th><th>参加</th></tr>";
+                table.innerHTML="<tr><th>部屋名</th><th>参加</th><th>観戦</th></tr>";
                 data.rooms.forEach(room => {
-                    table.innerHTML+= "<tr><td>"+room.name+"("+room.number+"人)</th><td><a href=./rooms/"+room.id+">参加</th></tr>";
+                    table.innerHTML+= "<tr><td>"+room.name+"("+room.number+"人)</td><td><a href=./rooms/"+room.id+">参加</td><td><a href=./rooms/spectate/"+room.id+">観戦</td></tr>";
                 });
                 if(data.taiman){
                     document.getElementById("taiman").innerHTML="1vs1(1人待ち)";

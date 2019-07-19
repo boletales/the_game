@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta encording="utf-8">
+        <title>Chakra!</title>
+        <link rel="main.css">
+        <script type="text/javascript" src="../../socket.io/socket.io.js"></script>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body{
+                width:100%;
+            }
+            .output{
+                padding: 5px;width: 100%;height: 20rem;overflow:auto;border-style: dotted;background-color: #eee
+            }
+        </style>
+    </head>
+    <body>
+        <span id="kokoha" style="color:#555"></span><span id="roomname" style="font-size:140%"></span>
+        <input type="button" value="参戦" onclick="join()">
+        
+        <pre id="output" class="output"></pre>
+        
+        <div id="players" style="padding: 5px;width: 100%;background-color: #eee"></div>
+        
+
+        <a href="../../">ロビーに戻る</a><br><br><br>
+        
+        <h2>全体チャット</h2>
+        <form id="gchat" action="" style="float:left">
+            <input id="gmsg">
+            <input type="submit"  value="送信">
+        </form>
+        <pre id="gmessages" class="output"></pre>
+        <script>
+            let teamColor={"a":"#a00","b":"#0a0"};
+            let defaultColor="#000";
+            let getColor=(team)=>(teamColor.hasOwnProperty(team)?teamColor[team]:defaultColor);
+            let socket = io.connect();
+            let roomid=decodeURIComponent(location.pathname.split("/").reverse()[0]);
+            let roomname;
+            socket.emit("getRoomData",{id:roomid});
+            socket.emit("spectate",{roomid:roomid});
+            socket.emit("getGlobalLog",{});
+
+            socket.on("roomData",data=>{
+                roomname=data.name;
+                document.title="Chakra! - "+roomname+" （観戦）";
+                document.getElementById("kokoha").innerHTML="ここは ";
+                document.getElementById("roomname").innerHTML=roomname;
+            });
+
+            socket.on("message", function(data){
+                document.getElementById("output").innerText+=data.name+"≫"+data.message+"\n";
+                document.getElementById("output").scrollTop = document.getElementById("output").scrollHeight;
+            });
+            socket.on("goRobby", function(data){
+                location.href="../../"
+            });
+            socket.on("goRoom", function(data){
+                location.href="./"+encodeURIComponent(data.name);
+            });
+            socket.on("okawari", function(data){
+                location.href="./"+data.roomid+"?nickname="+data.nickname+"&team="+data.team;
+            });
+            socket.on("showPlayers", function(data){
+                document.getElementById("players").innerHTML="<span style='color:"+getColor(data.you.team)+";border-style: dotted;'>"+data.you.name+"≫"+data.you.state+"</span><br>";
+                data.others.forEach(player=>{
+                    document.getElementById("players").innerHTML+="<span style='color:"+getColor(player.team)+"'>"+player.name+"≫"+player.state+"</span><br>";
+                })
+            });
+            
+
+            socket.on("globalMessage", function(data){
+                document.getElementById("gmessages").innerHTML+=data.name+"≫"+data.message+"\n";
+                document.getElementById("gmessages").scrollTop = document.getElementById("gmessages").scrollHeight;
+            });
+            document.getElementById("gchat").onsubmit=function(e){
+                socket.emit("globalChat", {name : name+"@"+roomname,message : document.getElementById("gmsg").value});
+                document.getElementById("gmsg").value="";
+                e.preventDefault();
+                return false;
+            };
+
+            BeforeUnloadEvent=socket.disconnect;
+
+            function join(){
+                location.href="../"+encodeURIComponent(roomid);
+            }
+
+            function getUrlVars(){
+                var vars = {}; 
+                var param = location.search.substring(1).split('&');
+                for(var i = 0; i < param.length; i++) {
+                    var keySearch = param[i].search(/=/);
+                    var key = '';
+                    if(keySearch != -1) key = param[i].slice(0, keySearch);
+                    var val = param[i].slice(param[i].indexOf('=', 0) + 1);
+                    if(key != '') vars[key] = decodeURI(val);
+                } 
+                return vars; 
+            }
+
+            //from:https://qiita.com/simiraaaa/items/2e7478d72f365aa48356
+            function execCopy(string){
+
+                // 空div 生成
+                var tmp = document.createElement("div");
+                // 選択用のタグ生成
+                var pre = document.createElement('pre');
+
+                // 親要素のCSSで user-select: none だとコピーできないので書き換える
+                pre.style.webkitUserSelect = 'auto';
+                pre.style.userSelect = 'auto';
+
+                tmp.appendChild(pre).textContent = string;
+
+                // 要素を画面外へ
+                var s = tmp.style;
+                s.position = 'fixed';
+                s.right = '200%';
+
+                // body に追加
+                document.body.appendChild(tmp);
+                // 要素を選択
+                document.getSelection().selectAllChildren(tmp);
+
+                // クリップボードにコピー
+                var result = document.execCommand("copy");
+
+                // 要素削除
+                document.body.removeChild(tmp);
+
+                return result;
+}
+        </script>
+    </body>
+</html>
