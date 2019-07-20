@@ -5,6 +5,8 @@
     </head>
     <body>
         <pre id="p1"></pre>
+        <button onclick="execCopy(JSON.stringify(winner1));">1st</button>
+        <button onclick="execCopy(JSON.stringify(winner2));">2nd</button>
         1st
         <table id="t1" border="1"></table>
         2nd
@@ -13,6 +15,9 @@
         <script>
             _game=exports;
             let winner=null;
+            
+            let actions=Object.keys(_game._RULE_NEW.skills).length-1;
+            let datas= 7+Object.keys(_game._RULE_NEW.skills).length*3;
             function generation(parents,gen,genmax,num,time,next,mut){
                 let params=parents.concat();
                 let points=Array(num).fill(0);
@@ -38,7 +43,12 @@
                         }).bind(null,i,j,points,gen));
                     }
                 }
-                setTimeout(((points,params,gen,genmax,num,time)=>{
+                let genEndMoto=((points,params,gen,genmax,num,time,next,mut,retry)=>{
+                    if(allcount/(num*(num-1)/2)<0.7){
+                        //console.log("retry("+allcount/(num*(num-1)/2)+"<0.9)");
+                        setTimeout(retry.bind(null,retry),time);
+                        return ;
+                    }
                     let result=points.map((p,i)=>{return{"point":p,"param":params[i]};}).sort((a,b)=>b.point-a.point);
                     console.log(result.map(r=>r.point));
                     console.log(gen+"世代 (残り"+(genmax-gen)+"世代)  試合:"+round(endcount/(num*(num-1)/2),3)+"  終了"+round(allcount/(num*(num-1)/2),3));
@@ -46,15 +56,26 @@
                         document.getElementById("t1").innerHTML=paramtotable(result[0].param);
                         document.getElementById("t2").innerHTML=paramtotable(result[1].param);
                         document.getElementById("p1").innerText=JSON.stringify(result[0].param);
-                        winner=result[0].param;
+                        winner1=result[0].param;
+                        winner2=result[1].param;
+                        battle(winner1,winner2);
                     }else{
                         generation(result.concat().slice(0,next).map(r=>r.param),gen+1,genmax,num,time,next,mut);
                     }
-                }).bind(null,points,params,gen,genmax,num,time,next),time,mut);
+                }).bind(null,points,params,gen,genmax,num,time,next,mut);
+                let genEnd=genEndMoto.bind(null,genEndMoto);
+                setTimeout(genEnd,time);
             }
 
             function versus(p0,p1,callback){
-                game=new _game.Game(_game._SKILLS_MOTO,{maxTurns:40},()=>{},()=>{},()=>{},()=>{},callback,false);
+                game=new _game.Game(_game._RULE_NEW,{maxTurns:40},()=>{},()=>{},()=>{},()=>{},callback,false);
+                players=[new TaimanAi(0,game,p0),new TaimanAi(1,game,p1)];
+                players.forEach(p=>game.joinPlayer(p,false));
+                game.init();
+            }
+            
+            function battle(p0,p1){
+                game=new _game.Game(_game._RULE_NEW,{maxTurns:40},()=>{},()=>{},console.log,()=>{},()=>{},false);
                 players=[new TaimanAi(0,game,p0),new TaimanAi(1,game,p1)];
                 players.forEach(p=>game.joinPlayer(p,false));
                 game.init();
@@ -63,14 +84,17 @@
                 return param.map(p=>p.map(v=>(" "+round(v,2)).slice(-5)).join(",")).join("\n");
             }
             function paramtotable(param){
-                return "<tr><th></th><th>定数</th><th>自命</th><th>自溜</th><th>敵命</th><th>敵溜</th></tr>"+
-                    param.map((p,i)=>"<tr><td>"+Object.values(_game._SKILLS_MOTO)[i+1].name+"</td>"+p.map(v=>"<td>"+round(v,2)+"</td>").join("")+"</tr>").join("\n");
+                return "<tr><th></th><th>定数</th><th>自命</th><th>自溜</th><th>自強</th><th>敵命</th><th>敵溜</th><th>敵強</th></tr>"+
+                    param.map((p,i)=>"<tr><td>"+Object.values(_game._RULE_NEW.skills)[i+1].name+"</td>"+p.map(v=>"<td>"+round(v,2)+"</td>").join("")+"</tr>").join("\n");
             }
             function round(n,keta=0){
                 return Math.round(n*(10**keta))/(10**keta);
             }
             function genRandomParamForAi(){
-                return Array(actions).fill([]).map(v=>Array(datas).fill(0).map(v=>Math.random()*2-1));
+                //return Array(actions).fill([]).map(v=>Array(datas).fill(0).map(v=>Math.random()*2-1));
+                let param=Array(actions).fill([]).map(v=>Array(datas).fill(0).map(v=>Math.random()*2-1));
+                //param[1][0]=1.5;
+                return param;
                 
                 /*if(Math.random()>0.5)*/
                 //return Array(5).fill(null).map(v=>[1,0,0,0,0]);
@@ -107,11 +131,42 @@
             }
 
             generation(
-                Array(5).fill(null).map(v=>genRandomParamForAi()).concat(
-                Array(actions).fill(null).map((v,i)=>genNonRandomParamForAi(i)))
+                Array(9).fill(null).map(v=>genRandomParamForAi()).concat(
+                Array(9).fill(null).map((v,i)=>genNonRandomParamForAi(i)))
 
-            ,1,20,30,1500,6,0.1);
-            //crossover(Array(5).fill(null).map(v=>genRandomParamForAi()))
+            ,1,20,20,200,5,0.1);
+            //crossover(Array(5).fill(null).map(v=>genRandomParamForAi()))//from:https://qiita.com/simiraaaa/items/2e7478d72f365aa48356
+            function execCopy(string){
+
+                // 空div 生成
+                var tmp = document.createElement("div");
+                // 選択用のタグ生成
+                var pre = document.createElement('pre');
+
+                // 親要素のCSSで user-select: none だとコピーできないので書き換える
+                pre.style.webkitUserSelect = 'auto';
+                pre.style.userSelect = 'auto';
+
+                tmp.appendChild(pre).textContent = string;
+
+                // 要素を画面外へ
+                var s = tmp.style;
+                s.position = 'fixed';
+                s.right = '200%';
+
+                // body に追加
+                document.body.appendChild(tmp);
+                // 要素を選択
+                document.getSelection().selectAllChildren(tmp);
+
+                // クリップボードにコピー
+                var result = document.execCommand("copy");
+
+                // 要素削除
+                document.body.removeChild(tmp);
+
+                return result;
+            }
         </script>
     </body>
 </html>

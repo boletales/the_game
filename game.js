@@ -310,6 +310,7 @@ class Game{
         this.maxTurns    = args.hasOwnProperty("maxTurns")   ?args.maxTurns   :Infinity;
         Object.values(this._SKILLS).forEach((s,i)=>s.id=i);
         this.players=[];
+        this.deadPlayers=[];
         this.waiting=[];
         this.turns=0;
         this.acceptingTurn=-1;
@@ -361,6 +362,7 @@ class Game{
                 function(cb){
                     if(this.result.turn){
                         this.todo=this.todo.concat(this.todoMoto);
+                        this.deadPlayers.push(this.players.filter(v=>v.hp<=0));
                         this.players=this.players.filter(v=>v.hp>0);
                         this.turns++;
                         setTimeout(cb,0);
@@ -655,15 +657,15 @@ exports.Player=Player;
 
 
 //param: [action][data]
-let actions=Object.keys(_SKILLS_MOTO).length-1;
-let datas= 5+Object.keys(_SKILLS_MOTO).length*3/*+Object.keys(_SKILLS_MOTO).length*/ ;
 function TaimanAi(id,game,param){
     Player.call(this,id,id,id,game);
+    this.isAI=true;
     this.param=param;
-    this.decisionCounts      =[[0,0,0,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0]];
+    this.skillsCount=Object.keys(this.game._SKILLS).length + 0;
+    this.decisionCounts=Array(3).fill([]).map(v=>Array(this.skillsCount).fill(0));
     this.data=Array(Object.keys(_SKILLS_MOTO).length).fill(0);
     this.noticeDecisions=function(decisions){
-        this.decisionCounts.unshift([0,0,0,0,0,0]);
+        this.decisionCounts.unshift(Array(this.skillsCount).fill(0));
         this.decisionCounts.pop();
         this.decisionCounts[decisions.find(d=>d.id!=this.id).decision]++;
     };
@@ -673,8 +675,10 @@ function TaimanAi(id,game,param){
                         1,
                         player.hp,
                         player.charge,
+                        player.buffs.str.level,
                         opponents[0].hp,
-                        opponents[0].charge
+                        opponents[0].charge,
+                        opponents[0].buffs.str.level,
                     ].concat(this.decisionCounts[0]).concat(this.decisionCounts[1]).concat(this.decisionCounts[2])));
     }.bind(this);
     this.ai=function(opponentid,data){
