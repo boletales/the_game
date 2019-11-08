@@ -161,15 +161,20 @@ _SKILLS_MOD_STUN={
         },
 };
 _SKILLS_MOD_SMASH={
-    sma:{name:"強打",args:[{message:"対象入力",type:"opponent",name:"to"}],
+    sma:{name:"強奪",args:[{message:"対象入力",type:"opponent",name:"to"}],
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
                 if(this.requirement(this,user)){
-                    user.charge-=this.getCost(user);
-                    attacks[players.findIndex(p=>p.id==args[0])] = this.pow+user.buffs.str.getPower();
-                    if(!decisions[players.findIndex(p=>p.id==args[0])].skill.def){
-                        let opp=players.find(p=>p.id==args[0]);
-                        opp.buffs.chd.levelUp(3);
+                    let targetIndex=players.findIndex(p=>p.id==args[0]);
+                    attacks[targetIndex] = this.pow+user.buffs.str.getPower();
+                    if(!decisions[targetIndex].skill.def){
+                        let target=players.find(p=>p.id==args[0]);
+                        target.buffs.chd.levelUp(3)
+                        if(target.charge>0){
+                            user.charge+=1;
+                        }
+                    }else{
+                        user.charge-=this.getCost(user);
                     }
                 }
                 return attacks;
