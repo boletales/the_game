@@ -83,36 +83,33 @@ _SKILLS_MOTO={
             reflect:true,
         },
 
-        wav:{name:"光線",args:[{message:"対象入力",type:"opponent",name:"to"}],
-            attackPhase:function(user,players,decisions,args){
-                let attacks=players.map(p=>0);
-                if(this.requirement(this,user)){
-                    user.charge-=this.getCost(user);
-                    let target=players.findIndex(p=>p.id==args[0]);
-                    attacks[target] = this.pow;
-                }
-                return attacks;
-            },
-            beam:true,
-            pow:3,
-            middlePhase:_MIDDLE_DEFAULT,
-            defensePhase:function(user,players,decisions,attacksForMe,args){
-                return attacksForMe.map((d,i)=>{
-                    if(decisions[i].skill.weak){
-                        return 0;
-                    }else{
-                        return d;
-                    }
-                });
-            },
-            getCost:(p)=>(3),
-            requirement:_REQUIREMENT_DEFAULT,
+    wav:{name:"光線",args:[{message:"対象入力",type:"opponent",name:"to"}],
+        attackPhase:function(user,players,decisions,args){
+            let attacks=players.map(p=>0);
+            if(this.requirement(this,user)){
+                user.charge-=this.getCost(user);
+                let target=players.findIndex(p=>p.id==args[0]);
+                attacks[target] = this.pow;
+            }
+            return attacks;
         },
-    //sui:{id:7,name:"自殺"                                                                ,act:p=>(p.hp=0)}
+        beam:true,
+        pow:3,
+        middlePhase:_MIDDLE_DEFAULT,
+        defensePhase:function(user,players,decisions,attacksForMe,args){
+            return attacksForMe.map((d,i)=>{
+                if(decisions[i].skill.weak){
+                    return 0;
+                }else{
+                    return d;
+                }
+            });
+        },
+        getCost:(p)=>(3),
+        requirement:_REQUIREMENT_DEFAULT,
+    },
 };
-
 _SKILLS_MOD_HEAL={
-
     hea:{name:"回復",args:[{message:"対象入力",type:"supporter",name:"to"}], 
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
@@ -129,9 +126,7 @@ _SKILLS_MOD_HEAL={
             defensePhase:_DEFENSE_DEFAULT,
         },
 };
-
 _SKILLS_MOD_ATPLUS={
-
     str:{name:"強化",args:[],
             attackPhase:function(user,players,decisions,args){
                 user.buffs.str.levelUp();
@@ -165,18 +160,21 @@ _SKILLS_MOD_STUN={
             defensePhase:_DEFENSE_DEFAULT
         },
 };
-
 _SKILLS_MOD_SMASH={
-
-    sma:{name:"強打",args:[{message:"対象入力",type:"opponent",name:"to"}],
+    sma:{name:"強奪",args:[{message:"対象入力",type:"opponent",name:"to"}],
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
                 if(this.requirement(this,user)){
-                    user.charge-=this.getCost(user);
-                    attacks[players.findIndex(p=>p.id==args[0])] = this.pow+user.buffs.str.getPower();
-                    if(!decisions[players.findIndex(p=>p.id==args[0])].skill.def){
-                        let opp=players.find(p=>p.id==args[0]);
-                        opp.buffs.chd.levelUp(3);
+                    let targetIndex=players.findIndex(p=>p.id==args[0]);
+                    attacks[targetIndex] = this.pow+user.buffs.str.getPower();
+                    if(!decisions[targetIndex].skill.def){
+                        let target=players.find(p=>p.id==args[0]);
+                        target.buffs.chd.levelUp(3)
+                        if(target.charge>0){
+                            user.charge+=1;
+                        }
+                    }else{
+                        user.charge-=this.getCost(user);
                     }
                 }
                 return attacks;
@@ -192,9 +190,7 @@ _SKILLS_MOD_SMASH={
             defensePhase:_DEFENSE_DEFAULT
         },
 };
-
 _SKILLS_MOD_EXPLODE={
-
     exp:{name:"爆発",args:[],
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
