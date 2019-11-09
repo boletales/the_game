@@ -358,7 +358,7 @@ class Game{
                 function(cb){
                     if(this.result.turn){
                         this.todo=this.todo.concat(this.todoMoto);
-                        this.deadPlayers.push(this.players.filter(v=>v.hp<=0));
+                        this.deadPlayers=this.deadPlayers.concat(this.players.filter(v=>v.hp<=0));
                         this.players=this.players.filter(v=>v.hp>0);
                         this.turns++;
                         setTimeout(cb,0);
