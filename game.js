@@ -222,7 +222,7 @@ _SKILLS_MOD_SALVO={
                 user.charge=0;
                 return attacks;
             },pow:1,
-            getCost:(p)=>(p.charge),
+            getCost:(p)=>Math.max(p.charge,1),
             requirement:_REQUIREMENT_DEFAULT,
             weak:true,
             middlePhase:_MIDDLE_DEFAULT,
