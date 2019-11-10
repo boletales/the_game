@@ -214,6 +214,24 @@ _SKILLS_MOD_EXPLODE={
             defensePhase:_DEFENSE_DEFAULT
         },
 };
+_SKILLS_MOD_SALVO={
+    sal:{name:"斉射",args:[{message:"対象入力",type:"opponent",name:"to"}],
+            attackPhase:function(user,players,decisions,args){
+                let attacks=players.map(p=>0);
+                attacks[players.findIndex(p=>p.id==args[0])] = user.charge+user.buffs.str.getPower();
+                usr.charge=0;
+                return attacks;
+            },pow:1,
+            getCost:(p)=>(p.charge),
+            requirement:_REQUIREMENT_DEFAULT,
+            weak:true,
+            middlePhase:_MIDDLE_DEFAULT,
+            defensePhase:_DEFENSE_DEFAULT,
+            pow:1,
+        },
+};
+
+
 const Buffs={
     str:function(user){
         this.tick=function(){};
@@ -286,7 +304,8 @@ let _RULE_NEW=new Rule(mergeSkills([
                             _SKILLS_MOD_ATPLUS,
                             _SKILLS_MOD_SMASH,
                             _SKILLS_MOD_EXPLODE,
-                            /*_SKILLS_MOD_STUN,*/
+                            _SKILLS_MOD_SALVO,
+
                         ]),7);
 exports._RULE_OLD=_RULE_OLD;
 exports._RULE_NEW=_RULE_NEW;
