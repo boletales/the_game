@@ -675,8 +675,16 @@ exports.Player=Player;
 function TaimanAi(id,game,param){
     Player.call(this,id,id,id,game);
     this.isAI=true;
-    this.param=param;
     this.skillsCount=Object.keys(this.game._SKILLS).length + 0;
+    
+    if(param.length<this.skillsCount*3+7){
+        let paramSkills=Math.floor((param.length-3)/7);
+        let skillsDiff=this.skillsCount-paramSkills;
+        this.param=param.slice(0,7+paramSkills).concat(Array(skillsDiff).fill(0)).concat(param.slice(7+paramSkills,7+paramSkills*2)).concat(Array(skillsDiff).fill(0)).concat(param.slice(7+paramSkills*2,7+paramSkills*3)).concat(Array(skillsDiff).fill(0));
+    }else{
+        this.param=param.concat();
+    }
+
     this.decisionCounts=Array(3).fill([]).map(v=>Array(this.skillsCount).fill(0));
     this.data=Array(Object.keys(_SKILLS_MOTO).length).fill(0);
     this.noticeDecisions=function(decisions){
