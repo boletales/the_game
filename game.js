@@ -219,7 +219,7 @@ _SKILLS_MOD_SALVO={
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
                 attacks[players.findIndex(p=>p.id==args[0])] = user.charge+user.buffs.str.getPower();
-                usr.charge=0;
+                user.charge=0;
                 return attacks;
             },pow:1,
             getCost:(p)=>(p.charge),
