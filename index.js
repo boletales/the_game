@@ -63,7 +63,7 @@ io.on('connection',function(socket){
         }
     });
 });
-http.listen(process.env.PORT || 80);
+http.listen(process.env.NODE_PORT || 80);
 console.log('It works!!');
 
 function sendGlobalRecentLog(socket){
