@@ -680,10 +680,13 @@ function TaimanAi(id,game,param){
     if(param.length<this.skillsCount){
         let paramSkills=param.length;
         let skillsDiff=this.skillsCount-paramSkills;
-        this.param=param.map(v=>v.slice(0,7+paramSkills).concat(Array(skillsDiff).fill(0)).concat(param.slice(7+paramSkills,7+paramSkills*2)).concat(Array(skillsDiff).fill(0)).concat(param.slice(7+paramSkills*2,7+paramSkills*3)).concat(Array(skillsDiff).fill(0))).concat(Array(skillsDiff).map(c=>Array(this.skillsCount*3+7).fill(0)));
-	
-	console.log(param);
-	console.log(this.param);
+        this.param = param.map(v=>
+		v.slice(0,7+paramSkills)
+		.concat(Array(skillsDiff).fill(0))
+		.concat(param.slice(7+paramSkills,7+paramSkills*2))
+		.concat(Array(skillsDiff).fill(0)).concat(param.slice(7+paramSkills*2,7+paramSkills*3))
+		.concat(Array(skillsDiff).fill(0))
+	).concat(Array(skillsDiff).fill(null).map(c=>Array(this.skillsCount*3+7).fill(0)));
     }else{
         this.param=param.concat();
     }
