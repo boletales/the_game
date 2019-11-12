@@ -676,10 +676,10 @@ function TaimanAi(id,game,param){
     Player.call(this,id,id,id,game);
     this.isAI=true;
     this.skillsCount=Object.keys(this.game._SKILLS).length + 0;
-    
+    let nonSuka=this.skillsCount-1; 
     if(param.length<this.skillsCount){
         let paramSkills=param.length;
-        let skillsDiff=this.skillsCount-paramSkills;
+        let skillsDiff=nonSuka-paramSkills;
         this.param = param.map(v=>
 		v.slice(0,7+paramSkills)
 		.concat(Array(skillsDiff).fill(0))

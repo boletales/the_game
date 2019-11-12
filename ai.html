@@ -131,8 +131,8 @@
             }
 
             generation(
-                Array(9).fill(null).map(v=>genRandomParamForAi()).concat(
-                Array(9).fill(null).map((v,i)=>genNonRandomParamForAi(i)))
+                Array(actions).fill(null).map(v=>genRandomParamForAi()).concat(
+                Array(actions).fill(null).map((v,i)=>genNonRandomParamForAi(i)))
 
             ,1,20,20,200,5,0.1);
             //crossover(Array(5).fill(null).map(v=>genRandomParamForAi()))//from:https://qiita.com/simiraaaa/items/2e7478d72f365aa48356
