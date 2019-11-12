@@ -229,8 +229,8 @@ class Room{
                 } 
             }).bind(null,roomid));
             for(let i=0;i<aicount;i++){
-                let id=Math.floor(Math.random()*AIs.length);
-                rooms[roomid].game.joinPlayer(new _game.TaimanAi("名無しAI🤖"+id,this.game,AIs[id]));
+                let id=Math.floor(Math.random()*_aidata.data.length);
+                rooms[roomid].game.joinPlayer(new _game.TaimanAi("名無しAI🤖"+id,this.game,_aidata.data[id]));
             }
         }
     }

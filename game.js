@@ -169,10 +169,8 @@ _SKILLS_MOD_SMASH={
                     attacks[targetIndex] = this.pow+user.buffs.str.getPower();
                     if(!decisions[targetIndex].skill.def){
                         let target=players.find(p=>p.id==args[0]);
-                        target.buffs.chd.levelUp(3)
-                        if(target.charge>0){
-                            user.charge+=1;
-                        }
+                        target.buffs.chd.levelUp(2)
+                        user.charge+=Math.min(target.charge,2);
                     }else{
                         user.charge-=this.getCost(user);
                     }
@@ -180,7 +178,7 @@ _SKILLS_MOD_SMASH={
                 return attacks;
             },
             pow:1,
-            getCost:(p)=>(3),
+            getCost:(p)=>(2),
             requirement:_REQUIREMENT_DEFAULT,
             weak:true,
             middlePhase:function(user,players,decisions,attacksAll,args){
@@ -214,6 +212,24 @@ _SKILLS_MOD_EXPLODE={
             defensePhase:_DEFENSE_DEFAULT
         },
 };
+_SKILLS_MOD_SALVO={
+    sal:{name:"斉射",args:[{message:"対象入力",type:"opponent",name:"to"}],
+            attackPhase:function(user,players,decisions,args){
+                let attacks=players.map(p=>0);
+                attacks[players.findIndex(p=>p.id==args[0])] = user.charge+user.buffs.str.getPower();
+                user.charge=0;
+                return attacks;
+            },pow:1,
+            getCost:(p)=>Math.max(p.charge,1),
+            requirement:_REQUIREMENT_DEFAULT,
+            weak:true,
+            middlePhase:_MIDDLE_DEFAULT,
+            defensePhase:_DEFENSE_DEFAULT,
+            pow:1,
+        },
+};
+
+
 const Buffs={
     str:function(user){
         this.tick=function(){};
@@ -286,7 +302,8 @@ let _RULE_NEW=new Rule(mergeSkills([
                             _SKILLS_MOD_ATPLUS,
                             _SKILLS_MOD_SMASH,
                             _SKILLS_MOD_EXPLODE,
-                            /*_SKILLS_MOD_STUN,*/
+                            _SKILLS_MOD_SALVO,
+
                         ]),7);
 exports._RULE_OLD=_RULE_OLD;
 exports._RULE_NEW=_RULE_NEW;
@@ -656,8 +673,22 @@ exports.Player=Player;
 function TaimanAi(id,game,param){
     Player.call(this,id,id,id,game);
     this.isAI=true;
-    this.param=param;
     this.skillsCount=Object.keys(this.game._SKILLS).length + 0;
+    let nonSuka=this.skillsCount-1; 
+    if(param.length<this.skillsCount){
+        let paramSkills=param.length;
+        let skillsDiff=nonSuka-paramSkills;
+        this.param = param.map(v=>
+		v.slice(0,7+paramSkills)
+		.concat(Array(skillsDiff).fill(0))
+		.concat(param.slice(7+paramSkills,7+paramSkills*2))
+		.concat(Array(skillsDiff).fill(0)).concat(param.slice(7+paramSkills*2,7+paramSkills*3))
+		.concat(Array(skillsDiff).fill(0))
+	).concat(Array(skillsDiff).fill(null).map(c=>Array(this.skillsCount*3+7).fill(0)));
+    }else{
+        this.param=param.concat();
+    }
+
     this.decisionCounts=Array(3).fill([]).map(v=>Array(this.skillsCount).fill(0));
     this.data=Array(Object.keys(_SKILLS_MOTO).length).fill(0);
     this.noticeDecisions=function(decisions){
