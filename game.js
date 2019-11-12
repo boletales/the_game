@@ -169,10 +169,8 @@ _SKILLS_MOD_SMASH={
                     attacks[targetIndex] = this.pow+user.buffs.str.getPower();
                     if(!decisions[targetIndex].skill.def){
                         let target=players.find(p=>p.id==args[0]);
-                        target.buffs.chd.levelUp(3)
-                        if(target.charge>0){
-                            user.charge+=1;
-                        }
+                        target.buffs.chd.levelUp(2)
+                        user.charge+=Math.min(target.charge,2);
                     }else{
                         user.charge-=this.getCost(user);
                     }
@@ -180,7 +178,7 @@ _SKILLS_MOD_SMASH={
                 return attacks;
             },
             pow:1,
-            getCost:(p)=>(3),
+            getCost:(p)=>(2),
             requirement:_REQUIREMENT_DEFAULT,
             weak:true,
             middlePhase:function(user,players,decisions,attacksAll,args){
