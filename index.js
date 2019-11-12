@@ -16,6 +16,12 @@ let globalRecentLogMax=20;
 app.get('/',function(req,res){
     res.sendFile(__dirname+'/docs/index.html');
 });
+app.get('/explain.html',function(req,res){
+    res.sendFile(__dirname+'/docs/explain.html');
+});
+app.get('/main.css',function(req,res){
+    res.sendFile(__dirname+'/docs/main.css');
+});
 app.get('/make.html',function(req,res){
     res.sendFile(__dirname+'/docs/make.html');
 });
