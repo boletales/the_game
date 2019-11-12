@@ -167,7 +167,9 @@ _SKILLS_MOD_SMASH={
                 if(this.requirement(this,user)){
                     let targetIndex=players.findIndex(p=>p.id==args[0]);
                     attacks[targetIndex] = this.pow+user.buffs.str.getPower();
-                    if(!decisions[targetIndex].skill.def){
+                    if(  !decisions[targetIndex].skill.def 
+                       &&!decisions[targetIndex].skill.beam){
+                        
                         let target=players.find(p=>p.id==args[0]);
                         target.buffs.chd.levelUp(2)
                         user.charge+=Math.min(target.charge,2);
