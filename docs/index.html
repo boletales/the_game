@@ -25,7 +25,13 @@
         <button id="aiman" onclick="joinAiman()">vsAI</button>
         <table id="rooms">
         </table>
-        
+        <br><br>
+        <iframe id="frame" src="explain.html" style="border: none;width: 100%;" onload="setIframeHeight()"></iframe>
+        <script>
+            function setIframeHeight() {
+                setTimeout(()=>document.getElementById('frame').style.height=document.getElementById('frame').contentWindow.scrollMaxY*1.2+"px",10);
+            }
+        </script>
         <script>
             let socket = io.connect();
             socket.emit("getGlobalLog",{});
