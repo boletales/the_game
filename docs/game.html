@@ -36,6 +36,14 @@
             <input type="submit"  value="送信">
         </form>
         <pre id="gmessages" class="output"></pre>
+
+        <br><br>
+        <iframe id="frame" src="../explain.html" style="border: none;width: 100%;" onload="setIframeHeight()"></iframe>
+        <script>
+            function setIframeHeight() {
+                setTimeout(()=>document.getElementById('frame').style.height=document.getElementById('frame').contentWindow.scrollMaxY*1.2+"px",10);
+            }
+        </script>
         <script>
             let teamColor={"a":"#a00","b":"#0a0"};
             let defaultColor="#000";
