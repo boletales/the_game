@@ -231,6 +231,9 @@ _SKILLS_MOD_SALVO={
         },
 };
 
+_SKILLS_MOD_EXAT={
+    atk:{inherit:true,pow:5},
+};
 
 const Buffs={
     str:function(user){
@@ -285,10 +288,18 @@ const Buffs={
 	}
     },
 }
-function mergeSkills(arraySkills){
-    let skills={};
+function mergeSkills(_skills,arraySkills){
+    let skills=Object.assign(_skills);
     arraySkills.forEach(_s=>{
-        Object.keys(_s).forEach(key=>skills[key]=Object.assign(_s[key]));
+        Object.keys(_s).forEach(key=>{
+            let merging=Object.assign(_s[key]);
+            if(merging.inherit){
+                //部分的書き換えオプション
+                if(skills.hasOwnProperty(key))Object.keys(merging).forEach(k=>skills[key][k]=merging[k]);
+            }else{
+                skills[key]=merging;
+            }
+        });
     });
     return skills;
 }
@@ -298,7 +309,7 @@ function Rule(skills,hp){
     this.hp=hp;
 }
 let _RULE_OLD=new Rule(_SKILLS_MOTO,6);
-let _RULE_NEW=new Rule(mergeSkills([   
+let _RULE_NEW=new Rule(mergeSkills({},[   
                             _SKILLS_MOTO,
                             _SKILLS_MOD_HEAL,
                             _SKILLS_MOD_ATPLUS,
@@ -307,6 +318,15 @@ let _RULE_NEW=new Rule(mergeSkills([
                             _SKILLS_MOD_SALVO,
 
                         ]),7);
+let _RULE_EXAT=new Rule(mergeSkills(_RULE_NEW.skills,[   
+                            _SKILLS_MOD_EXAT,
+                        ]),7);
+                        
+let rules={
+	standard:{name:"スタンダード",rule:_RULE_NEW},
+	extremeAT:{name:"鬼畜攻撃",rule:_RULE_EXAT},
+};
+exports.rules=rules;
 exports._RULE_OLD=_RULE_OLD;
 exports._RULE_NEW=_RULE_NEW;
 

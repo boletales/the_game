@@ -6,10 +6,6 @@ const io=socketIO.listen(http);
 const _aidata=require("./aidata.js");
 const _TIMEOUT_SECONDS=240;
 
-var selectableRules={
-	standard:{name:"スタンダード",rule:_game._RULE_NEW},
-};
-
 var events = require('events');
 var eventEmitter = new events.EventEmitter();
 eventEmitter.setMaxListeners(40);
@@ -74,7 +70,7 @@ io.on('connection',function(socket){
         }
     });
     socket.on("getRules",data=>{
-	    socket.emit("rules",selectableRules);
+	    socket.emit("rules",_game.rules);
     });
 });
 http.listen(process.env.PORT || 80);
@@ -147,7 +143,7 @@ class Room{
         this.taiman=this.args.taiman;
         this.parent=parent;
         this.hidden=args.hasOwnProperty("hidden")&&args.hidden;
-        this.rule=(selectableRules.hasOwnProperty(args.rule)?selectableRules[args.rule].rule:_game._RULE_NEW);
+        this.rule=(_game.rules.hasOwnProperty(args.rule)?_game.rules[args.rule].rule:_game._RULE_NEW);
 	this.game=new _game.Game(_game._RULE_NEW,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this));
         this.teamMode=this.game.teamMode;
     }
