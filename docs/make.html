@@ -17,6 +17,7 @@
                 チーム戦:<input id="team" type="checkbox">
                 プラベ:<input id="hidden" type="checkbox">
                 <input type="submit" value="作成">
+		<select id="rule"></select>
         </form>
         <p id="warning" style="color:red"></p>
         <a href="../../">ロビーに戻る</a>
@@ -27,6 +28,11 @@
             socket.on("roomExists",data=>{
                 document.getElementById("warning")="もう使われている部屋名です";
             });
+            socket.on("rules",data=>{
+                Object.keys(data).forEach(k=>{
+	            
+		});
+	    });
             function randomID(keta){
                 return ("0".repeat(keta)+Math.floor(Math.random()*Math.pow(10,keta))).slice(-keta);
             }
