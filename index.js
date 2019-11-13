@@ -74,7 +74,7 @@ io.on('connection',function(socket){
         }
     });
     socket.on("getRules",data=>{
-	socket.emit(selectableRules);
+	    socket.emit("rules",selectableRules);
     });
 });
 http.listen(process.env.PORT || 80);

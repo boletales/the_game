@@ -17,7 +17,7 @@
                 チーム戦:<input id="team" type="checkbox">
                 プラベ:<input id="hidden" type="checkbox">
                 <input type="submit" value="作成">
-		<select id="rule"></select>
+		<select id="rules"></select>
         </form>
         <p id="warning" style="color:red"></p>
         <a href="../../">ロビーに戻る</a>
@@ -29,10 +29,18 @@
                 document.getElementById("warning")="もう使われている部屋名です";
             });
             socket.on("rules",data=>{
+                let select=document.getElementById("rules");
                 Object.keys(data).forEach(k=>{
-	            
-		});
-	    });
+                    select.innerHTML+="<option name="+k+">"+data[k].name+"</option>";
+		        });
+	        });
+            socket.on("goRoom",data=>{
+                location.href="./rooms/"+encodeURIComponent(data.id);
+            });
+            socket.on("goRobby", function(data){
+                location.href="./"
+            });
+            socket.emit("getRules",{});
             function randomID(keta){
                 return ("0".repeat(keta)+Math.floor(Math.random()*Math.pow(10,keta))).slice(-keta);
             }
@@ -42,12 +50,6 @@
                     args:{teamMode:document.getElementById("team").checked,hidden:document.getElementById("hidden").checked}})
                 ;
             }
-            socket.on("goRoom",data=>{
-                location.href="./rooms/"+encodeURIComponent(data.id);
-            });
-            socket.on("goRobby", function(data){
-                location.href="./"
-            });
             function randomID(keta){
                 return ("0".repeat(keta)+Math.floor(Math.random()*(10**keta))).slice(-keta);
             }
