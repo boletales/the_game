@@ -289,11 +289,12 @@ const Buffs={
     },
 }
 function mergeSkills(_skills,arraySkills){
-    let skills=Object.assign(_skills);
+    let skills=Object.assign({},_skills);
     arraySkills.forEach(_s=>{
         Object.keys(_s).forEach(key=>{
-            let merging=Object.assign(_s[key]);
+            let merging=Object.assign({},_s[key]);
             if(merging.inherit){
+                skills[key]=Object.assign({},skills[key]);
                 //部分的書き換えオプション
                 if(skills.hasOwnProperty(key))Object.keys(merging).forEach(k=>skills[key][k]=merging[k]);
             }else{
@@ -316,7 +317,6 @@ let _RULE_NEW=new Rule(mergeSkills({},[
                             _SKILLS_MOD_SMASH,
                             _SKILLS_MOD_EXPLODE,
                             _SKILLS_MOD_SALVO,
-
                         ]),7);
 let _RULE_EXAT=new Rule(mergeSkills(_RULE_NEW.skills,[   
                             _SKILLS_MOD_EXAT,
@@ -405,7 +405,7 @@ class Game{
                 }.bind(this)
             }
         ];
-        this.todo=this.todoMoto.map(v=>Object.assign(v));
+        this.todo=this.todoMoto.map(v=>Object.assign({},v));
         this.result={};
         this.newresult={};
     }
@@ -415,7 +415,7 @@ class Game{
                 this.newresult[id]=input;
                 if(Object.keys(this.newresult).length==jobs){
                     this.todo.shift();
-                    this.result=Object.assign(this.newresult);
+                    this.result=Object.assign({},this.newresult);
                     this.newresult={};
                     this.tick();
                 }
@@ -430,7 +430,7 @@ class Game{
     }
     init(){
         this.turns=1;
-        this.todo=this.todoMoto.map(v=>Object.assign(v));
+        this.todo=this.todoMoto.map(v=>Object.assign({},v));
         this.result={};
         this.newresult={};
         this.tick();
@@ -585,7 +585,7 @@ class Game{
                 this.newresult[player.id]=new decision([this._SKILLS.non]);
                 if(Object.keys(this.newresult).length==Object.keys(this.todo[0]).length){
                     this.todo.shift();
-                    this.result=Object.assign(this.newresult);
+                    this.result=Object.assign({},this.newresult);
                     this.newresult={};
                     this.tick();
                 }
