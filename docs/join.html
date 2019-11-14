@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta encording="utf-8">
+        <title>Chakra! - 参加</title>
+        <script type="text/javascript" src="./socket.io/socket.io.js"></script>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body{
+                width:100%;
+            }
+        </style>
+    </head>
+    <body>
+        <span id="kokoha" style="color:#555"></span><span id="roomname" style="font-size:140%"></span>　<span id="anataha" style="color:#555"></span><span id="team" style="font-size:100%"></span><span id="name" style="font-size:140%"></span><br>
+        <form id="chat" action="#" onsubmit="join()">
+                <input id="name" value="room">
+                <div id="teambox"><input id="team" value="room"></div>
+		        <select id="kits"></select>
+                <input type="submit" value="作成">
+        </form>
+        <p id="warning" style="color:red"></p>
+        <a href="../../">ロビーに戻る</a>
+        
+        <script>
+            document.getElementById("name").value="名無し"+randomID(3);
+            let teamMode=true;
+            let socket = io.connect();
+            socket.on("kits",data=>{
+                let select=document.getElementById("kits");
+                Object.keys(data).forEach(k=>{
+                    select.innerHTML+="<option name="+k+">"+data[k].name+"</option>";
+		        });
+	        });
+            socket.on("goRobby", function(data){
+                location.href="./"
+            });
+            socket.emit("getKits",{});
+            socket.emit("getRoomData",{id:roomid});
+
+            socket.on("roomData",data=>{
+                roomname=data.name;
+                document.title="Chakra! - "+roomname+" - 参加";
+                document.getElementById("kokoha").innerHTML="ここは ";
+                document.getElementById("roomname").innerHTML=roomname;
+                let urlVars=getUrlVars();
+                if(urlVars.nickname!=undefined && !data.teamMode && urlVars.kit!=undefined){
+                    var nickname=urlVars.nickname;
+                    var team=nickname;
+                    var kit=urlVars.kit;
+                    location.href="./rooms/"+encodeURIComponent(data.id)+encodeURIComponent(data.id);
+                }else if(urlVars.nickname!=undefined && !urlVars.team==undefined && urlVars.kit!=undefined){
+                    var nickname=urlVars.nickname;
+                    var team=urlVars.team;
+                    var kit=urlVars.kit;
+                    location.href="./rooms/"+encodeURIComponent(data.id)+encodeURIComponent(data.id);
+                }
+                teamMode=data.teamMode;
+                if(!data.teamMode){
+                    document.getElementById("teambox").hidden=true;
+                }
+            });
+            function join(){
+                let name = document.getElementById("name").value;
+                let team = teamMode ? document.getElementById("team").value:name;
+                let kit = document.getElementById("kit").value;
+                location.href="./rooms/"+encodeURIComponent(data.id)+"?nickname="+encodeURIComponent(data.id)+"&team="+encodeURIComponent(team)+"&kit="+encodeURIComponent(kit);
+            }
+            function randomID(keta){
+                return ("0".repeat(keta)+Math.floor(Math.random()*(10**keta))).slice(-keta);
+            }
+            
+        </script>
+    </body>
+</html>

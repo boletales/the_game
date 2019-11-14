@@ -323,7 +323,11 @@ let _KIT_EXAT=new Kit("鬼畜攻撃力",mergeSkills(_KIT_NEW.skills,[
                             _SKILLS_MOD_EXAT,
                         ]),7);
 
+let kitsets={
+    "standard":[_KIT_NEW,_KIT_EXAT],
+};
 
+exports.kitsets=kitsets;
 exports._KIT_OLD=_KIT_OLD;
 exports._KIT_NEW=_KIT_NEW;
 

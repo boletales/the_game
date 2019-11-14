@@ -29,6 +29,9 @@ app.get('/make.html',function(req,res){
 app.get('/rooms/:roomid',function(req,res){
     res.sendFile(__dirname+'/docs/game.html');
 });
+app.get('/rooms/join/:roomid',function(req,res){
+    res.sendFile(__dirname+'/docs/join.html');
+});
 app.get('/rooms/spectate/:roomid',function(req,res){
     res.sendFile(__dirname+'/docs/spectate.html');
 });

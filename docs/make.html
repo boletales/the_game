@@ -41,9 +41,6 @@
                 location.href="./"
             });
             socket.emit("getRules",{});
-            function randomID(keta){
-                return ("0".repeat(keta)+Math.floor(Math.random()*Math.pow(10,keta))).slice(-keta);
-            }
             function makeRoom(){
                 socket.emit("makeRoom",{
                     name:document.getElementById("name").value,
