@@ -449,13 +449,13 @@ class Game{
                 //行動（使用可能なスキル,スキルの引数）
                 case "action":
                     ret.candidates=
-                        Object.keys(this._SKILLS).reduce(
+                        Object.keys(player._SKILLS).reduce(
                             function(acc,skillname){
-                                let available=this.checkRec(player,this._SKILLS[skillname]);
+                                let available=this.checkRec(player,player._SKILLS[skillname]);
                                 acc[skillname]={
-                                    "name":this._SKILLS[skillname].name,
-                                    "args":expansion(this._SKILLS[skillname].args.concat(args.slice(1))),
-                                    "cost":this._SKILLS[skillname].getCost(player),
+                                    "name":player._SKILLS[skillname].name,
+                                    "args":expansion(player._SKILLS[skillname].args.concat(args.slice(1))),
+                                    "cost":player._SKILLS[skillname].getCost(player),
                                     "available":available
                                 };
                                 return acc;
@@ -500,7 +500,7 @@ class Game{
         //条件処理
         for(let from=0;from<decisions.length;from++){
             if(!this.checkRec(players[from],decisions[from].skill)){
-                decisions[from].skill=this._SKILLS.non;
+                decisions[from].skill=players[from]._SKILLS.non;
             }
         }
 
@@ -579,10 +579,10 @@ class Game{
         this.players.filter(p=>p.id==id).forEach(player=>{
             player.hp=0;
             player.reqDecision=function(cb){
-                cb(new decision([this._SKILLS.non]));
+                cb(new decision([player._SKILLS.non]));
             }.bind(this);
             if(this.todo.length>1 && this.todo[1].hasOwnProperty("turn")){
-                this.newresult[player.id]=new decision([this._SKILLS.non]);
+                this.newresult[player.id]=new decision([player._SKILLS.non]);
                 if(Object.keys(this.newresult).length==Object.keys(this.todo[0]).length){
                     this.todo.shift();
                     this.result=Object.assign({},this.newresult);
@@ -619,13 +619,13 @@ class Game{
     countJoined(){
         return this.players.length+this.waiting.length;
     }
-    genDecision(args){
+    genDecision(args,player){
         if(args==undefined || args.length==0){
-            return {skill:this._SKILLS.non,args:[]};
+            return {skill:player._SKILLS.non,args:[]};
         }else if(args.length==1){
-            return {skill:this._SKILLS[args[0]],args:[]};
+            return {skill:player._SKILLS[args[0]],args:[]};
         }else{
-            return {skill:this._SKILLS[args[0]],args:args.slice(1)};
+            return {skill:player._SKILLS[args[0]],args:args.slice(1)};
         }
     }
 }
@@ -635,6 +635,7 @@ function decision(args){
 }
 exports.decision=decision;
 function Player(id,nickname,team,game){
+    this._SKILLS=_RULE_NEW.skills;
     this.hp=game._HP;
     this.team=team;
     this.id=id;
@@ -643,14 +644,14 @@ function Player(id,nickname,team,game){
     this.game=game;
     this.buffs=[];
     Object.keys(Buffs).forEach((key=>this.buffs[key]=new Buffs[key](this)).bind(this));
-    this.decision=function(player,supporter,opponents,candidates){return new _game.decision([game._SKILLS.non])}.bind(this);
+    this.decision=function(player,supporter,opponents,candidates){return new _game.decision([this._SKILLS.non])}.bind(this);
     this.reqDecision=function(callBack,candidates){
         if(this.buffs.stu.level>0){//麻痺
-        	callBack(new decision([this.game._SKILLS.non]));
+        	callBack(new decision([this._SKILLS.non]));
         }else{
             //遅刻入力対策
         	if(this.game.hasOwnProperty("timeout") && this.game.timeout!=-1){
-                setTimeout(callBack.bind(null,new decision([this.game._SKILLS.non])),this.game.timeout);
+                setTimeout(callBack.bind(null,new decision([this._SKILLS.non])),this.game.timeout);
             }
             let cbw=(function(turnstart,callBack,...args){
                 if(turnstart==this.acceptingTurn){
@@ -695,7 +696,7 @@ exports.Player=Player;
 function TaimanAi(id,game,param){
     Player.call(this,id,id,id,game);
     this.isAI=true;
-    this.skillsCount=Object.keys(this.game._SKILLS).length + 0;
+    this.skillsCount=Object.keys(this._SKILLS).length + 0;
     let nonSuka=this.skillsCount-1; 
     if(param.length<this.skillsCount){
         let paramSkills=param.length;
@@ -728,7 +729,7 @@ function TaimanAi(id,game,param){
                         opponents[0].hp,
                         opponents[0].charge,
                         opponents[0].buffs.str.level,
-                    ].concat(this.decisionCounts[0]).concat(this.decisionCounts[1]).concat(this.decisionCounts[2])));
+                    ].concat(this.decisionCounts[0]).concat(this.decisionCounts[1]).concat(this.decisionCounts[2])),this);
     }.bind(this);
     this.ai=function(opponentid,data){
         let probs=MxV(this.param,data).map(v=>Math.max(v,0));
@@ -742,8 +743,8 @@ function TaimanAi(id,game,param){
                 rx-=probs[i];
                 if(rx>0)decid++;
             }
-            let decstr=Object.keys(this.game._SKILLS)[decid];
-            if(this.game._SKILLS[decstr].args.length>0){
+            let decstr=Object.keys(this._SKILLS)[decid];
+            if(this._SKILLS[decstr].args.length>0){
                 return [decstr,opponentid];
             }else{
                 return [decstr];

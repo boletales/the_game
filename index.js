@@ -300,7 +300,7 @@ function Human(nickname,team,game,socket){
     this.reqDecisionWrapped=function(callBack,candidates){
         this.socket.emit('input_action',{"candidates":candidates});
         this.onAction=function(data){
-            callBack(this.game.genDecision(data.action));
+            callBack(this.game.genDecision(data.action,this));
         }.bind(this);
     }.bind(this);
     this.onAction=function(){};
