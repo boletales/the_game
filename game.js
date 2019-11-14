@@ -305,12 +305,13 @@ function mergeSkills(_skills,arraySkills){
     return skills;
 }
 
-function Rule(skills,hp){
+function Kit(name,skills,hp){
     this.skills=skills;
     this.hp=hp;
+    this.name=name;
 }
-let _RULE_OLD=new Rule(_SKILLS_MOTO,6);
-let _RULE_NEW=new Rule(mergeSkills({},[   
+let _KIT_OLD=new Kit("黎明",_SKILLS_MOTO,6);
+let _KIT_NEW=new Kit("スタンダード",mergeSkills({},[   
                             _SKILLS_MOTO,
                             _SKILLS_MOD_HEAL,
                             _SKILLS_MOD_ATPLUS,
@@ -318,27 +319,22 @@ let _RULE_NEW=new Rule(mergeSkills({},[
                             _SKILLS_MOD_EXPLODE,
                             _SKILLS_MOD_SALVO,
                         ]),7);
-let _RULE_EXAT=new Rule(mergeSkills(_RULE_NEW.skills,[   
+let _KIT_EXAT=new Kit("鬼畜攻撃力",mergeSkills(_KIT_NEW.skills,[   
                             _SKILLS_MOD_EXAT,
                         ]),7);
-                        
-let rules={
-	standard:{name:"スタンダード",rule:_RULE_NEW},
-	extremeAT:{name:"鬼畜攻撃",rule:_RULE_EXAT},
-};
-exports.rules=rules;
-exports._RULE_OLD=_RULE_OLD;
-exports._RULE_NEW=_RULE_NEW;
+
+
+exports._KIT_OLD=_KIT_OLD;
+exports._KIT_NEW=_KIT_NEW;
 
 exports._SKILLS_MOTO=_SKILLS_MOTO;
 exports._HP_DEFAULT=6;
 class Game{
-    constructor(rule,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},needokawari=true){
+    constructor(kits,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},needokawari=true){
+        this.kits=kits;
         this.log=log;
         this.noticewinner= noticewinner;
         this.needokawari = needokawari;
-        this._HP         = rule.hp;
-        this._SKILLS     = rule.skills;
         this.teamMode    = args.hasOwnProperty("teamMode")   ?args.teamMode   :true;
         this.maxPlayers  = args.hasOwnProperty("maxPlayers") ?args.maxPlayers :Infinity;
         this.startnumber = args.hasOwnProperty("startnumber")?args.startnumber:2;
@@ -634,9 +630,10 @@ function decision(args){
     return {skill:args[0],args:args.slice(1)};
 }
 exports.decision=decision;
-function Player(id,nickname,team,game){
-    this._SKILLS=_RULE_NEW.skills;
-    this.hp=game._HP;
+function Player(id,nickname,team,game,kit){
+    this._KIT=kit;
+    this._SKILLS=Object.assign({},this._KIT.skills);
+    this.hp=this._RULE._HP;
     this.team=team;
     this.id=id;
     this.nickname=nickname;
@@ -694,7 +691,7 @@ exports.Player=Player;
 
 //param: [action][data]
 function TaimanAi(id,game,param){
-    Player.call(this,id,id,id,game);
+    Player.call(this,id,id,id,game,_KIT_NEW);
     this.isAI=true;
     this.skillsCount=Object.keys(this._SKILLS).length + 0;
     let nonSuka=this.skillsCount-1; 

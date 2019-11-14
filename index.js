@@ -143,8 +143,8 @@ class Room{
         this.taiman=this.args.taiman;
         this.parent=parent;
         this.hidden=args.hasOwnProperty("hidden")&&args.hidden;
-        this.rule=(_game.rules.hasOwnProperty(args.rule)?_game.rules[args.rule].rule:_game._RULE_NEW);
-	this.game=new _game.Game(_game._RULE_NEW,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this));
+        this.rule=(_game.rules.hasOwnProperty(args.rule)?_game.rules[args.rule].rule:_game._KIT_NEW);
+	this.game=new _game.Game(_game._KIT_NEW,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this));
         this.teamMode=this.game.teamMode;
     }
     getNumber(){
