@@ -330,6 +330,7 @@ let kitsets={
 exports.kitsets=kitsets;
 exports._KIT_OLD=_KIT_OLD;
 exports._KIT_NEW=_KIT_NEW;
+exports._KIT_EXAT=_KIT_EXAT;
 
 exports._SKILLS_MOTO=_SKILLS_MOTO;
 exports._HP_DEFAULT=6;
@@ -343,7 +344,15 @@ class Game{
         this.maxPlayers  = args.hasOwnProperty("maxPlayers") ?args.maxPlayers :Infinity;
         this.startnumber = args.hasOwnProperty("startnumber")?args.startnumber:2;
         this.maxTurns    = args.hasOwnProperty("maxTurns")   ?args.maxTurns   :Infinity;
-        Object.values(this._SKILLS).forEach((s,i)=>s.id=i);
+        kits.map(k=>Object.keys(k.skills)).flat()
+            .reduce((a,c)=>a.includes(c)?a:a.concat(c),[])
+            .forEach((n,i)=>kits.forEach(k=>{
+                if(k.hasOwnProperty(n)){
+                    let skcp=Object.assign({},k[n]);
+                    skcp.id=i;
+                    k[n]=skcp;
+                }
+            }));
         this.players=[];
         this.deadPlayers=[];
         this.waiting=[];
@@ -637,7 +646,7 @@ exports.decision=decision;
 function Player(id,nickname,team,game,kit){
     this._KIT=kit;
     this._SKILLS=Object.assign({},this._KIT.skills);
-    this.hp=this._RULE._HP;
+    this.hp=this._KIT.hp;
     this.team=team;
     this.id=id;
     this.nickname=nickname;

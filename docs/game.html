@@ -63,9 +63,9 @@
                 document.getElementById("roomname").innerHTML=roomname;
                 let urlVars=getUrlVars();
                 if(urlVars.nickname==undefined || (data.teamMode && urlVars.team==undefined)){
-                    location.href="./rooms/join/"+encodeURIComponent(data.id);
+                    location.href="./join/"+encodeURIComponent(roomid);
                 }
-                socket.emit("joinRoom",{roomid:roomid,nickname:nickname,team:team});
+                socket.emit("joinRoom",{roomid:roomid,nickname:urlVars.nickname,team:urlVars.team,kitid:parseInt(urlVars.kit)});
                 
             });
             socket.on("input_action", function(data){

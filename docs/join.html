@@ -3,7 +3,7 @@
     <head>
         <meta encording="utf-8">
         <title>Chakra! - 参加</title>
-        <script type="text/javascript" src="./socket.io/socket.io.js"></script>
+        <script type="text/javascript" src="../../socket.io/socket.io.js"></script>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
             body{
@@ -12,12 +12,12 @@
         </style>
     </head>
     <body>
-        <span id="kokoha" style="color:#555"></span><span id="roomname" style="font-size:140%"></span>　<span id="anataha" style="color:#555"></span><span id="team" style="font-size:100%"></span><span id="name" style="font-size:140%"></span><br>
+        <span id="kokoha" style="color:#555"></span><span id="roomname" style="font-size:140%"></span><br>
         <form id="chat" action="#" onsubmit="join()">
-                <input id="name" value="room">
-                <div id="teambox"><input id="team" value="room"></div>
+                <input id="name" value="名無し">
+                <div id="teambox" style="display: inline-block;">チーム:<input id="team" value="a"></div>
 		        <select id="kits"></select>
-                <input type="submit" value="作成">
+                <input id="submit" type="submit" value="参加" style="display: none">
         </form>
         <p id="warning" style="color:red"></p>
         <a href="../../">ロビーに戻る</a>
@@ -26,16 +26,10 @@
             document.getElementById("name").value="名無し"+randomID(3);
             let teamMode=true;
             let socket = io.connect();
-            socket.on("kits",data=>{
-                let select=document.getElementById("kits");
-                Object.keys(data).forEach(k=>{
-                    select.innerHTML+="<option name="+k+">"+data[k].name+"</option>";
-		        });
-	        });
+            let roomid=decodeURIComponent(location.pathname.split("/").reverse()[0]);
             socket.on("goRobby", function(data){
                 location.href="./"
             });
-            socket.emit("getKits",{});
             socket.emit("getRoomData",{id:roomid});
 
             socket.on("roomData",data=>{
@@ -43,6 +37,10 @@
                 document.title="Chakra! - "+roomname+" - 参加";
                 document.getElementById("kokoha").innerHTML="ここは ";
                 document.getElementById("roomname").innerHTML=roomname;
+                let select=document.getElementById("kits");
+                Object.keys(data.kits).forEach((k,i)=>{
+                    select.innerHTML+="<option value="+i+" name="+k+">"+data.kits[k].name+"</option>";
+		        });
                 let urlVars=getUrlVars();
                 if(urlVars.nickname!=undefined && !data.teamMode && urlVars.kit!=undefined){
                     var nickname=urlVars.nickname;
@@ -57,17 +55,30 @@
                 }
                 teamMode=data.teamMode;
                 if(!data.teamMode){
-                    document.getElementById("teambox").hidden=true;
+                    document.getElementById("teambox").style.display="none";
                 }
+                document.getElementById("submit").style.display="unset";
             });
             function join(){
                 let name = document.getElementById("name").value;
                 let team = teamMode ? document.getElementById("team").value:name;
-                let kit = document.getElementById("kit").value;
-                location.href="./rooms/"+encodeURIComponent(data.id)+"?nickname="+encodeURIComponent(data.id)+"&team="+encodeURIComponent(team)+"&kit="+encodeURIComponent(kit);
+                let kit = document.getElementById("kits").value;
+                location.href="../"+encodeURIComponent(roomid)+"?nickname="+encodeURIComponent(name)+"&team="+encodeURIComponent(team)+"&kit="+encodeURIComponent(kit);
             }
             function randomID(keta){
                 return ("0".repeat(keta)+Math.floor(Math.random()*(10**keta))).slice(-keta);
+            }
+            function getUrlVars(){
+                var vars = {}; 
+                var param = location.search.substring(1).split('&');
+                for(var i = 0; i < param.length; i++) {
+                    var keySearch = param[i].search(/=/);
+                    var key = '';
+                    if(keySearch != -1) key = param[i].slice(0, keySearch);
+                    var val = param[i].slice(param[i].indexOf('=', 0) + 1);
+                    if(key != '') vars[key] = decodeURI(val);
+                } 
+                return vars; 
             }
             
         </script>
