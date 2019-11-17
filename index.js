@@ -4,7 +4,6 @@ const http=require('http').createServer(app);
 const socketIO=require('socket.io');
 const io=socketIO.listen(http);
 const _aidata=require("./aidata.js");
-const _TIMEOUT_SECONDS=240;
 
 var events = require('events');
 var eventEmitter = new events.EventEmitter();
@@ -94,7 +93,7 @@ function makeRoom(name,args){
     return r.id;
 }
 function makeRoomAndJoin(socket,name,args){
-    socket.emit("goRoom",{id:makeRoom(name,args)});
+    socket.emit("goJoin",{id:makeRoom(name,args)});
 }
 function joinRoom(roomid,socket,nickname,team,kitid){
     if(rooms.hasOwnProperty(roomid)){
@@ -119,7 +118,7 @@ function joinTaiman(socket){
         var room=new TaimanRoom(name,rooms);
         rooms[room.id]=room;
     }
-    socket.emit("goRoom",{id:room.id});
+    socket.emit("goJoin",{id:room.id});
 }
 
 function joinAiman(socket){
@@ -127,7 +126,7 @@ function joinAiman(socket){
     let name="AIタイマン"+("000"+(trooms.length+1)).slice(-3);
     var room=new AimanRoom(name,rooms);
     rooms[room.id]=room;
-    socket.emit("goRoom",{id:room.id});
+    socket.emit("goRoom",{id:room.id+"?nickname=名無し&team=名無し&kit=0"});
 }
 function showRoomState(){
     var avr= Object.values(rooms).filter(r=>r.game.countJoined()>0);
