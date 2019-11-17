@@ -13,6 +13,19 @@ rooms={};
 let globalRecentLog=[];
 let globalRecentLogMax=20;
 
+function forceHttps(req, res, next){
+    if (!process.env.HAS_HTTPS) {
+        return next();
+    };
+
+    if (req.headers['x-forwarded-proto'] && req.headers['x-forwarded-proto'] === "http") {
+        res.redirect('https://' + req.headers.host + req.url);
+    }else {
+        return next();
+    }
+};
+app.all('*', forceHttps);
+
 app.get('/',function(req,res){
     res.sendFile(__dirname+'/docs/index.html');
 });
@@ -75,15 +88,7 @@ io.on('connection',function(socket){
         socket.emit("kitsset",Object.keys(_game.kitsets));
     });
 });
-if(process.env.HAS_HTTPS){
-    console.log("https mode is enable");
-    http.createServer((express()).all("*", function (request, response) {
-        response.redirect(`https://${request.hostname}${request.url}`);
-    })).listen(process.env.PORT || 80);
-}else{
-    console.log("https mode is unable");
-    http.listen(process.env.PORT || 80);
-}
+http.listen(process.env.PORT || 80);
 console.log('It works!!');
 
 function sendGlobalRecentLog(socket){
