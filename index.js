@@ -76,10 +76,12 @@ io.on('connection',function(socket){
     });
 });
 if(process.env.HAS_HTTPS){
+    console.log("https mode is enable");
     http.createServer((express()).all("*", function (request, response) {
         response.redirect(`https://${request.hostname}${request.url}`);
     })).listen(process.env.PORT || 80);
 }else{
+    console.log("https mode is unable");
     http.listen(process.env.PORT || 80);
 }
 console.log('It works!!');
