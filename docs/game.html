@@ -18,7 +18,7 @@
     <body>
         <span id="kokoha" style="color:#555"></span><span id="roomname" style="font-size:140%"></span>　<span id="anataha" style="color:#555"></span><span id="team" style="font-size:100%"></span><span id="name" style="font-size:140%"></span><br>
         <input type="button" value="この部屋へのリンクをコピー" onclick="execCopy(window.location.host+window.location.pathname)">
-        <form id="chat" action="">
+        <form id="chat" action="javascript:void(0)">
             <input id="msg">
             <input type="submit" value="部屋内チャット">
         </form>
@@ -31,7 +31,7 @@
         <a href="../../">ロビーに戻る</a><br><br><br>
         
         <h2>全体チャット</h2>
-        <form id="gchat" action="" style="float:left">
+        <form id="gchat" action="javascript:void(0)" style="float:left">
             <input id="gmsg">
             <input type="submit"  value="送信">
         </form>
@@ -55,14 +55,14 @@
             let preCommand=document.getElementById("command");
             socket.emit("getRoomData",{id:roomid});
             socket.emit("getGlobalLog",{});
+                let urlVars=getUrlVars();
 
             socket.on("roomData",data=>{
                 roomname=data.name;
                 document.title="Chakra! - "+roomname;
                 document.getElementById("kokoha").innerHTML="ここは ";
                 document.getElementById("roomname").innerHTML=roomname;
-                let urlVars=getUrlVars();
-                if(urlVars.nickname==undefined || (data.teamMode && urlVars.team==undefined)){
+                if(urlVars.nickname==undefined || (data.teamMode && urlVars.team==undefined) || urlVars.kit==undefined){
                     location.href="./join/"+encodeURIComponent(roomid);
                 }
                 socket.emit("joinRoom",{roomid:roomid,nickname:urlVars.nickname,team:urlVars.team,kitid:parseInt(urlVars.kit)});
@@ -91,10 +91,13 @@
                 location.href="../../"
             });
             socket.on("goRoom", function(data){
-                location.href="./"+encodeURIComponent(data.name);
+                location.href="./"+encodeURIComponent(data.id);
+            });
+            socket.on("goJoin", function(data){
+                location.href="./join/"+encodeURIComponent(data.id);
             });
             socket.on("okawari", function(data){
-                location.href="./"+data.roomid+"?nickname="+data.nickname+"&team="+data.team;
+                location.href="./"+data.roomid+"?nickname="+data.nickname+"&team="+data.team+"&kit="+urlVars.kit;
             });
             socket.on("showPlayers", function(data){
                 document.getElementById("players").innerHTML="<span style='color:"+getColor(data.you.team)+";border-style: dotted;'>"+data.you.name+"≫"+data.you.state+"</span><br>";

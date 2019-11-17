@@ -12,12 +12,12 @@
         </style>
     </head>
     <body>
-        <form id="chat" action="#" onsubmit="makeRoom()">
+        <form id="chat" action="javascript:void(0)" onsubmit="makeRoom()">
             <input id="name" value="room">
             チーム戦:<input id="team" type="checkbox">
             プラベ:<input id="hidden" type="checkbox">
-            <input type="submit" value="作成">
-		    <select id="kitsset"></select>
+		    <select id="kitsset"></select><br>
+            <input type="submit" value="作成"><br>
         </form>
         <p id="warning" style="color:red"></p>
         <a href="../../">ロビーに戻る</a>
@@ -36,6 +36,9 @@
 	        });
             socket.on("goRoom",data=>{
                 location.href="./rooms/"+encodeURIComponent(data.id);
+            });
+            socket.on("goJoin", function(data){
+                location.href="./rooms/join/"+encodeURIComponent(data.id);
             });
             socket.on("goRobby", function(data){
                 location.href="./"
