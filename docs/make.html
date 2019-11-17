@@ -13,11 +13,11 @@
     </head>
     <body>
         <form id="chat" action="#" onsubmit="makeRoom()">
-                <input id="name" value="room">
-                チーム戦:<input id="team" type="checkbox">
-                プラベ:<input id="hidden" type="checkbox">
-                <input type="submit" value="作成">
-		<select id="rules"></select>
+            <input id="name" value="room">
+            チーム戦:<input id="team" type="checkbox">
+            プラベ:<input id="hidden" type="checkbox">
+            <input type="submit" value="作成">
+		    <select id="kitsset"></select>
         </form>
         <p id="warning" style="color:red"></p>
         <a href="../../">ロビーに戻る</a>
@@ -28,10 +28,10 @@
             socket.on("roomExists",data=>{
                 document.getElementById("warning")="もう使われている部屋名です";
             });
-            socket.on("rules",data=>{
-                let select=document.getElementById("rules");
-                Object.keys(data).forEach(k=>{
-                    select.innerHTML+="<option name="+k+">"+data[k].name+"</option>";
+            socket.on("kitsset",data=>{
+                let select=document.getElementById("kitsset");
+                data.forEach(k=>{
+                    select.innerHTML+="<option value="+k+">"+k+"</option>";
 		        });
 	        });
             socket.on("goRoom",data=>{
@@ -40,12 +40,16 @@
             socket.on("goRobby", function(data){
                 location.href="./"
             });
-            socket.emit("getRules",{});
+            socket.emit("getKitsset",{});
             function makeRoom(){
                 socket.emit("makeRoom",{
                     name:document.getElementById("name").value,
-                    args:{teamMode:document.getElementById("team").checked,hidden:document.getElementById("hidden").checked}})
-                ;
+                    args:{
+                        teamMode:document.getElementById("team").checked,
+                        hidden:document.getElementById("hidden").checked,
+                        kitsname:document.getElementById("kitsset").value
+                    }
+                });
             }
             function randomID(keta){
                 return ("0".repeat(keta)+Math.floor(Math.random()*(10**keta))).slice(-keta);

@@ -69,8 +69,11 @@ io.on('connection',function(socket){
     });
     socket.on("getRoomData",data=>{
         if(rooms.hasOwnProperty(data.id)){
-            socket.emit(rooms[data.id].showData(socket));
+            rooms[data.id].showData(socket);
         }
+    });
+    socket.on("getKitsset",data=>{
+        socket.emit("kitsset",Object.keys(_game.kitsets));
     });
 });
 http.listen(process.env.PORT || 80);
@@ -142,7 +145,7 @@ class Room{
         this.args=args;
         this.taiman=this.args.taiman;
         this.parent=parent;
-        this.kits=[_game._KIT_NEW,_game._KIT_EXAT];
+        this.kits=_game.kitsets.hasOwnProperty(args.kitsname)?_game.kitsets[args.kitsname]:_game.kitsets["スタンダード"];
         this.hidden=args.hasOwnProperty("hidden")&&args.hidden;
 	    this.game=new _game.Game(this.kits,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this));
         this.teamMode=this.game.teamMode;
