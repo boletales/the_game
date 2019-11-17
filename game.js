@@ -426,6 +426,9 @@ exports._KIT_EXAT=_KIT_EXAT;
 
 exports._SKILLS_MOTO=_SKILLS_MOTO;
 exports._HP_DEFAULT=6;
+
+const OKAWARISEC=10;
+
 class Game{
     constructor(kits,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},needokawari=true){
         this.kits=kits;
@@ -667,8 +670,8 @@ class Game{
                 this.noticewinner(null);
             }
             if(this.needokawari){
-                this.log("5秒後に次の試合");
-                setTimeout(this.okawari,5000);
+                this.log(OKAWARISEC+"秒後に次の試合");
+                setTimeout(this.okawari,OKAWARISEC);
             }
             return false;
         }
