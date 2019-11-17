@@ -75,7 +75,7 @@ io.on('connection',function(socket){
         socket.emit("kitsset",Object.keys(_game.kitsets));
     });
 });
-if(process.env.HAS_HTTPS=="true"){
+if(process.env.HAS_HTTPS){
     http.createServer((express()).all("*", function (request, response) {
         response.redirect(`https://${request.hostname}${request.url}`);
     })).listen(process.env.PORT || 80);
