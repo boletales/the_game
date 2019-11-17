@@ -235,6 +235,95 @@ _SKILLS_MOD_EXAT={
     atk:{inherit:true,pow:5},
 };
 
+_SKILLS_ZERO={
+    non:{name:"スカ",args:[],
+        attackPhase :_ATTACK_DEFAULT,
+        middlePhase:_MIDDLE_DEFAULT,
+        defensePhase:_DEFENSE_DEFAULT,
+        getCost:(p)=>(0),
+        requirement:_REQUIREMENT_DEFAULT,
+    },
+
+
+    chr:{name:"溜め",args:[],
+            attackPhase:function(user,players,decisions,args){
+                user.charge+=1;
+                return players.map(p=>0);
+            },
+            getCost:(p)=>(0),
+            requirement:_REQUIREMENT_DEFAULT,
+            middlePhase:_MIDDLE_DEFAULT,
+            defensePhase:_DEFENSE_DEFAULT
+        },
+    def:{name:"防御",args:[], 
+            attackPhase:_ATTACK_DEFAULT,
+            middlePhase:_MIDDLE_DEFAULT,
+            defensePhase:function(user,players,decisions,attacksForMe,args){
+                return attacksForMe.map((d,i)=>(decisions[i].skill.beam ? d : 0));
+            },
+            getCost:(p)=>(0),
+            requirement:_REQUIREMENT_DEFAULT.bind(this),
+            def:true,
+        },
+    
+    mir:{name:"反射",args:[],
+            attackPhase:_ATTACK_DEFAULT,
+            middlePhase:function(user,players,decisions,attacksAll,args){
+                let myId=players.indexOf(user);
+                decisions.forEach((d,i)=>{
+                    if(d.skill.hasOwnProperty("beam")){
+                        attacksAll[i][myId]=attacksAll[myId][i];
+                        attacksAll[myId][i]=0;
+                    }
+                })
+            },
+            getCost:(p)=>(0),
+            requirement:(p)=>(true),
+            defensePhase:_DEFENSE_DEFAULT,
+            reflect:true,
+        },
+
+    atk:{name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
+            attackPhase:function(user,players,decisions,args){
+                let attacks=players.map(p=>0);
+                if(this.requirement(this,user)){
+                    user.charge-=this.getCost(user);
+                    let target=players.findIndex(p=>p.id==args[0]);
+                    attacks[target] = this.pow;
+                }
+                return attacks;
+            },
+            pow:1,
+            getCost:(p)=>(1),
+            requirement:_REQUIREMENT_DEFAULT,
+            weak:true,
+            middlePhase:_MIDDLE_DEFAULT,
+            defensePhase:function(user,players,decisions,attacksForMe,args){
+                return attacksForMe.map((d,i)=>(decisions[i].skill.beam?d:0));
+            },
+        },
+
+    wav:{name:"強攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
+        attackPhase:function(user,players,decisions,args){
+            let attacks=players.map(p=>0);
+            if(this.requirement(this,user)){
+                user.charge-=this.getCost(user);
+                let target=players.findIndex(p=>p.id==args[0]);
+                attacks[target] = this.pow;
+            }
+            return attacks;
+        },
+        beam:true,
+        pow:1,
+        middlePhase:_MIDDLE_DEFAULT,
+        defensePhase:function(user,players,decisions,attacksForMe,args){
+            return attacksForMe.map((d,i)=>0);
+        },
+        getCost:(p)=>(5),
+        requirement:_REQUIREMENT_DEFAULT,
+    },
+};
+
 const Buffs={
     str:function(user){
         this.tick=function(){};
@@ -305,12 +394,14 @@ function mergeSkills(_skills,arraySkills){
     return skills;
 }
 
-function Rule(skills,hp){
+function Kit(name,skills,hp){
     this.skills=skills;
     this.hp=hp;
+    this.name=name;
 }
-let _RULE_OLD=new Rule(_SKILLS_MOTO,6);
-let _RULE_NEW=new Rule(mergeSkills({},[   
+let _KIT_OLD=new Kit("初期版",_SKILLS_MOTO,6);
+let _KIT_ZERO=new Kit("原作",_SKILLS_ZERO,1);
+let _KIT_NEW=new Kit("スタンダード",mergeSkills({},[   
                             _SKILLS_MOTO,
                             _SKILLS_MOD_HEAL,
                             _SKILLS_MOD_ATPLUS,
@@ -318,32 +409,42 @@ let _RULE_NEW=new Rule(mergeSkills({},[
                             _SKILLS_MOD_EXPLODE,
                             _SKILLS_MOD_SALVO,
                         ]),7);
-let _RULE_EXAT=new Rule(mergeSkills(_RULE_NEW.skills,[   
+let _KIT_EXAT=new Kit("鬼畜攻撃力",mergeSkills(_KIT_NEW.skills,[   
                             _SKILLS_MOD_EXAT,
                         ]),7);
                         
-let rules={
-	standard:{name:"スタンダード",rule:_RULE_NEW},
-	extremeAT:{name:"鬼畜攻撃",rule:_RULE_EXAT},
+let kitsets={
+    "スタンダード":[_KIT_NEW],
+    "なんでもあり":[_KIT_NEW,_KIT_EXAT],
+    "原作":[_KIT_ZERO],
 };
-exports.rules=rules;
-exports._RULE_OLD=_RULE_OLD;
-exports._RULE_NEW=_RULE_NEW;
+
+exports.kitsets=kitsets;
+exports._KIT_OLD=_KIT_OLD;
+exports._KIT_NEW=_KIT_NEW;
+exports._KIT_EXAT=_KIT_EXAT;
 
 exports._SKILLS_MOTO=_SKILLS_MOTO;
 exports._HP_DEFAULT=6;
 class Game{
-    constructor(rule,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},needokawari=true){
+    constructor(kits,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},needokawari=true){
+        this.kits=kits;
         this.log=log;
         this.noticewinner= noticewinner;
         this.needokawari = needokawari;
-        this._HP         = rule.hp;
-        this._SKILLS     = rule.skills;
         this.teamMode    = args.hasOwnProperty("teamMode")   ?args.teamMode   :true;
         this.maxPlayers  = args.hasOwnProperty("maxPlayers") ?args.maxPlayers :Infinity;
         this.startnumber = args.hasOwnProperty("startnumber")?args.startnumber:2;
         this.maxTurns    = args.hasOwnProperty("maxTurns")   ?args.maxTurns   :Infinity;
-        Object.values(this._SKILLS).forEach((s,i)=>s.id=i);
+        kits.map(k=>Object.keys(k.skills)).flat()
+            .reduce((a,c)=>a.includes(c)?a:a.concat(c),[])
+            .forEach((n,i)=>kits.forEach(k=>{
+                if(k.hasOwnProperty(n)){
+                    let skcp=Object.assign({},k[n]);
+                    skcp.id=i;
+                    k[n]=skcp;
+                }
+            }));
         this.players=[];
         this.deadPlayers=[];
         this.waiting=[];
@@ -449,13 +550,13 @@ class Game{
                 //行動（使用可能なスキル,スキルの引数）
                 case "action":
                     ret.candidates=
-                        Object.keys(this._SKILLS).reduce(
+                        Object.keys(player._SKILLS).reduce(
                             function(acc,skillname){
-                                let available=this.checkRec(player,this._SKILLS[skillname]);
+                                let available=this.checkRec(player,player._SKILLS[skillname]);
                                 acc[skillname]={
-                                    "name":this._SKILLS[skillname].name,
-                                    "args":expansion(this._SKILLS[skillname].args.concat(args.slice(1))),
-                                    "cost":this._SKILLS[skillname].getCost(player),
+                                    "name":player._SKILLS[skillname].name,
+                                    "args":expansion(player._SKILLS[skillname].args.concat(args.slice(1))),
+                                    "cost":player._SKILLS[skillname].getCost(player),
                                     "available":available
                                 };
                                 return acc;
@@ -500,7 +601,7 @@ class Game{
         //条件処理
         for(let from=0;from<decisions.length;from++){
             if(!this.checkRec(players[from],decisions[from].skill)){
-                decisions[from].skill=this._SKILLS.non;
+                decisions[from].skill=players[from]._SKILLS.non;
             }
         }
 
@@ -579,10 +680,10 @@ class Game{
         this.players.filter(p=>p.id==id).forEach(player=>{
             player.hp=0;
             player.reqDecision=function(cb){
-                cb(new decision([this._SKILLS.non]));
+                cb(new decision([player._SKILLS.non]));
             }.bind(this);
             if(this.todo.length>1 && this.todo[1].hasOwnProperty("turn")){
-                this.newresult[player.id]=new decision([this._SKILLS.non]);
+                this.newresult[player.id]=new decision([player._SKILLS.non]);
                 if(Object.keys(this.newresult).length==Object.keys(this.todo[0]).length){
                     this.todo.shift();
                     this.result=Object.assign({},this.newresult);
@@ -619,13 +720,13 @@ class Game{
     countJoined(){
         return this.players.length+this.waiting.length;
     }
-    genDecision(args){
+    genDecision(args,player){
         if(args==undefined || args.length==0){
-            return {skill:this._SKILLS.non,args:[]};
+            return {skill:player._SKILLS.non,args:[]};
         }else if(args.length==1){
-            return {skill:this._SKILLS[args[0]],args:[]};
+            return {skill:player._SKILLS[args[0]],args:[]};
         }else{
-            return {skill:this._SKILLS[args[0]],args:args.slice(1)};
+            return {skill:player._SKILLS[args[0]],args:args.slice(1)};
         }
     }
 }
@@ -634,8 +735,10 @@ function decision(args){
     return {skill:args[0],args:args.slice(1)};
 }
 exports.decision=decision;
-function Player(id,nickname,team,game){
-    this.hp=game._HP;
+function Player(id,nickname,team,game,kit){
+    this._KIT=kit;
+    this._SKILLS=Object.assign({},this._KIT.skills);
+    this.hp=this._KIT.hp;
     this.team=team;
     this.id=id;
     this.nickname=nickname;
@@ -643,14 +746,14 @@ function Player(id,nickname,team,game){
     this.game=game;
     this.buffs=[];
     Object.keys(Buffs).forEach((key=>this.buffs[key]=new Buffs[key](this)).bind(this));
-    this.decision=function(player,supporter,opponents,candidates){return new _game.decision([game._SKILLS.non])}.bind(this);
+    this.decision=function(player,supporter,opponents,candidates){return new _game.decision([this._SKILLS.non])}.bind(this);
     this.reqDecision=function(callBack,candidates){
         if(this.buffs.stu.level>0){//麻痺
-        	callBack(new decision([this.game._SKILLS.non]));
+        	callBack(new decision([this._SKILLS.non]));
         }else{
             //遅刻入力対策
         	if(this.game.hasOwnProperty("timeout") && this.game.timeout!=-1){
-                setTimeout(callBack.bind(null,new decision([this.game._SKILLS.non])),this.game.timeout);
+                setTimeout(callBack.bind(null,new decision([this._SKILLS.non])),this.game.timeout);
             }
             let cbw=(function(turnstart,callBack,...args){
                 if(turnstart==this.acceptingTurn){
@@ -693,11 +796,11 @@ exports.Player=Player;
 
 //param: [action][data]
 function TaimanAi(id,game,param){
-    Player.call(this,id,id,id,game);
+    Player.call(this,id,id,id,game,_KIT_NEW);
     this.isAI=true;
-    this.skillsCount=Object.keys(this.game._SKILLS).length + 0;
+    this.skillsCount=Object.keys(this._SKILLS).length + 0;
     let nonSuka=this.skillsCount-1; 
-    if(param.length<this.skillsCount){
+    if(param.length<nonSuka){
         let paramSkills=param.length;
         let skillsDiff=nonSuka-paramSkills;
         this.param = param.map(v=>
@@ -728,7 +831,7 @@ function TaimanAi(id,game,param){
                         opponents[0].hp,
                         opponents[0].charge,
                         opponents[0].buffs.str.level,
-                    ].concat(this.decisionCounts[0]).concat(this.decisionCounts[1]).concat(this.decisionCounts[2])));
+                    ].concat(this.decisionCounts[0]).concat(this.decisionCounts[1]).concat(this.decisionCounts[2])),this);
     }.bind(this);
     this.ai=function(opponentid,data){
         let probs=MxV(this.param,data).map(v=>Math.max(v,0));
@@ -742,8 +845,8 @@ function TaimanAi(id,game,param){
                 rx-=probs[i];
                 if(rx>0)decid++;
             }
-            let decstr=Object.keys(this.game._SKILLS)[decid];
-            if(this.game._SKILLS[decstr].args.length>0){
+            let decstr=Object.keys(this._SKILLS)[decid];
+            if(this._SKILLS[decstr].args.length>0){
                 return [decstr,opponentid];
             }else{
                 return [decstr];

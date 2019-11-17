@@ -29,6 +29,9 @@ app.get('/make.html',function(req,res){
 app.get('/rooms/:roomid',function(req,res){
     res.sendFile(__dirname+'/docs/game.html');
 });
+app.get('/rooms/join/:roomid',function(req,res){
+    res.sendFile(__dirname+'/docs/join.html');
+});
 app.get('/rooms/spectate/:roomid',function(req,res){
     res.sendFile(__dirname+'/docs/spectate.html');
 });
@@ -45,7 +48,7 @@ io.on('connection',function(socket){
         makeRoomAndJoin(socket,data.name,data.args);
     });
     socket.on("joinRoom",data=>{
-        joinRoom(data.roomid,socket,data.nickname,data.team);
+        joinRoom(data.roomid,socket,data.nickname,data.team,data.kitid);
     });
     socket.on("spectate",data=>{
         socket.join(data.roomid);
@@ -66,11 +69,11 @@ io.on('connection',function(socket){
     });
     socket.on("getRoomData",data=>{
         if(rooms.hasOwnProperty(data.id)){
-            socket.emit(rooms[data.id].showData(socket));
+            rooms[data.id].showData(socket);
         }
     });
-    socket.on("getRules",data=>{
-	    socket.emit("rules",_game.rules);
+    socket.on("getKitsset",data=>{
+        socket.emit("kitsset",Object.keys(_game.kitsets));
     });
 });
 http.listen(process.env.PORT || 80);
@@ -93,10 +96,10 @@ function makeRoom(name,args){
 function makeRoomAndJoin(socket,name,args){
     socket.emit("goRoom",{id:makeRoom(name,args)});
 }
-function joinRoom(roomid,socket,nickname,team){
+function joinRoom(roomid,socket,nickname,team,kitid){
     if(rooms.hasOwnProperty(roomid)){
         socket.join(roomid);
-        if(rooms[roomid].join(socket,nickname,team)){
+        if(rooms[roomid].join(socket,nickname,team,kitid)){
             showRoomState();
         }else{
             socket.emit("goRobby",{});
@@ -142,9 +145,9 @@ class Room{
         this.args=args;
         this.taiman=this.args.taiman;
         this.parent=parent;
+        this.kits=_game.kitsets.hasOwnProperty(args.kitsname)?_game.kitsets[args.kitsname]:_game.kitsets["スタンダード"];
         this.hidden=args.hasOwnProperty("hidden")&&args.hidden;
-        this.rule=(_game.rules.hasOwnProperty(args.rule)?_game.rules[args.rule].rule:_game._RULE_NEW);
-	this.game=new _game.Game(_game._RULE_NEW,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this));
+	    this.game=new _game.Game(this.kits,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this));
         this.teamMode=this.game.teamMode;
     }
     getNumber(){
@@ -154,11 +157,12 @@ class Room{
         }
         return Object.keys(io.sockets.adapter.rooms[this.id].sockets).length;
     }
-    join(socket,nickname,team){
+    join(socket,nickname,team,kitid){
+        let kit=this.kits.hasOwnProperty(kitid)?this.kits[kitid]:this.kits[0];
         if(!this.args.hasOwnProperty("teamMode")||this.args.teamMode){
-            var newPlayer=(new Human(nickname,team,this.game,socket));
+            var newPlayer=(new Human(nickname,team,this.game,socket,kit));
         }else{
-            var newPlayer=(new Human(nickname,socket.id,this.game,socket));
+            var newPlayer=(new Human(nickname,socket.id,this.game,socket,kit));
         }
         if(this.game.joinPlayer(newPlayer)){
             socket.emit("joined",{"id":nickname,"team":team,"teamMode":this.teamMode});
@@ -184,7 +188,12 @@ class Room{
     showData(socket){
         this.sendRecentLog(socket);
         this.game.showPlayers();
-        socket.emit("roomData",{name:this.name,teamMode:this.game.teamMode,available:this.game.aki()});
+        socket.emit("roomData",{
+            name:this.name,
+            teamMode:this.game.teamMode,
+            available:this.game.aki(),
+            kits:Object.keys(this.kits).reduce((a,c)=>{a[c]=this.kits[c];return a;},{})
+        });
     }
 
     log(str){
@@ -293,14 +302,14 @@ class AimanRoom extends Room{
     game.setStartnumber(game.startnumber);
 }*/
 
-function Human(nickname,team,game,socket){
-    _game.Player.call(this,socket.id,nickname,team,game);
+function Human(nickname,team,game,socket,kit){
+    _game.Player.call(this,socket.id,nickname,team,game,kit);
     this.socket=socket;
     this.isHuman=true;
     this.reqDecisionWrapped=function(callBack,candidates){
         this.socket.emit('input_action',{"candidates":candidates});
         this.onAction=function(data){
-            callBack(this.game.genDecision(data.action));
+            callBack(this.game.genDecision(data.action,this));
         }.bind(this);
     }.bind(this);
     this.onAction=function(){};

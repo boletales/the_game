@@ -16,8 +16,8 @@
             _game=exports;
             let winner=null;
             
-            let actions=Object.keys(_game._RULE_NEW.skills).length-1;
-            let datas= 7+Object.keys(_game._RULE_NEW.skills).length*3;
+            let actions=Object.keys(_game._KIT_NEW.skills).length-1;
+            let datas= 7+Object.keys(_game._KIT_NEW.skills).length*3;
             function generation(parents,gen,genmax,num,time,next,mut){
                 let params=parents.concat();
                 let points=Array(num).fill(0);
@@ -67,15 +67,17 @@
                 setTimeout(genEnd,time);
             }
 
+            //選別試合
             function versus(p0,p1,callback){
-                game=new _game.Game(_game._RULE_NEW,{maxTurns:40},()=>{},()=>{},()=>{},()=>{},callback,false);
+                game=new _game.Game([_game._KIT_NEW],{maxTurns:40},()=>{},()=>{},()=>{},()=>{},callback,false);
                 players=[new TaimanAi(0,game,p0),new TaimanAi(1,game,p1)];
                 players.forEach(p=>game.joinPlayer(p,false));
                 game.init();
             }
             
+            //見せ試合
             function battle(p0,p1){
-                game=new _game.Game(_game._RULE_NEW,{maxTurns:40},()=>{},()=>{},console.log,()=>{},()=>{},false);
+                game=new _game.Game([_game._KIT_NEW],{maxTurns:40},()=>{},()=>{},console.log,()=>{},()=>{},false);
                 players=[new TaimanAi(0,game,p0),new TaimanAi(1,game,p1)];
                 players.forEach(p=>game.joinPlayer(p,false));
                 game.init();
@@ -85,7 +87,7 @@
             }
             function paramtotable(param){
                 return "<tr><th></th><th>定数</th><th>自命</th><th>自溜</th><th>自強</th><th>敵命</th><th>敵溜</th><th>敵強</th></tr>"+
-                    param.map((p,i)=>"<tr><td>"+Object.values(_game._RULE_NEW.skills)[i+1].name+"</td>"+p.map(v=>"<td>"+round(v,2)+"</td>").join("")+"</tr>").join("\n");
+                    param.map((p,i)=>"<tr><td>"+Object.values(_game._KIT_NEW.skills)[i+1].name+"</td>"+p.map(v=>"<td>"+round(v,2)+"</td>").join("")+"</tr>").join("\n");
             }
             function round(n,keta=0){
                 return Math.round(n*(10**keta))/(10**keta);
@@ -134,7 +136,7 @@
                 Array(actions).fill(null).map(v=>genRandomParamForAi()).concat(
                 Array(actions).fill(null).map((v,i)=>genNonRandomParamForAi(i)))
 
-            ,1,20,20,200,5,0.1);
+            ,1,30,20,200,5,0.1);
             //crossover(Array(5).fill(null).map(v=>genRandomParamForAi()))//from:https://qiita.com/simiraaaa/items/2e7478d72f365aa48356
             function execCopy(string){
 

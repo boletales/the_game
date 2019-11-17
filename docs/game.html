@@ -62,19 +62,10 @@
                 document.getElementById("kokoha").innerHTML="ここは ";
                 document.getElementById("roomname").innerHTML=roomname;
                 let urlVars=getUrlVars();
-                if(urlVars.nickname!=undefined){
-                    var nickname=urlVars.nickname;
-                }else{
-                    var nickname=prompt("名前を入力してください","名無し"+randomID(3));
+                if(urlVars.nickname==undefined || (data.teamMode && urlVars.team==undefined)){
+                    location.href="./join/"+encodeURIComponent(roomid);
                 }
-                if(!data.teamMode){
-                    var team=nickname;
-                }else if(!(urlVars.team==undefined)){
-                    var team=urlVars.team;
-                }else{
-                    var team=prompt("チームを入力してください","a");
-                }
-                socket.emit("joinRoom",{roomid:roomid,nickname:nickname,team:team});
+                socket.emit("joinRoom",{roomid:roomid,nickname:urlVars.nickname,team:urlVars.team,kitid:parseInt(urlVars.kit)});
                 
             });
             socket.on("input_action", function(data){
