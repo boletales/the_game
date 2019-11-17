@@ -75,7 +75,13 @@ io.on('connection',function(socket){
         socket.emit("kitsset",Object.keys(_game.kitsets));
     });
 });
-http.listen(process.env.PORT || 80);
+if(process.env.HAS_HTTPS=="true"){
+    http.createServer((express()).all("*", function (request, response) {
+        response.redirect(`https://${request.hostname}${request.url}`);
+    })).listen(process.env.PORT || 80);
+}else{
+    http.listen(process.env.PORT || 80);
+}
 console.log('It works!!');
 
 function sendGlobalRecentLog(socket){
