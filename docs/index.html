@@ -33,6 +33,8 @@
             }
         </script>
         <script>
+            document.getElementById("gname").value=getName();
+
             let socket = io.connect();
             socket.emit("getGlobalLog",{});
             socket.on("roomStates",data=>{
@@ -47,7 +49,6 @@
                     document.getElementById("taiman").innerHTML="1vs1(0人待ち)";
                 }
             });
-            document.getElementById("gname").value="名無し"+randomID(3);
             function randomID(keta){
                 return ("0".repeat(keta)+Math.floor(Math.random()*Math.pow(10,keta))).slice(-keta);
             }
@@ -77,8 +78,19 @@
                 socket.emit("globalChat", {name : document.getElementById("gname").value+"@ロビー",message : document.getElementById("gmsg").value});
                 document.getElementById("gmsg").value="";
                 e.preventDefault();
+                setNameCookie(document.getElementById("gname").value);
                 return false;
             };
+            function setNameCookie(name){
+                document.cookie="playername="+encodeURIComponent(name)+";expires=1-Jan-2030 00:00:00 GMT;path=/";
+            }
+            function getName(){
+                if(document.cookie.split(";").find(e=>e.includes("playername="))!=undefined){
+                    return decodeURIComponent(document.cookie.split(";").find(e=>e.includes("playername=")).split("=")[1]);
+                }else{
+                    return "名無し"+randomID(3);
+                }
+            }
         </script>
     </body>
 </html>
