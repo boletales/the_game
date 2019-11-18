@@ -13,6 +13,19 @@ rooms={};
 let globalRecentLog=[];
 let globalRecentLogMax=20;
 
+function forceHttps(req, res, next){
+    if (!process.env.HAS_HTTPS) {
+        return next();
+    };
+
+    if (req.headers['x-forwarded-proto'] && req.headers['x-forwarded-proto'] === "http") {
+        res.redirect('https://' + req.headers.host + req.url);
+    }else {
+        return next();
+    }
+};
+app.all('*', forceHttps);
+
 app.get('/',function(req,res){
     res.sendFile(__dirname+'/docs/index.html');
 });
