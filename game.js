@@ -8,6 +8,96 @@ _DEFENSE_DEFAULT=(user,players,decisions,attacksForMe,args)=>attacksForMe;
 _REQUIREMENT_DEFAULT=(skill,p)=>(p.charge>=skill.getCost(p));
 exports._ATTACK_DEFAULT=_ATTACK_DEFAULT;
 exports._DEFENSE_DEFAULT=_DEFENSE_DEFAULT;
+
+_SKILLS_ZERO={
+    non:{name:"スカ",args:[],
+        attackPhase :_ATTACK_DEFAULT,
+        middlePhase:_MIDDLE_DEFAULT,
+        defensePhase:_DEFENSE_DEFAULT,
+        getCost:(p)=>(0),
+        requirement:_REQUIREMENT_DEFAULT,
+    },
+
+
+    chr:{name:"溜め",args:[],
+            attackPhase:function(user,players,decisions,args){
+                user.charge+=1;
+                return players.map(p=>0);
+            },
+            getCost:(p)=>(0),
+            requirement:_REQUIREMENT_DEFAULT,
+            middlePhase:_MIDDLE_DEFAULT,
+            defensePhase:_DEFENSE_DEFAULT
+        },
+    def:{name:"防御",args:[], 
+            attackPhase:_ATTACK_DEFAULT,
+            middlePhase:_MIDDLE_DEFAULT,
+            defensePhase:function(user,players,decisions,attacksForMe,args){
+                return attacksForMe.map((d,i)=>(decisions[i].skill.beam ? d : 0));
+            },
+            getCost:(p)=>(0),
+            requirement:_REQUIREMENT_DEFAULT.bind(this),
+            def:true,
+        },
+    
+    mir:{name:"反射",args:[],
+            attackPhase:_ATTACK_DEFAULT,
+            middlePhase:function(user,players,decisions,attacksAll,args){
+                let myId=players.indexOf(user);
+                decisions.forEach((d,i)=>{
+                    if(d.skill.hasOwnProperty("beam")){
+                        attacksAll[i][myId]=attacksAll[myId][i];
+                        attacksAll[myId][i]=0;
+                    }
+                })
+            },
+            getCost:(p)=>(0),
+            requirement:(p)=>(true),
+            defensePhase:_DEFENSE_DEFAULT,
+            reflect:true,
+        },
+
+    atk:{name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
+            attackPhase:function(user,players,decisions,args){
+                let attacks=players.map(p=>0);
+                if(this.requirement(this,user)){
+                    user.charge-=this.getCost(user);
+                    let target=players.findIndex(p=>p.id==args[0]);
+                    attacks[target] = this.pow;
+                }
+                return attacks;
+            },
+            pow:1,
+            getCost:(p)=>(1),
+            requirement:_REQUIREMENT_DEFAULT,
+            weak:true,
+            middlePhase:_MIDDLE_DEFAULT,
+            defensePhase:function(user,players,decisions,attacksForMe,args){
+                return attacksForMe.map((d,i)=>(decisions[i].skill.beam?d:0));
+            },
+        },
+
+    wav:{name:"強攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
+        attackPhase:function(user,players,decisions,args){
+            let attacks=players.map(p=>0);
+            if(this.requirement(this,user)){
+                user.charge-=this.getCost(user);
+                let target=players.findIndex(p=>p.id==args[0]);
+                attacks[target] = this.pow;
+            }
+            return attacks;
+        },
+        beam:true,
+        pow:1,
+        middlePhase:_MIDDLE_DEFAULT,
+        defensePhase:function(user,players,decisions,attacksForMe,args){
+            return attacksForMe.map((d,i)=>0);
+        },
+        getCost:(p)=>(5),
+        requirement:_REQUIREMENT_DEFAULT,
+    },
+};
+
 _SKILLS_MOTO={
     //id:技id name:技名
     //atk:(技主,対象,対象の使用技)=>対象への攻撃力(防御前)
@@ -83,7 +173,9 @@ _SKILLS_MOTO={
             reflect:true,
         },
 
-    wav:{name:"光線",args:[{message:"対象入力",type:"opponent",name:"to"}],
+};
+_SKILLS_MOD_BEAM={
+    bea:{name:"光線",args:[{message:"対象入力",type:"opponent",name:"to"}],
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             if(this.requirement(this,user)){
@@ -267,94 +359,6 @@ _SKILLS_MOD_EXAT={
     atk:{inherit:true,pow:5},
 };
 
-_SKILLS_ZERO={
-    non:{name:"スカ",args:[],
-        attackPhase :_ATTACK_DEFAULT,
-        middlePhase:_MIDDLE_DEFAULT,
-        defensePhase:_DEFENSE_DEFAULT,
-        getCost:(p)=>(0),
-        requirement:_REQUIREMENT_DEFAULT,
-    },
-
-
-    chr:{name:"溜め",args:[],
-            attackPhase:function(user,players,decisions,args){
-                user.charge+=1;
-                return players.map(p=>0);
-            },
-            getCost:(p)=>(0),
-            requirement:_REQUIREMENT_DEFAULT,
-            middlePhase:_MIDDLE_DEFAULT,
-            defensePhase:_DEFENSE_DEFAULT
-        },
-    def:{name:"防御",args:[], 
-            attackPhase:_ATTACK_DEFAULT,
-            middlePhase:_MIDDLE_DEFAULT,
-            defensePhase:function(user,players,decisions,attacksForMe,args){
-                return attacksForMe.map((d,i)=>(decisions[i].skill.beam ? d : 0));
-            },
-            getCost:(p)=>(0),
-            requirement:_REQUIREMENT_DEFAULT.bind(this),
-            def:true,
-        },
-    
-    mir:{name:"反射",args:[],
-            attackPhase:_ATTACK_DEFAULT,
-            middlePhase:function(user,players,decisions,attacksAll,args){
-                let myId=players.indexOf(user);
-                decisions.forEach((d,i)=>{
-                    if(d.skill.hasOwnProperty("beam")){
-                        attacksAll[i][myId]=attacksAll[myId][i];
-                        attacksAll[myId][i]=0;
-                    }
-                })
-            },
-            getCost:(p)=>(0),
-            requirement:(p)=>(true),
-            defensePhase:_DEFENSE_DEFAULT,
-            reflect:true,
-        },
-
-    atk:{name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
-            attackPhase:function(user,players,decisions,args){
-                let attacks=players.map(p=>0);
-                if(this.requirement(this,user)){
-                    user.charge-=this.getCost(user);
-                    let target=players.findIndex(p=>p.id==args[0]);
-                    attacks[target] = this.pow;
-                }
-                return attacks;
-            },
-            pow:1,
-            getCost:(p)=>(1),
-            requirement:_REQUIREMENT_DEFAULT,
-            weak:true,
-            middlePhase:_MIDDLE_DEFAULT,
-            defensePhase:function(user,players,decisions,attacksForMe,args){
-                return attacksForMe.map((d,i)=>(decisions[i].skill.beam?d:0));
-            },
-        },
-
-    wav:{name:"強攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
-        attackPhase:function(user,players,decisions,args){
-            let attacks=players.map(p=>0);
-            if(this.requirement(this,user)){
-                user.charge-=this.getCost(user);
-                let target=players.findIndex(p=>p.id==args[0]);
-                attacks[target] = this.pow;
-            }
-            return attacks;
-        },
-        beam:true,
-        pow:1,
-        middlePhase:_MIDDLE_DEFAULT,
-        defensePhase:function(user,players,decisions,attacksForMe,args){
-            return attacksForMe.map((d,i)=>0);
-        },
-        getCost:(p)=>(5),
-        requirement:_REQUIREMENT_DEFAULT,
-    },
-};
 
 const Buffs={
     str:function(user){
@@ -426,28 +430,30 @@ function mergeSkills(_skills,arraySkills){
     return skills;
 }
 
-function Kit(name,skills,hp){
+function Kit(name,skills,hp,mark){
     this.skills=skills;
     this.hp=hp;
     this.name=name;
+    this.mark=mark;
 }
-let _KIT_OLD=new Kit("初期版",_SKILLS_MOTO,6);
-let _KIT_ZERO=new Kit("原作",_SKILLS_ZERO,1);
+let _KIT_OLD=new Kit("初期版",_SKILLS_MOTO,6,"");
+let _KIT_ZERO=new Kit("原作",_SKILLS_ZERO,1,"");
 let _KIT_NEW=new Kit("スタンダード",mergeSkills({},[   
                             _SKILLS_MOTO,
+                            _SKILLS_MOD_BEAM,
                             _SKILLS_MOD_HEAL,
                             _SKILLS_MOD_ATPLUS,
                             _SKILLS_MOD_SMASH,
                             _SKILLS_MOD_EXPLODE,
                             _SKILLS_MOD_SALVO,
-                        ]),7);
+                        ]),7,"(標)");
 let _KIT_EXAT=new Kit("鬼畜攻撃力",mergeSkills(_KIT_NEW.skills,[   
                             _SKILLS_MOD_EXAT,
-                        ]),7);
+                        ]),7,"(攻)");
 let _KIT_HEALER=new Kit("白魔導師",mergeSkills({},[   
                             _SKILLS_MOTO,
                             _SKILLS_MOD_HEALPLUS,
-                        ]),7);
+                        ]),7,"(白)");
 let kitsets={
     "スタンダード":[_KIT_NEW],
     "ジョブあり":[_KIT_NEW,_KIT_HEALER],
@@ -773,13 +779,13 @@ function decision(args){
     return {skill:args[0],args:args.slice(1)};
 }
 exports.decision=decision;
-function Player(id,nickname,team,game,kit){
+function Player(id,nickname,team,game,kit,showJobMark=false){
     this._KIT=kit;
     this._SKILLS=Object.assign({},this._KIT.skills);
     this.hp=this._KIT.hp;
     this.team=team;
     this.id=id;
-    this.nickname=nickname;
+    this.nickname=nickname+(showJobMark?" "+this._KIT.mark:"");
     this.charge=0;
     this.game=game;
     this.buffs=[];

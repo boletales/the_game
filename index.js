@@ -171,10 +171,11 @@ class Room{
     }
     join(socket,nickname,team,kitid){
         let kit=this.kits.hasOwnProperty(kitid)?this.kits[kitid]:this.kits[0];
-        if(!this.args.hasOwnProperty("teamMode")||this.args.teamMode){
-            var newPlayer=(new Human(nickname,team,this.game,socket,kit));
+        let showJobMark=(Object.keys(this.kits).length>1);
+	if(!this.args.hasOwnProperty("teamMode")||this.args.teamMode){
+            var newPlayer=(new Human(nickname,team,this.game,socket,kit,showJobMark));
         }else{
-            var newPlayer=(new Human(nickname,socket.id,this.game,socket,kit));
+            var newPlayer=(new Human(nickname,socket.id,this.game,socket,kit,showJobMark));
         }
         if(this.game.joinPlayer(newPlayer)){
             socket.emit("joined",{"id":nickname,"team":team,"teamMode":this.teamMode});
@@ -314,8 +315,8 @@ class AimanRoom extends Room{
     game.setStartnumber(game.startnumber);
 }*/
 
-function Human(nickname,team,game,socket,kit){
-    _game.Player.call(this,socket.id,nickname,team,game,kit);
+function Human(nickname,team,game,socket,kit,showJobMark){
+    _game.Player.call(this,socket.id,nickname,team,game,kit,showJobMark);
     this.socket=socket;
     this.isHuman=true;
     this.reqDecisionWrapped=function(callBack,candidates){
