@@ -206,8 +206,24 @@ _SKILLS_MOD_BEAM={
         requirement:_REQUIREMENT_DEFAULT,
     },
 };
+_SKILLS_MOD_COVER={
+    cov:{name:"硬化",args:[{message:"対象入力",type:"supporter",name:"to"}], 
+            attackPhase:function(user,players,decisions,args){
+                let attacks=players.map(p=>0);
+                if(this.requirement(this,user)){
+                    user.charge-=this.getCost(user);
+                    players.find(p=>p.id==args[0]).buffs.phd.levelUp(1);
+                }
+                return attacks;
+            },
+            getCost:(p)=>(2),
+            requirement:_REQUIREMENT_DEFAULT,
+            middlePhase:_MIDDLE_DEFAULT,
+            defensePhase:_DEFENSE_DEFAULT,
+        },
+};
 _SKILLS_MOD_HEAL={
-    hea:{name:"回復",args:[{message:"対象入力",type:"supporter",name:"to"}], 
+    hea:{name:"回復",args:[{message:"対象入力",type:"team",name:"to"}], 
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
                 if(this.requirement(this,user)){
@@ -237,7 +253,7 @@ _SKILLS_MOD_HEALPLUS={
             middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT,
         },
-    mhe:{name:"強回復",args:[{message:"対象入力",type:"supporter",name:"to"}], 
+    mhe:{name:"強回復",args:[{message:"対象入力",type:"team",name:"to"}], 
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
                 if(this.requirement(this,user)){
@@ -474,6 +490,7 @@ let _KIT_NEW=new Kit("スタンダード",mergeSkills({},[
                             _SKILLS_MOD_SMASH,
                             _SKILLS_MOD_EXPLODE,
                             _SKILLS_MOD_SALVO,
+                            _SKILLS_MOD_COVER,
                         ]),7,"(標)");
 let _KIT_EXAT=new Kit("鬼畜攻撃力",mergeSkills(_KIT_NEW.skills,[   
                             _SKILLS_MOD_EXAT,
@@ -646,10 +663,20 @@ class Game{
                             }.bind(this)
                         ,{});
                     break;
+                //対象（自分含む味方）
+                case "team":
+                    ret.candidates=
+                        this.players.filter(p=>p.team==player.team).map(p=>p.id).reduce(
+                            function(a,playerid){
+                                a[playerid]={"name":this.players.find(p=>p.id==playerid).getShowingName(),"args":expansion(args.slice(1)),"available":true};
+                                return a;
+                            }.bind(this)
+                        ,{});
+                    break;
                 //対象（味方）
                 case "supporter":
                     ret.candidates=
-                        this.players.filter(p=>p.team==player.team).map(p=>p.id).reduce(
+                        this.players.filter(p=>p.team==player.team).filter(p=>p.id!=player.id).map(p=>p.id).reduce(
                             function(a,playerid){
                                 a[playerid]={"name":this.players.find(p=>p.id==playerid).getShowingName(),"args":expansion(args.slice(1)),"available":true};
                                 return a;
