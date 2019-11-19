@@ -231,7 +231,10 @@ class Room{
         players.filter(p=>p.hasOwnProperty("socket")).map(player=>{
             player.socket.emit("showPlayers",
                 {
-                    others:players.filter(p=>p!==player).map(p=>({name:p.getShowingName(),state:p.state(),team:p.team}))
+                    others:players
+			.filter(p=>p.team==player.team).filter(p=>p!==player)
+			.concat(players.filter(p=>p.team!=player.team))
+			    .map(p=>({name:p.getShowingName(),state:p.state(),team:p.team}))
                     ,you:{name:player.getShowingName(),state:player.state(),team:player.team}
                 });
         });
