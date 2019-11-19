@@ -503,7 +503,7 @@ class Game{
                 this.log("★第"+this.turns+"ターン★");
                 this.waiting.filter(p=>!p.isHuman||p.socket.connected).forEach(p=>{
                     this.players.push(p);
-                    this.log("「"+p.nickname+"」参戦！！");
+                    this.log("「"+p.getShowingName()+"」参戦！！");
                 });
                 this.waiting=[];
                 this.todo[1]={};
@@ -513,7 +513,7 @@ class Game{
                             this.todo[1][p.id]=
                                 (cb=>{
                                     p.reqDecision(((input)=>{
-                                            log("行動決定:"+p.nickname+"("+(Object.keys(this.newresult).length+1)+"/"+Object.keys(this.todo[0]).length+")");
+                                            log("行動決定:"+p.getShowingName()+"("+(Object.keys(this.newresult).length+1)+"/"+Object.keys(this.todo[0]).length+")");
                                             cb(input);
                                         }).bind(this)
                                     ,this.genCommandcandidates(p));
@@ -522,7 +522,7 @@ class Game{
                             this.todo[1][p.id]=
                                 (cb=>{
                                     p.reqDecision(((input)=>{
-                                            log("行動決定:"+p.nickname+"("+(Object.keys(this.newresult).length+1)+"/"+Object.keys(this.todo[0]).length+")");
+                                            log("行動決定:"+p.getShowingName()+"("+(Object.keys(this.newresult).length+1)+"/"+Object.keys(this.todo[0]).length+")");
                                             cb(input);
                                         }).bind(this)
                                     );
@@ -613,7 +613,7 @@ class Game{
                     ret.candidates=
                         this.players.filter(p=>p.team!==player.team).map(p=>p.id).reduce(
                             function(a,playerid){
-                                a[playerid]={"name":this.players.find(p=>p.id==playerid).nickname,"args":expansion(args.slice(1)),"available":true};
+                                a[playerid]={"name":this.players.find(p=>p.id==playerid).getShowingName(),"args":expansion(args.slice(1)),"available":true};
                                 return a;
                             }.bind(this)
                         ,{});
@@ -623,7 +623,7 @@ class Game{
                     ret.candidates=
                         this.players.filter(p=>p.team==player.team).map(p=>p.id).reduce(
                             function(a,playerid){
-                                a[playerid]={"name":this.players.find(p=>p.id==playerid).nickname,"args":expansion(args.slice(1)),"available":true};
+                                a[playerid]={"name":this.players.find(p=>p.id==playerid).getShowingName(),"args":expansion(args.slice(1)),"available":true};
                                 return a;
                             }.bind(this)
                         ,{});
@@ -678,12 +678,12 @@ class Game{
         players.filter(v=>v.hp>0).forEach(p=>livingTeams.indexOf(p.team)==-1&&livingTeams.push(p.team));
 
         for(let i=0;i<decisions.length;i++){
-            let dstr=" "+damages[i].map((v,j)=>[v,"←「"+players[j].nickname+"」の≪"+decisions[j].skill.name+"≫("+v+"dmg.)"]).filter(d=>d[0]>0).map(d=>d[1]).join("  ");
+            let dstr=" "+damages[i].map((v,j)=>[v,"←「"+players[j].getShowingName()+"」の≪"+decisions[j].skill.name+"≫("+v+"dmg.)"]).filter(d=>d[0]>0).map(d=>d[1]).join("  ");
             let oppindex=decisions[i].skill.args.findIndex(a=>a.name=="to");
             if(oppindex!=-1){
-                this.log(players[i].nickname+":≪"+decisions[i].skill.name+"≫⇢「"+players.find(p=>p.id==decisions[i].args[oppindex]).nickname+"」");
+                this.log(players[i].getShowingName()+":≪"+decisions[i].skill.name+"≫⇢「"+players.find(p=>p.id==decisions[i].args[oppindex]).getShowingName()+"」");
             }else{
-                this.log(players[i].nickname+":≪"+decisions[i].skill.name+"≫");
+                this.log(players[i].getShowingName()+":≪"+decisions[i].skill.name+"≫");
             }
             if(players[i].hp<=0){
                 this.log("  死亡..."+dstr);
@@ -703,7 +703,7 @@ class Game{
                     this.log("勝者...🎉 チーム「"+livingTeams[0]+"」 🎉");
                     this.noticewinner(livingTeams[0]);
                 }else{
-                    this.log("勝者...🎉 "+players.filter(v=>v.hp>0)[0].nickname+" 🎉");
+                    this.log("勝者...🎉 "+players.filter(v=>v.hp>0)[0].getShowingName()+" 🎉");
                     this.noticewinner(players.filter(v=>v.hp>0)[0].id);
                 }
             }else{
@@ -785,7 +785,8 @@ function Player(id,nickname,team,game,kit,showJobMark=false){
     this.hp=this._KIT.hp;
     this.team=team;
     this.id=id;
-    this.nickname=nickname+(showJobMark?" "+this._KIT.mark:"");
+    this.nickname=nickname;
+    this.showingname=nickname+(showJobMark?" "+kit.mark:"");
     this.charge=0;
     this.game=game;
     this.buffs=[];
@@ -807,6 +808,7 @@ function Player(id,nickname,team,game,kit,showJobMark=false){
             this.reqDecisionWrapped(cbw,candidates);
         }
     }
+    this.getShowingName=(()=>(this.showingname));
     this.reqDecisionWrapped=function(callBack,candidates){
         callBack(
             this.decision(
