@@ -712,7 +712,7 @@ class Game{
             }
             if(this.needokawari){
                 this.log(OKAWARISEC+"秒後に次の試合");
-                setTimeout(this.okawari,OKAWARISEC);
+                setTimeout(this.okawari,OKAWARISEC*1000);
             }
             return false;
         }
