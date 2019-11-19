@@ -126,6 +126,38 @@ _SKILLS_MOD_HEAL={
             defensePhase:_DEFENSE_DEFAULT,
         },
 };
+_SKILLS_MOD_HEALPLUS={
+    the:{name:"全体回復",args:[], 
+            attackPhase:function(user,players,decisions,args){
+                let attacks=players.map(p=>0);
+                if(this.requirement(this,user)){
+                    user.charge-=this.getCost(user);
+                    players.find(p=>p.team==user.team).hp += 3;
+                }
+                return attacks;
+            },
+            beam:true,
+            getCost:(p)=>(6),
+            requirement:_REQUIREMENT_DEFAULT,
+            middlePhase:_MIDDLE_DEFAULT,
+            defensePhase:_DEFENSE_DEFAULT,
+        },
+    mhe:{name:"強回復",args:[{message:"対象入力",type:"supporter",name:"to"}], 
+            attackPhase:function(user,players,decisions,args){
+                let attacks=players.map(p=>0);
+                if(this.requirement(this,user)){
+                    user.charge-=this.getCost(user);
+                    players.find(p=>p.id==args[0]).hp += 6;
+                }
+                return attacks;
+            },
+            beam:true,
+            getCost:(p)=>(6),
+            requirement:_REQUIREMENT_DEFAULT,
+            middlePhase:_MIDDLE_DEFAULT,
+            defensePhase:_DEFENSE_DEFAULT,
+        },
+};
 _SKILLS_MOD_ATPLUS={
     str:{name:"強化",args:[],
             attackPhase:function(user,players,decisions,args){
@@ -412,10 +444,13 @@ let _KIT_NEW=new Kit("スタンダード",mergeSkills({},[
 let _KIT_EXAT=new Kit("鬼畜攻撃力",mergeSkills(_KIT_NEW.skills,[   
                             _SKILLS_MOD_EXAT,
                         ]),7);
-                        
+let _KIT_HEALER=new Kit("白魔導師",mergeSkills({},[   
+                            _SKILLS_MOTO,
+                            _SKILLS_MOD_HEALPLUS,
+                        ]),7);
 let kitsets={
     "スタンダード":[_KIT_NEW],
-    "なんでもあり":[_KIT_NEW,_KIT_EXAT],
+    "ジョブあり":[_KIT_NEW,_KIT_HEALER],
     "原作":[_KIT_ZERO],
 };
 
