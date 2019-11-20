@@ -7,8 +7,8 @@ _MIDDLE_DEFAULT=(user,players,decisions,attacksAll,args)=>{};
 _DEFENSE_DEFAULT=(user,players,decisions,attacksForMe,args)=>
     attacksForMe.map((a,i)=>(
         decisions[i].skill.physical?
-            Math.floor(a/(2**user.buffs.phd.level)):
-            a
+            Math.floor(a/(2**(user.buffs.pdp.level+user.buffs.pdt.level))):
+            Math.floor(a/(2**(user.buffs.mdp.level+user.buffs.mdt.level)))
         )
     );
 _REQUIREMENT_DEFAULT=(skill,p)=>(p.charge>=skill.getCost(p));
@@ -121,7 +121,7 @@ _SKILLS_MOTO={
 
     def:{name:"防御",args:[], 
             attackPhase:function(user,players,decisions,args){
-                user.buffs.phd.levelUp(1);
+                user.buffs.pdt.levelUp(1);
                 return players.map(p=>0);
             },
             middlePhase:_MIDDLE_DEFAULT,
@@ -212,7 +212,7 @@ _SKILLS_MOD_COVER={
                 let attacks=players.map(p=>0);
                 if(this.requirement(this,user)){
                     user.charge-=this.getCost(user);
-                    players.find(p=>p.id==args[0]).buffs.phd.levelUp(1);
+                    players.find(p=>p.id==args[0]).buffs.pdt.levelUp(1);
                 }
                 return attacks;
             },
@@ -439,8 +439,17 @@ const Buffs={
                 this.level+=level;
         }
     },
-    //↓物理防御
-    phd:function(user){
+    //↓物理防御(永続)
+    pdp:function(user){
+        this.tick=(()=>(undefined));
+        this.level=0;
+        this.user=user;
+        this.id="pdp";
+        this.state=(()=>"");
+        this.levelUp=(level=>(this.level+=level)).bind(this);
+    },
+    //↓物理防御(1ターン)
+    pdt:function(user){
         this.tick=function(){
         	if(this.level>0){
                 this.level=0;
@@ -448,13 +457,31 @@ const Buffs={
         }.bind(this);
         this.level=0;
         this.user=user;
-        this.id="phd";
-        this.state=function(){
-            return "";
+        this.id="pdt";
+        this.state=(()=>"");
+        this.levelUp=(level=>(this.level+=level)).bind(this);
+    },
+    //↓魔法防御(永続)
+    mdp:function(user){
+        this.tick=(()=>(undefined));
+        this.level=0;
+        this.user=user;
+        this.id="mdp";
+        this.state=(()=>"");
+        this.levelUp=(level=>(this.level+=level)).bind(this);
+    },
+    //↓魔法防御(1ターン)
+    mdt:function(user){
+        this.tick=function(){
+        	if(this.level>0){
+                this.level=0;
+            }
         }.bind(this);
-        this.levelUp=function(level){
-            this.level+=level;
-        }
+        this.level=0;
+        this.user=user;
+        this.id="mdt";
+        this.state=(()=>"");
+        this.levelUp=(level=>(this.level+=level)).bind(this);
     },
 }
 function mergeSkills(_skills,arraySkills){
