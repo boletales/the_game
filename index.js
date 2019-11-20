@@ -228,7 +228,7 @@ class Room{
     }
 
     showPlayers(players){
-        players.filter(p=>p.hasOwnProperty("socket")).map(player=>{
+        players.concat(this.game.deadPlayers).filter(p=>p.hasOwnProperty("socket")).map(player=>{
             player.socket.emit("showPlayers",
                 {
                     others:players
