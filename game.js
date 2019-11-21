@@ -499,7 +499,7 @@ function Kit(name,skills,hp,mark){
 }
 let _KIT_OLD=new Kit("初期版",_SKILLS_MOTO,6,"");
 let _KIT_ZERO=new Kit("原作",_SKILLS_ZERO,1,"");
-let _KIT_NEW=new Kit("スタンダード",mergeSkills({},[   
+let _KIT_STD=new Kit("スタンダード",mergeSkills({},[   
                             _SKILLS_MOTO,
                             _SKILLS_MOD_BEAM,
                             _SKILLS_MOD_HEAL,
@@ -507,8 +507,9 @@ let _KIT_NEW=new Kit("スタンダード",mergeSkills({},[
                             _SKILLS_MOD_SMASH,
                             _SKILLS_MOD_EXPLODE,
                             _SKILLS_MOD_SALVO,
+                        ]),7,"(標)");
+let _KIT_JSTD=new Kit("スタンダード",mergeSkills(_KIT_STD.skills,[   
                             _SKILLS_MOD_COVER,
-			    _SKILLS_MOD_COPY,
                         ]),7,"(標)");
 let _KIT_EXAT=new Kit("戦士",mergeSkills({},[   
                             _SKILLS_MOTO,
@@ -524,21 +525,20 @@ let _KIT_HEALER=new Kit("白魔導師",mergeSkills({},[
                             _SKILLS_MOD_HEALPLUS,
                             _SKILLS_MOD_ATPLUS,
                             _SKILLS_MOD_SMASH,
-			    _SKILLS_MOD_COPY,
                         ]),7,"(白)");
 let _KIT_TRICK=new Kit("トリック",mergeSkills({},[   
                             _SKILLS_MOTO,
 			    _SKILLS_MOD_COPY,
                         ]),7,"(奇)");
 let kitsets={
-    "スタンダード":[_KIT_NEW],
-    "ジョブあり":[_KIT_NEW,_KIT_HEALER,_KIT_EXAT,_KIT_TRICK],
+    "スタンダード":[_KIT_STD],
+    "ジョブあり":[_KIT_JSTD,_KIT_HEALER,_KIT_EXAT,],
     "原作":[_KIT_ZERO],
 };
 
 exports.kitsets=kitsets;
 exports._KIT_OLD=_KIT_OLD;
-exports._KIT_NEW=_KIT_NEW;
+exports._KIT_STD=_KIT_NEW;
 exports._KIT_EXAT=_KIT_EXAT;
 
 exports._SKILLS_MOTO=_SKILLS_MOTO;
@@ -945,7 +945,7 @@ exports.Player=Player;
 
 //param: [action][data]
 function TaimanAi(id,game,param){
-    Player.call(this,id,id,id,game,_KIT_NEW);
+    Player.call(this,id,id,id,game,_KIT_STD);
     this.isAI=true;
     this.skillsCount=Object.keys(this._SKILLS).length + 0;
     let nonSuka=this.skillsCount-1; 
