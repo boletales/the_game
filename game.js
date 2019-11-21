@@ -348,9 +348,9 @@ _SKILLS_MOD_COPY={
 		let targetSkill=decisions[targetIndex].skill;
 		let skillArgs=targetSkill.args.map(e=>{
 		    if(e.type=="opponent"){
-		        return targetIndex;
+		        return args[0];
 		    }else if(e.type=="team"||e.type=="supporter"){
-		        return myIndex;
+		        return user.id;
 		    }else{
 			return undefined;
 		    }
@@ -508,6 +508,7 @@ let _KIT_NEW=new Kit("スタンダード",mergeSkills({},[
                             _SKILLS_MOD_EXPLODE,
                             _SKILLS_MOD_SALVO,
                             _SKILLS_MOD_COVER,
+			    _SKILLS_MOD_COPY,
                         ]),7,"(標)");
 let _KIT_EXAT=new Kit("戦士",mergeSkills({},[   
                             _SKILLS_MOTO,
@@ -523,9 +524,11 @@ let _KIT_HEALER=new Kit("白魔導師",mergeSkills({},[
                             _SKILLS_MOD_HEALPLUS,
                             _SKILLS_MOD_ATPLUS,
                             _SKILLS_MOD_SMASH,
+			    _SKILLS_MOD_COPY,
                         ]),7,"(白)");
 let _KIT_TRICK=new Kit("トリック",mergeSkills({},[   
                             _SKILLS_MOTO,
+			    _SKILLS_MOD_COPY,
                         ]),7,"(奇)");
 let kitsets={
     "スタンダード":[_KIT_NEW],
@@ -729,7 +732,7 @@ class Game{
 	let applyAction=function(actname){
             for(let from=0;from<decisions.length;from++){
                 if(decisions[from].skill.hasOwnProperty(actname)){
-            	    decisions[from].skill[actname](players[from],players,decisions,attacks,decisions[from].args);
+            	    decisions[from].skill[actname](players[from],players,decisions,decisions[from].args);
                 }
             }
 	}
