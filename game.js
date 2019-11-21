@@ -18,7 +18,6 @@ exports._DEFENSE_DEFAULT=_DEFENSE_DEFAULT;
 _SKILLS_ZERO={
     non:{name:"スカ",args:[],
         attackPhase :_ATTACK_DEFAULT,
-        middlePhase:_MIDDLE_DEFAULT,
         defensePhase:_DEFENSE_DEFAULT,
         getCost:(p)=>(0),
         requirement:_REQUIREMENT_DEFAULT,
@@ -32,12 +31,10 @@ _SKILLS_ZERO={
             },
             getCost:(p)=>(0),
             requirement:_REQUIREMENT_DEFAULT,
-            middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT
         },
     def:{name:"防御",args:[], 
             attackPhase:_ATTACK_DEFAULT,
-            middlePhase:_MIDDLE_DEFAULT,
             defensePhase:function(user,players,decisions,attacksForMe,args){
                 return attacksForMe.map((d,i)=>(decisions[i].skill.beam ? d : 0));
             },
@@ -66,18 +63,15 @@ _SKILLS_ZERO={
     atk:{name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
-                if(this.requirement(this,user)){
-                    user.charge-=this.getCost(user);
-                    let target=players.findIndex(p=>p.id==args[0]);
-                    attacks[target] = this.pow;
-                }
+                user.charge-=this.getCost(user);
+                let target=players.findIndex(p=>p.id==args[0]);
+                attacks[target] = this.pow;
                 return attacks;
             },
             pow:1,
             getCost:(p)=>(1),
             requirement:_REQUIREMENT_DEFAULT,
             weak:true,
-            middlePhase:_MIDDLE_DEFAULT,
             defensePhase:function(user,players,decisions,attacksForMe,args){
                 return attacksForMe.map((d,i)=>(decisions[i].skill.beam?d:0));
             },
@@ -86,16 +80,13 @@ _SKILLS_ZERO={
     wav:{name:"強攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
-            if(this.requirement(this,user)){
-                user.charge-=this.getCost(user);
-                let target=players.findIndex(p=>p.id==args[0]);
-                attacks[target] = this.pow;
-            }
+            user.charge-=this.getCost(user);
+            let target=players.findIndex(p=>p.id==args[0]);
+            attacks[target] = this.pow;
             return attacks;
         },
         beam:true,
         pow:1,
-        middlePhase:_MIDDLE_DEFAULT,
         defensePhase:function(user,players,decisions,attacksForMe,args){
             return attacksForMe.map((d,i)=>0);
         },
@@ -113,7 +104,6 @@ _SKILLS_MOTO={
     //pow:威力(攻撃技専用)
     non:{name:"スカ",args:[],
         attackPhase :_ATTACK_DEFAULT,
-        middlePhase:_MIDDLE_DEFAULT,
         defensePhase:_DEFENSE_DEFAULT,
         getCost:(p)=>(0),
         requirement:_REQUIREMENT_DEFAULT,
@@ -124,7 +114,6 @@ _SKILLS_MOTO={
                 user.buffs.pdt.levelUp(1);
                 return players.map(p=>0);
             },
-            middlePhase:_MIDDLE_DEFAULT,
             defensePhase:function(user,players,decisions,attacksForMe,args){
                 attacksForMe.forEach(d=>user.charge+=Math.max(0,d));
                 return _DEFENSE_DEFAULT(user,players,decisions,attacksForMe,args);
@@ -144,7 +133,6 @@ _SKILLS_MOTO={
             requirement:_REQUIREMENT_DEFAULT,
             physical:true,
             weak:true,
-            middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT
         },
 
@@ -156,7 +144,6 @@ _SKILLS_MOTO={
             },
             getCost:(p)=>(0),
             requirement:_REQUIREMENT_DEFAULT,
-            middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT
         },
     
@@ -182,16 +169,13 @@ _SKILLS_MOD_BEAM={
     bea:{name:"光線",args:[{message:"対象入力",type:"opponent",name:"to"}],
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
-            if(this.requirement(this,user)){
-                user.charge-=this.getCost(user);
-                let target=players.findIndex(p=>p.id==args[0]);
-                attacks[target] = this.pow;
-            }
+            user.charge-=this.getCost(user);
+            let target=players.findIndex(p=>p.id==args[0]);
+            attacks[target] = this.pow;
             return attacks;
         },
         beam:true,
         pow:3,
-        middlePhase:_MIDDLE_DEFAULT,
         defensePhase:function(user,players,decisions,attacksForMe,args){
             return attacksForMe.map((d,i)=>{
                 if(decisions[i].skill.weak){
@@ -210,10 +194,8 @@ _SKILLS_MOD_COVER={
     cov:{name:"硬化",args:[{message:"対象入力",type:"supporter",name:"to"}], 
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
-                if(this.requirement(this,user)){
-                    user.charge-=this.getCost(user);
-                    players.find(p=>p.id==args[0]).buffs.pdt.levelUp(1);
-                }
+                user.charge-=this.getCost(user);
+                players.find(p=>p.id==args[0]).buffs.pdt.levelUp(1);
                 return attacks;
             },
             getCost:(p)=>(2),
@@ -226,15 +208,12 @@ _SKILLS_MOD_HEAL={
     hea:{name:"回復",args:[{message:"対象入力",type:"team",name:"to"}], 
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
-                if(this.requirement(this,user)){
-                    user.charge-=this.getCost(user);
-                    players.find(p=>p.id==args[0]).hp += 3;
-                }
+                user.charge-=this.getCost(user);
+                players.find(p=>p.id==args[0]).hp += 3;
                 return attacks;
             },
             getCost:(p)=>(6),
             requirement:_REQUIREMENT_DEFAULT,
-            middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT,
         },
 };
@@ -242,29 +221,23 @@ _SKILLS_MOD_HEALPLUS={
     the:{name:"全体回復",args:[], 
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
-                if(this.requirement(this,user)){
-                    user.charge-=this.getCost(user);
-                    players.find(p=>p.team==user.team).hp += 3;
-                }
+                user.charge-=this.getCost(user);
+                players.find(p=>p.team==user.team).hp += 3;
                 return attacks;
             },
             getCost:(p)=>(6),
             requirement:_REQUIREMENT_DEFAULT,
-            middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT,
         },
     mhe:{name:"強回復",args:[{message:"対象入力",type:"team",name:"to"}], 
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
-                if(this.requirement(this,user)){
-                    user.charge-=this.getCost(user);
-                    players.find(p=>p.id==args[0]).hp += 6;
-                }
+                user.charge-=this.getCost(user);
+                players.find(p=>p.id==args[0]).hp += 6;
                 return attacks;
             },
             getCost:(p)=>(6),
             requirement:_REQUIREMENT_DEFAULT,
-            middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT,
         },
 };
@@ -277,28 +250,24 @@ _SKILLS_MOD_ATPLUS={
             },
             getCost:(p)=>p.buffs.str.getCost(),
             requirement:_REQUIREMENT_DEFAULT,
-            middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT
         },
 };
 _SKILLS_MOD_STUN={
     stu:{name:"麻痺",args:[{message:"対象入力",type:"opponent",name:"to"}], 
             attackPhase:function(user,players,decisions,args){
-                if(this.requirement(this,user)){
-                	user.charge-=this.getCost();
-                    let target=players.findIndex(p=>p.id==args[0]);
-                    if(decisions[target].skill.reflect){
-                    	user.buffs.stu.level++;
-                    }else{
-                    	players[target].buffs.stu.level++;
-                    }
+               	user.charge-=this.getCost();
+                let target=players.findIndex(p=>p.id==args[0]);
+                if(decisions[target].skill.reflect){
+                	user.buffs.stu.level++;
+                }else{
+                	players[target].buffs.stu.level++;
                 }
                 let attacks=players.map(p=>0);
                 return attacks;
             },
             getCost:(p)=>(3),
             requirement:_REQUIREMENT_DEFAULT,
-            middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT
         },
 };
@@ -306,10 +275,8 @@ _SKILLS_MOD_SMASH={
     sma:{name:"強奪",args:[{message:"対象入力",type:"opponent",name:"to"}],
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
-                if(this.requirement(this,user)){
-                    let targetIndex=players.findIndex(p=>p.id==args[0]);
-                    attacks[targetIndex] = this.pow+user.buffs.str.getPower();
-                }
+                let targetIndex=players.findIndex(p=>p.id==args[0]);
+                attacks[targetIndex] = this.pow+user.buffs.str.getPower();
                 return attacks;
             },
             pow:1,
@@ -318,17 +285,15 @@ _SKILLS_MOD_SMASH={
             physical:true,
             weak:true,
             middlePhase:function(user,players,decisions,attacksAll,args){
-                if(this.requirement(this,user)){
-                    let targetIndex=players.findIndex(p=>p.id==args[0]);
-                    if(  !decisions[targetIndex].skill.def 
-                       &&!decisions[targetIndex].skill.beam){
-                        
-                        let target=players.find(p=>p.id==args[0]);
-                        target.buffs.chd.levelUp(2)
-                        user.charge+=Math.min(target.charge,2);
-                    }else{
-                        user.charge-=this.getCost(user);
-                    }
+                let targetIndex=players.findIndex(p=>p.id==args[0]);
+                if(  !decisions[targetIndex].skill.def 
+                   &&!decisions[targetIndex].skill.beam){
+                    
+                    let target=players.find(p=>p.id==args[0]);
+                    target.buffs.chd.levelUp(2)
+                    user.charge+=Math.min(target.charge,2);
+                }else{
+                    user.charge-=this.getCost(user);
                 }
                 let opp=players.find(p=>p.id==args[0]);
                 opp.buffs.chd.tick();
@@ -340,15 +305,13 @@ _SKILLS_MOD_EXPLODE={
     exp:{name:"爆発",args:[],
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
-                if(this.requirement(this,user)){
-                    user.charge-=this.getCost(user);
-                    let at=this.pow+user.buffs.str.getPower();
-                    user.game.players.forEach((p,i)=>{
-                        if(p.team!=user.team){
-                            attacks[i]=at;
-                        }
-                    });
-                }
+                user.charge-=this.getCost(user);
+                let at=this.pow+user.buffs.str.getPower();
+                user.game.players.forEach((p,i)=>{
+                    if(p.team!=user.team){
+                        attacks[i]=at;
+                    }
+                });
                 return attacks;
             },
             pow:1,
@@ -357,7 +320,6 @@ _SKILLS_MOD_EXPLODE={
             requirement:_REQUIREMENT_DEFAULT,
             physical:true,
             weak:true,
-            middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT
         },
 };
@@ -373,9 +335,37 @@ _SKILLS_MOD_SALVO={
             requirement:_REQUIREMENT_DEFAULT,
             physical:true,
             weak:true,
-            middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT,
             pow:1,
+        },
+};
+
+_SKILLS_MOD_COPY={
+    cop:{name:"模倣",args:[{message:"対象入力",type:"opponent",name:"to"}], 
+	    prePhaseCopyA:function(user,players,decisions,args){
+                let targetIndex=players.findIndex(p=>p.id==args[0]);
+                let myIndex=players.findIndex(p=>p.id==user.id);
+		let targetSkill=decisions[targetIndex].skill;
+		let skillArgs=targetSkill.args.map(e=>{
+		    if(e.type=="opponent"){
+		        return args[0];
+		    }else if(e.type=="team"||e.type=="supporter"){
+		        return user.id;
+		    }else{
+			return undefined;
+		    }
+		}).filter(e=>e!=undefined);
+		decisions[myIndex].args.push({skill:targetSkill,args:skillArgs}); 
+		    
+	    },
+	    prePhaseCopyB:function(user,players,decisions,args){
+		decisions[players.findIndex(p=>p.id==user.id)]=args[args.length-1];
+	    },
+            attackPhase:_ATTACK_DEFAULT,
+	    copy:true,
+            getCost:(p)=>(0),
+            requirement:_REQUIREMENT_DEFAULT,
+            defensePhase:_DEFENSE_DEFAULT
         },
 };
 
@@ -509,7 +499,7 @@ function Kit(name,skills,hp,mark){
 }
 let _KIT_OLD=new Kit("初期版",_SKILLS_MOTO,6,"");
 let _KIT_ZERO=new Kit("原作",_SKILLS_ZERO,1,"");
-let _KIT_NEW=new Kit("スタンダード",mergeSkills({},[   
+let _KIT_STD=new Kit("スタンダード",mergeSkills({},[   
                             _SKILLS_MOTO,
                             _SKILLS_MOD_BEAM,
                             _SKILLS_MOD_HEAL,
@@ -517,6 +507,8 @@ let _KIT_NEW=new Kit("スタンダード",mergeSkills({},[
                             _SKILLS_MOD_SMASH,
                             _SKILLS_MOD_EXPLODE,
                             _SKILLS_MOD_SALVO,
+                        ]),7,"(標)");
+let _KIT_JSTD=new Kit("スタンダード",mergeSkills(_KIT_STD.skills,[   
                             _SKILLS_MOD_COVER,
                         ]),7,"(標)");
 let _KIT_EXAT=new Kit("戦士",mergeSkills({},[   
@@ -536,16 +528,17 @@ let _KIT_HEALER=new Kit("白魔導師",mergeSkills({},[
                         ]),7,"(白)");
 let _KIT_TRICK=new Kit("トリック",mergeSkills({},[   
                             _SKILLS_MOTO,
+			    _SKILLS_MOD_COPY,
                         ]),7,"(奇)");
 let kitsets={
-    "スタンダード":[_KIT_NEW],
-    "ジョブあり":[_KIT_NEW,_KIT_HEALER,_KIT_EXAT,_KIT_TRICK],
+    "スタンダード":[_KIT_STD],
+    "ジョブあり":[_KIT_JSTD,_KIT_HEALER,_KIT_EXAT,],
     "原作":[_KIT_ZERO],
 };
 
 exports.kitsets=kitsets;
 exports._KIT_OLD=_KIT_OLD;
-exports._KIT_NEW=_KIT_NEW;
+exports._KIT_STD=_KIT_NEW;
 exports._KIT_EXAT=_KIT_EXAT;
 
 exports._SKILLS_MOTO=_SKILLS_MOTO;
@@ -735,6 +728,18 @@ class Game{
         players.forEach(p=>p.noticeDecisions(players.map((pl,i)=>{return {"id":pl.id,"decision":decisions[i].skill.id};})));
         players.forEach(p=>p.refreshBuffs());
         this.log("~~~~~");
+
+	let applyAction=function(actname){
+            for(let from=0;from<decisions.length;from++){
+                if(decisions[from].skill.hasOwnProperty(actname)){
+            	    decisions[from].skill[actname](players[from],players,decisions,decisions[from].args);
+                }
+            }
+	}
+        //初期処理
+	//模倣計算
+	applyAction("prePhaseCopyA");
+	
         //条件処理
         for(let from=0;from<decisions.length;from++){
             if(!this.checkRec(players[from],decisions[from].skill)){
@@ -742,8 +747,11 @@ class Game{
             }
         }
 
+        //模倣適用
+	applyAction("prePhaseCopyB");
+        
+	//攻撃処理
         let attacks=players.map(p=>[]);
-        //攻撃処理
         for(let from=0;from<decisions.length;from++){
             decisions[from].skill.attackPhase(players[from],players,decisions,decisions[from].args).forEach((damage,i) => {
                 attacks[i].push(damage);
@@ -752,7 +760,9 @@ class Game{
         
         //中間処理
         for(let from=0;from<decisions.length;from++){
-            decisions[from].skill.middlePhase(players[from],players,decisions,attacks,decisions[from].args);
+            if(decisions[from].skill.hasOwnProperty("middlePhase")){
+		decisions[from].skill.middlePhase(players[from],players,decisions,attacks,decisions[from].args);
+	    }
         }
 
         //防御処理
@@ -935,7 +945,7 @@ exports.Player=Player;
 
 //param: [action][data]
 function TaimanAi(id,game,param){
-    Player.call(this,id,id,id,game,_KIT_NEW);
+    Player.call(this,id,id,id,game,_KIT_STD);
     this.isAI=true;
     this.skillsCount=Object.keys(this._SKILLS).length + 0;
     let nonSuka=this.skillsCount-1; 
