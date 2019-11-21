@@ -217,7 +217,7 @@ _SKILLS_MOD_COVER={
                 return attacks;
             },
             getCost:(p)=>(2),
-            requirement:(skill,p)=>(p.charge>=skill.getCost(p) && players.filter(e=>e.team==p.team).length>1),
+            requirement:_REQUIREMENT_DEFAULT,
             middlePhase:_MIDDLE_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT,
         },
