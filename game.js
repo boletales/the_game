@@ -380,7 +380,7 @@ _SKILLS_MOD_SALVO={
 };
 
 _SKILLS_MOD_EXAT={
-    atk:{inherit:true,pow:5},
+    atk:{inherit:true,pow:2},
 };
 
 
@@ -519,18 +519,27 @@ let _KIT_NEW=new Kit("スタンダード",mergeSkills({},[
                             _SKILLS_MOD_SALVO,
                             _SKILLS_MOD_COVER,
                         ]),7,"(標)");
-let _KIT_EXAT=new Kit("鬼畜攻撃力",mergeSkills(_KIT_NEW.skills,[   
+let _KIT_EXAT=new Kit("戦士",mergeSkills({},[   
+                            _SKILLS_MOTO,
                             _SKILLS_MOD_EXAT,
-                        ]),7,"(攻)");
+                            _SKILLS_MOD_BEAM,
+                            _SKILLS_MOD_ATPLUS,
+                            _SKILLS_MOD_SMASH,
+                            _SKILLS_MOD_SALVO,
+                            _SKILLS_MOD_COVER,
+                        ]),7,"(戦)");
 let _KIT_HEALER=new Kit("白魔導師",mergeSkills({},[   
                             _SKILLS_MOTO,
                             _SKILLS_MOD_HEALPLUS,
                             _SKILLS_MOD_ATPLUS,
                             _SKILLS_MOD_SMASH,
                         ]),7,"(白)");
+let _KIT_TRICK=new Kit("トリック",mergeSkills({},[   
+                            _SKILLS_MOTO,
+                        ]),7,"(奇)");
 let kitsets={
     "スタンダード":[_KIT_NEW],
-    "ジョブあり":[_KIT_NEW,_KIT_HEALER],
+    "ジョブあり":[_KIT_NEW,_KIT_HEALER,_KIT_EXAT,_KIT_TRICK],
     "原作":[_KIT_ZERO],
 };
 
