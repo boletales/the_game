@@ -525,6 +525,8 @@ let _KIT_EXAT=new Kit("鬼畜攻撃力",mergeSkills(_KIT_NEW.skills,[
 let _KIT_HEALER=new Kit("白魔導師",mergeSkills({},[   
                             _SKILLS_MOTO,
                             _SKILLS_MOD_HEALPLUS,
+                            _SKILLS_MOD_ATPLUS,
+                            _SKILLS_MOD_SMASH,
                         ]),7,"(白)");
 let kitsets={
     "スタンダード":[_KIT_NEW],
