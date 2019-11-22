@@ -245,10 +245,14 @@ _SKILLS_MOD_ATPLUS={
     str:{name:"強化",args:[],
             attackPhase:function(user,players,decisions,args){
                 user.buffs.str.levelUp();
+                user.charge-=this.getCost(user);
                 let attacks=players.map(p=>0);
                 return attacks;
             },
-            getCost:(p)=>p.buffs.str.getCost(),
+            getCost:(p)=>{
+                let costs=[4,7,10];
+                return (p.buffs.str.level < costs.length) ? costs[p.buffs.str.level] : Infinity;
+            },
             requirement:_REQUIREMENT_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT
         },
@@ -385,19 +389,11 @@ const Buffs={
             return this.level;
         }.bind(this);
         this.levelUp=function(){
-            if(this.user.charge>=this.getCost(this.level)){
-                this.user.charge-=this.getCost(this.level);
-                this.level++;
-            }
+            this.level++;
         }.bind(this);
         this.state=function(){
             return "⚔".repeat(this.level);
         }.bind(this);
-        
-        this.getCost=(()=>{
-            let costs=[4,7,10];
-            return (this.user.buffs.str.level < costs.length) ? costs[this.user.buffs.str.level] : Infinity;
-        }).bind(this);
     },
     //↓麻痺
     stu:function(user){
