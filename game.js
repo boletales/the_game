@@ -538,7 +538,7 @@ let kitsets={
 
 exports.kitsets=kitsets;
 exports._KIT_OLD=_KIT_OLD;
-exports._KIT_STD=_KIT_NEW;
+exports._KIT_STD=_KIT_STD;
 exports._KIT_EXAT=_KIT_EXAT;
 
 exports._SKILLS_MOTO=_SKILLS_MOTO;
