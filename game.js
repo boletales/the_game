@@ -55,7 +55,7 @@ _SKILLS_ZERO={
                 })
             },
             getCost:(p)=>(0),
-            requirement:(p)=>(true),
+            requirement:_REQUIREMENT_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT,
             reflect:true,
         },
@@ -63,13 +63,13 @@ _SKILLS_ZERO={
     atk:{name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
-                user.charge-=this.getCost(user);
+                user.useChakra(this.getCost(user));
                 let target=players.findIndex(p=>p.id==args[0]);
                 attacks[target] = this.pow;
                 return attacks;
             },
             pow:1,
-            getCost:(p)=>(1),
+            getCost:(p)=>(0),
             requirement:_REQUIREMENT_DEFAULT,
             weak:true,
             defensePhase:function(user,players,decisions,attacksForMe,args){
@@ -80,7 +80,7 @@ _SKILLS_ZERO={
     wav:{name:"強攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
-            user.charge-=this.getCost(user);
+            user.useChakra(this.getCost(user));
             let target=players.findIndex(p=>p.id==args[0]);
             attacks[target] = this.pow;
             return attacks;
@@ -159,7 +159,7 @@ _SKILLS_MOTO={
                 })
             },
             getCost:(p)=>(0),
-            requirement:(p)=>(true),
+            requirement:_REQUIREMENT_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT,
             reflect:true,
         },
@@ -169,7 +169,7 @@ _SKILLS_MOD_BEAM={
     bea:{name:"光線",args:[{message:"対象入力",type:"opponent",name:"to"}],
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
-            user.charge-=this.getCost(user);
+            user.useChakra(this.getCost(user));
             let target=players.findIndex(p=>p.id==args[0]);
             attacks[target] = this.pow;
             return attacks;
@@ -194,7 +194,7 @@ _SKILLS_MOD_COVER={
     cov:{name:"硬化",args:[{message:"対象入力",type:"supporter",name:"to"}], 
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
-                user.charge-=this.getCost(user);
+                user.useChakra(this.getCost(user));
                 players.find(p=>p.id==args[0]).buffs.pdt.levelUp(1);
                 return attacks;
             },
@@ -208,7 +208,7 @@ _SKILLS_MOD_HEAL={
     hea:{name:"回復",args:[{message:"対象入力",type:"team",name:"to"}], 
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
-                user.charge-=this.getCost(user);
+                user.useChakra(this.getCost(user));
                 players.find(p=>p.id==args[0]).hp += 3;
                 return attacks;
             },
@@ -221,7 +221,7 @@ _SKILLS_MOD_HEALPLUS={
     the:{name:"全体回復",args:[], 
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
-                user.charge-=this.getCost(user);
+                user.useChakra(this.getCost(user));
                 players.find(p=>p.team==user.team).hp += 3;
                 return attacks;
             },
@@ -232,7 +232,7 @@ _SKILLS_MOD_HEALPLUS={
     mhe:{name:"強回復",args:[{message:"対象入力",type:"team",name:"to"}], 
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
-                user.charge-=this.getCost(user);
+                user.useChakra(this.getCost(user));
                 players.find(p=>p.id==args[0]).hp += 6;
                 return attacks;
             },
@@ -244,10 +244,9 @@ _SKILLS_MOD_HEALPLUS={
 _SKILLS_MOD_ATPLUS={
     str:{name:"強化",args:[],
             attackPhase:function(user,players,decisions,args){
+                user.useChakra(this.getCost(user));
                 user.buffs.str.levelUp();
-                user.charge-=this.getCost(user);
-                let attacks=players.map(p=>0);
-                return attacks;
+                return players.map(p=>0);
             },
             getCost:(p)=>{
                 let costs=[4,7,10];
@@ -260,7 +259,7 @@ _SKILLS_MOD_ATPLUS={
 _SKILLS_MOD_STUN={
     stu:{name:"麻痺",args:[{message:"対象入力",type:"opponent",name:"to"}], 
             attackPhase:function(user,players,decisions,args){
-               	user.charge-=this.getCost();
+                user.useChakra(this.getCost(user));
                 let target=players.findIndex(p=>p.id==args[0]);
                 if(decisions[target].skill.reflect){
                 	user.buffs.stu.level++;
@@ -297,7 +296,7 @@ _SKILLS_MOD_SMASH={
                     target.buffs.chd.levelUp(2)
                     user.charge+=Math.min(target.charge,2);
                 }else{
-                    user.charge-=this.getCost(user);
+                    user.useChakra(this.getCost(user));
                 }
                 let opp=players.find(p=>p.id==args[0]);
                 opp.buffs.chd.tick();
@@ -309,7 +308,7 @@ _SKILLS_MOD_EXPLODE={
     exp:{name:"爆発",args:[],
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
-                user.charge-=this.getCost(user);
+                user.useChakra(this.getCost(user));
                 let at=this.pow+user.buffs.str.getPower();
                 user.game.players.forEach((p,i)=>{
                     if(p.team!=user.team){
@@ -347,30 +346,29 @@ _SKILLS_MOD_SALVO={
 _SKILLS_MOD_COPY={
     cop:{name:"模倣",args:[{message:"対象入力",type:"opponent",name:"to"}], 
 	    prePhaseCopyA:function(user,players,decisions,args){
-                let targetIndex=players.findIndex(p=>p.id==args[0]);
-                let myIndex=players.findIndex(p=>p.id==user.id);
-		let targetSkill=decisions[targetIndex].skill;
-		let skillArgs=targetSkill.args.map(e=>{
-		    if(e.type=="opponent"){
-		        return args[0];
-		    }else if(e.type=="team"||e.type=="supporter"){
-		        return user.id;
-		    }else{
-			return undefined;
-		    }
-		}).filter(e=>e!=undefined);
-		decisions[myIndex].args.push({skill:targetSkill,args:skillArgs}); 
-		    
+            let targetIndex=players.findIndex(p=>p.id==args[0]);
+            let myIndex=players.findIndex(p=>p.id==user.id);
+            let targetSkill=decisions[targetIndex].skill;
+            let skillArgs=targetSkill.args.map(e=>{
+                if(e.type=="opponent"){
+                    return args[0];
+                }else if(e.type=="team"||e.type=="supporter"){
+                    return user.id;
+                }else{
+                return undefined;
+                }
+            }).filter(e=>e!=undefined);
+            decisions[myIndex].args.push({skill:targetSkill,args:skillArgs}); 
 	    },
 	    prePhaseCopyB:function(user,players,decisions,args){
-		decisions[players.findIndex(p=>p.id==user.id)]=args[args.length-1];
-	    },
-            attackPhase:_ATTACK_DEFAULT,
-	    copy:true,
-            getCost:(p)=>(0),
-            requirement:_REQUIREMENT_DEFAULT,
-            defensePhase:_DEFENSE_DEFAULT
+            decisions[players.findIndex(p=>p.id==user.id)]=args[args.length-1];
         },
+        attackPhase:_ATTACK_DEFAULT,
+        copy:true,
+        getCost:(p)=>(0),
+        requirement:_REQUIREMENT_DEFAULT,
+        defensePhase:_DEFENSE_DEFAULT
+    },
 };
 
 _SKILLS_MOD_EXAT={
@@ -907,6 +905,11 @@ function Player(id,nickname,team,game,kit,showJobMark=false){
             this.reqDecisionWrapped(cbw,candidates);
         }
     }
+
+    this.useChakra=(cost)=>{
+        this.charge=Math.max(0,this.charge-cost);
+    }
+
     this.getShowingName=(()=>(this.showingname));
     this.reqDecisionWrapped=function(callBack,candidates){
         callBack(
