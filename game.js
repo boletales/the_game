@@ -222,7 +222,7 @@ _SKILLS_MOD_HEALPLUS={
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
                 user.useChakra(this.getCost(user));
-                players.find(p=>p.team==user.team).hp += 3;
+                players.filter(p=>p.team==user.team).forEach(p=>p.hp += 3);
                 return attacks;
             },
             getCost:(p)=>(6),
