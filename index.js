@@ -7,10 +7,6 @@ const _aidata=require("./aidata.js");
 const crypto = require('crypto');
 const os = require('os');
 
-let serverColorMoto = crypto.createHash('sha256').update(os.hostname(), 'utf8').digest("hex");
-let serverColor=genServerColor(parseInt(serverColorMoto.slice(0,2),16));
-console.log("color:"+serverColor+"("+os.hostname()+")");
-
 var events = require('events');
 var eventEmitter = new events.EventEmitter();
 eventEmitter.setMaxListeners(40);
@@ -60,6 +56,10 @@ app.get('/clear',function(req,res){
     res.redirect('/');
 });
 app.get('/favicon.ico',function(req,res){
+    let serverColorMoto = crypto.createHash('sha256').update(req.headers.host, 'utf8').digest("hex");
+    let serverColor=genServerColor(parseInt(serverColorMoto.slice(0,2),16));
+    console.log("color:"+serverColor+"("+os.hostname()+")");
+
     let svg='<svg xmlns="http://www.w3.org/2000/svg" height="20" width="20"><text x="0" y="15" fill="'+serverColor+'" fontsize="30">☯</text></svg>';
     res.writeHead(200, {
         'Content-Type': 'image/svg+xml',
