@@ -8,7 +8,7 @@ const crypto = require('crypto');
 const os = require('os');
 
 let serverColorMoto = crypto.createHash('sha256').update(os.hostname(), 'utf8').digest("hex");
-let serverColor=hue256(parseInt(serverColorMoto.slice(0,2),16));
+let serverColor=genServerColor(parseInt(serverColorMoto.slice(0,2),16));
 console.log("color:"+serverColor+"("+os.hostname()+")");
 
 var events = require('events');
@@ -106,25 +106,26 @@ io.on('connection',function(socket){
 http.listen(process.env.PORT || 80);
 console.log('It works!!');
 
-function hue256(num){
+function genServerColor(num){
+    let BRIT=128;
     let hue=num*6;
-    let phue=(hue%256).toString(16);
-    let mhue=(256-(hue%256)).toString(16);
+    let phue=(     (hue%256) *(BRIT/256)).toString(16);
+    let mhue=((256-(hue%256))*(BRIT/256)).toString(16);
     switch (true) {
-        case hue<256*1:
-            return "#"+"ff"+phue+"00";
-        case hue<256*2:
-            return "#"+mhue+"ff"+"00";
-        case hue<256*3:
-            return "#"+"00"+"ff"+phue;
-        case hue<256*4:
-            return "#"+"00"+mhue+"ff";
-        case hue<256*5:
-            return "#"+phue+"00"+"ff";
-        case hue<256*6:
-            return "#"+"ff"+"00"+mhue;
+        case hue<128*1:
+            return "#"+BRIT+phue+"00";
+        case hue<128*2:
+            return "#"+mhue+BRIT+"00";
+        case hue<128*3:
+            return "#"+"00"+BRIT+phue;
+        case hue<128*4:
+            return "#"+"00"+mhue+BRIT;
+        case hue<128*5:
+            return "#"+phue+"00"+BRIT;
+        case hue<128*6:
+            return "#"+BRIT+"00"+mhue;
         default:
-            return "#"+"ff"+"00"+"00";
+            return "#"+BRIT+"00"+"00";
     }
 }
 
