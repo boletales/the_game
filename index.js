@@ -4,6 +4,12 @@ const http=require('http').createServer(app);
 const socketIO=require('socket.io');
 const io=socketIO.listen(http);
 const _aidata=require("./aidata.js");
+const crypto = require('crypto');
+const os = require('os');
+
+let serverColorMoto = crypto.createHash('sha256').update(os.hostname(), 'utf8').digest("hex");
+let serverColor=hue256(parseInt(serverColorMoto.slice(0,2),16));
+console.log("color:"+serverColor+"("+os.hostname()+")");
 
 var events = require('events');
 var eventEmitter = new events.EventEmitter();
@@ -53,6 +59,15 @@ app.get('/clear',function(req,res){
     io.emit("goRobby",{});
     res.redirect('/');
 });
+app.get('/favicon.ico',function(req,res){
+    let svg='<svg xmlns="http://www.w3.org/2000/svg" height="20" width="20"><text x="0" y="15" fill="'+serverColor+'" fontsize="30">☯</text></svg>';
+    res.writeHead(200, {
+        'Content-Type': 'image/svg+xml',
+        'Content-Length': strBytes(svg),
+        'Expires': new Date().toUTCString()
+    });
+    res.end(svg);
+})
 io.on('connection',function(socket){
     socket.join("robby");
     showRoomState();
@@ -90,6 +105,28 @@ io.on('connection',function(socket){
 });
 http.listen(process.env.PORT || 80);
 console.log('It works!!');
+
+function hue256(num){
+    let hue=num*6;
+    let phue=(hue%256).toString(16);
+    let mhue=(256-(hue%256)).toString(16);
+    switch (true) {
+        case hue<256*1:
+            return "#"+"ff"+phue+"00";
+        case hue<256*2:
+            return "#"+mhue+"ff"+"00";
+        case hue<256*3:
+            return "#"+"00"+"ff"+phue;
+        case hue<256*4:
+            return "#"+"00"+mhue+"ff";
+        case hue<256*5:
+            return "#"+phue+"00"+"ff";
+        case hue<256*6:
+            return "#"+"ff"+"00"+mhue;
+        default:
+            return "#"+"ff"+"00"+"00";
+    }
+}
 
 function sendGlobalRecentLog(socket){
     globalRecentLog.forEach(data=>
@@ -353,4 +390,8 @@ function generateUuid() {
         }
     }
     return chars.join("");
+}
+
+function strBytes(str) {
+    return(encodeURIComponent(str).replace(/%../g,"x").length);
 }

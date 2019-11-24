@@ -435,9 +435,7 @@ const Buffs={
     //↓物理防御(1ターン)
     pdt:function(user){
         this.tick=function(){
-        	if(this.level>0){
-                this.level=0;
-            }
+            this.level=0;
         }.bind(this);
         this.level=0;
         this.user=user;
@@ -457,9 +455,7 @@ const Buffs={
     //↓魔法防御(1ターン)
     mdt:function(user){
         this.tick=function(){
-        	if(this.level>0){
-                this.level=0;
-            }
+            this.level=0;
         }.bind(this);
         this.level=0;
         this.user=user;
@@ -723,17 +719,17 @@ class Game{
         players.forEach(p=>p.refreshBuffs());
         this.log("~~~~~");
 
-	let applyAction=function(actname){
-            for(let from=0;from<decisions.length;from++){
-                if(decisions[from].skill.hasOwnProperty(actname)){
-            	    decisions[from].skill[actname](players[from],players,decisions,decisions[from].args);
+        let applyAction=function(actname){
+                for(let from=0;from<decisions.length;from++){
+                    if(decisions[from].skill.hasOwnProperty(actname)){
+                        decisions[from].skill[actname](players[from],players,decisions,decisions[from].args);
+                    }
                 }
-            }
-	}
+        }
         //初期処理
-	//模倣計算
-	applyAction("prePhaseCopyA");
-	
+        //模倣計算
+        applyAction("prePhaseCopyA");
+        
         //条件処理
         for(let from=0;from<decisions.length;from++){
             if(!this.checkRec(players[from],decisions[from].skill)){
@@ -742,9 +738,9 @@ class Game{
         }
 
         //模倣適用
-	applyAction("prePhaseCopyB");
-        
-	//攻撃処理
+        applyAction("prePhaseCopyB");
+            
+        //攻撃処理
         let attacks=players.map(p=>[]);
         for(let from=0;from<decisions.length;from++){
             decisions[from].skill.attackPhase(players[from],players,decisions,decisions[from].args).forEach((damage,i) => {
