@@ -6,6 +6,7 @@ const io=socketIO.listen(http);
 const _aidata=require("./aidata.js");
 const crypto = require('crypto');
 const os = require('os');
+const svgToImg = require("svg-to-img");
 
 var events = require('events');
 var eventEmitter = new events.EventEmitter();
@@ -59,14 +60,16 @@ app.get('/favicon.ico',function(req,res){
     let serverColorMoto = crypto.createHash('sha256').update(req.headers.host, 'utf8').digest("hex");
     let serverColor=genServerColor(parseInt(serverColorMoto.slice(0,2),16));
     console.log("color:"+serverColor+"("+os.hostname()+")");
-
     let svg='<svg xmlns="http://www.w3.org/2000/svg" height="20" width="20"><text x="0" y="15" fill="'+serverColor+'" fontsize="30">☯</text></svg>';
-    res.writeHead(200, {
-        'Content-Type': 'image/svg+xml',
-        'Content-Length': strBytes(svg),
-        'Expires': new Date().toUTCString()
-    });
-    res.end(svg);
+    (async (res,svg) => {
+        const png = await svgToImg.from(svg).toPng({ encoding: "base64" });
+        res.writeHead(200, {
+            'Content-Type': 'image/svg+xml',
+            'Content-Length': strBytes(svg),
+            'Expires': new Date().toUTCString()
+        });
+        res.end("data:image/png;base64," + png);
+      })(res,svg);
 })
 io.on('connection',function(socket){
     socket.join("robby");
