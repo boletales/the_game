@@ -6,7 +6,7 @@ const io=socketIO.listen(http);
 const _aidata=require("./aidata.js");
 const crypto = require('crypto');
 const os = require('os');
-const svgToImg = require("svg-to-img");
+const svg2img = require("svg2img");
 
 var events = require('events');
 var eventEmitter = new events.EventEmitter();
@@ -69,16 +69,16 @@ function sendFavicon(req,res,size){
     let serverColorMoto = crypto.createHash('sha256').update(req.headers.host, 'utf8').digest("hex");
     let serverColor=genServerColor(parseInt(serverColorMoto.slice(0,2),16));
     console.log("color:"+serverColor+"("+os.hostname()+")");
-    let svg='<svg xmlns="http://www.w3.org/2000/svg" height="15" width="15"><text x="0" y="13" fill="'+serverColor+'">☯</text></svg>';
-    (async (res,svg,size) => {
-        const png = await svgToImg.from(svg).toPng({ encoding: "hex" ,width:size,height:size});
+    let svg='<svg xmlns="http://www.w3.org/2000/svg" height="9" width="9"><text x="0" y="8" fill="'+serverColor+'">☯</text></svg>';
+    
+    svg2img(svg,{width:size,height:size},function(error,buffer){
         res.writeHead(200, {
             'Content-Type': 'image/png',
-            'Content-Length': png.length/2,
+            'Content-Length': buffer.length,
             'Expires': new Date().toUTCString()
         });
-        res.end(Buffer.from(png,"hex"));
-      })(res,svg,size);
+        res.end(buffer);
+    });
 }
 io.on('connection',function(socket){
     socket.join("robby");
