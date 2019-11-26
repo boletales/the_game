@@ -1,14 +1,15 @@
 if(typeof process == 'undefined'){
     var exports={};
 }
+const _DEF_FACTOR=2;//ダメージ半減に必要な防御バフレベル
 
 _ATTACK_DEFAULT=(user,players,decisions,args)=>players.map(p=>0);
 _MIDDLE_DEFAULT=(user,players,decisions,attacksAll,args)=>{};
 _DEFENSE_DEFAULT=(user,players,decisions,attacksForMe,args)=>
     attacksForMe.map((a,i)=>(
         decisions[i].skill.physical?
-            Math.floor(a/(2**(user.buffs.pdp.level+user.buffs.pdt.level))):
-            Math.floor(a/(2**(user.buffs.mdp.level+user.buffs.mdt.level)))
+            Math.floor(a/(2**((user.buffs.pdp.level+user.buffs.pdt.level)/_DEF_FACTOR))):
+            Math.floor(a/(2**((user.buffs.mdp.level+user.buffs.mdt.level)/_DEF_FACTOR)))
         )
     );
 _REQUIREMENT_DEFAULT=(skill,p)=>(p.charge>=skill.getCost(p) && (!skill.hasOwnProperty("getCostEx") || p.chargeEx>=skill.getCostEx(p)));
@@ -111,7 +112,7 @@ _SKILLS_MOTO={
 
     def:{name:"防御",args:[], 
             attackPhase:function(user,players,decisions,args){
-                user.buffs.pdt.levelUp(1);
+                user.buffs.pdt.levelUp(_DEF_FACTOR);
                 return players.map(p=>0);
             },
             defensePhase:function(user,players,decisions,attacksForMe,args){
