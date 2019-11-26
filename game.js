@@ -213,7 +213,7 @@ _SKILLS_MOD_EX_LIGHTBLADE={
     },
 };
 _SKILLS_MOD_COVER={
-    cov:{name:"硬化",args:[{message:"対象入力",type:"supporter",name:"to"}], 
+    cov:{name:"護衛",args:[{message:"対象入力",type:"supporter",name:"to"}], 
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
                 user.useChakra(this.getCost(user));
