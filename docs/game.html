@@ -189,9 +189,9 @@
                             let hasCostEx=candidate.hasOwnProperty("costEx")&&candidate.costEx>0;
                             if(hasCostEx){
                                 if(hasCost){
-                                    coststr="("+candidate.cost+"+Ey"+candidate.costEx+")";
+                                    coststr="("+candidate.cost+"+Ex"+candidate.costEx+")";
                                 }else{
-                                    coststr="(Ez"+candidate.costEx+")";
+                                    coststr="(Ex"+candidate.costEx+")";
                                 }
                             }else if(hasCost){
                                 coststr="("+candidate.cost+")"

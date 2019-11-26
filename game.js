@@ -192,7 +192,7 @@ _SKILLS_MOD_BEAM={
 };
 
 _SKILLS_MOD_EX_LIGHTBLADE={
-    xlb:{name:"光刃(Ex)",args:[{message:"対象入力",type:"opponent",name:"to"}],
+    xlb:{name:"閃光剣舞",args:[{message:"対象入力",type:"opponent",name:"to"}],
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             user.useChakraEx(this.getCostEx(user));
@@ -208,7 +208,7 @@ _SKILLS_MOD_EX_LIGHTBLADE={
         pow:5,
         physical:false,
         getCost:(p)=>(0),
-        getCostEx:(p)=>(1),
+        getCostEx:(p)=>(2),
         requirement:_REQUIREMENT_DEFAULT,
     },
 };
@@ -547,11 +547,11 @@ let _KIT_STD=new Kit("スタンダード",mergeSkills({},[
                             _SKILLS_MOD_SMASH,
                             _SKILLS_MOD_EXPLODE,
                             _SKILLS_MOD_SALVO,
-                            _SKILLS_MOD_EX_LIGHTBLADE,
                         ]),7,"(標)",_TURNEND_NONTEAM_DEFAULT);
 
 let _KIT_JSTD=new Kit("スタンダード",mergeSkills(_KIT_STD.skills,[   
                             _SKILLS_MOD_COVER,
+                            _SKILLS_MOD_EX_LIGHTBLADE,
                         ]),7,"(標)",_TURNEND_TEAM_DEFAULT);
 
 let _KIT_EXAT=new Kit("戦士",mergeSkills({},[   
@@ -718,16 +718,17 @@ class Game{
                     ret.candidates=
                         Object.keys(player._SKILLS).reduce(
                             function(acc,skillname){
-                                let available=this.checkRec(player,player._SKILLS[skillname]);
+                                let skill=player._SKILLS[skillname];
+                                let available=this.checkRec(player,skill);
                                 acc[skillname]={
-                                    "name":player._SKILLS[skillname].name,
-                                    "args":expansion(player._SKILLS[skillname].args.concat(args.slice(1))),
-                                    "cost":player._SKILLS[skillname].getCost(player),
+                                    "name":skill.name,
+                                    "args":expansion(skill.args.concat(args.slice(1))),
+                                    "cost":skill.getCost(player),
                                     "available":available
                                 };
-                                if(player._SKILLS[skillname].ex){
+                                if(skill.hasOwnProperty("getCostEx") && skill.getCostEx(player)>0){
                                     acc[skillname].ex=true;
-                                    acc[skillname].costEx=player._SKILLS[skillname].getCostEx(player);
+                                    acc[skillname].costEx=skill.getCostEx(player);
                                     console.log(skillname+":Ex"+acc[skillname].costEx);
                                 }
                                 return acc;
