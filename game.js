@@ -429,7 +429,7 @@ const Buffs={
         this.level=0;
         this.user=user;
         this.id="pdp";
-        this.state=(()=>"");
+        this.state=(()=>"⛑".repeat(this.level)).bind(this);
         this.levelUp=(level=>(this.level+=level)).bind(this);
     },
     //↓物理防御(1ターン)
@@ -449,7 +449,7 @@ const Buffs={
         this.level=0;
         this.user=user;
         this.id="mdp";
-        this.state=(()=>"");
+        this.state=(()=>"☂".repeat(this.level)).bind(this);
         this.levelUp=(level=>(this.level+=level)).bind(this);
     },
     //↓魔法防御(1ターン)
