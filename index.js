@@ -221,8 +221,8 @@ class Room{
         return Object.keys(io.sockets.adapter.rooms[this.id].sockets).length;
     }
     join(socket,nickname,team,kitid){
-        let kit=this.kits.hasOwnProperty(kitid)?this.kits[kitid]:this.kits[0];
-        let showJobMark=(Object.keys(this.kits).length>1);
+        let kit=this.kits.set.hasOwnProperty(kitid)?this.kits.set[kitid]:this.kits.set[0];
+        let showJobMark=(Object.keys(this.kits.set).length>1);
 	if(!this.args.hasOwnProperty("teamMode")||this.args.teamMode){
             var newPlayer=(new Human(nickname,team,this.game,socket,kit,showJobMark));
         }else{
@@ -256,7 +256,7 @@ class Room{
             name:this.name,
             teamMode:this.game.teamMode,
             available:this.game.aki(),
-            kits:Object.keys(this.kits).reduce((a,c)=>{a[c]=this.kits[c];return a;},{})
+            kits:Object.keys(this.kits.set).reduce((a,c)=>{a[c]=this.kits.set[c];return a;},{})
         });
     }
 

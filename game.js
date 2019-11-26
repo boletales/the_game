@@ -481,14 +481,47 @@ function mergeSkills(_skills,arraySkills){
     return skills;
 }
 
-function Kit(name,skills,hp,mark){
+function Kit(name,skills,hp,mark,turnend){
     this.skills=skills;
     this.hp=hp;
     this.name=name;
     this.mark=mark;
+    this.turnend=turnend;
 }
-let _KIT_OLD=new Kit("初期版",_SKILLS_MOTO,6,"");
-let _KIT_ZERO=new Kit("原作",_SKILLS_ZERO,1,"");
+//逆境関数(副作用なし)
+function calcAdvIndex(me,players){
+    const _T=4;//teammate factor(人数差)
+    const _H=1/2;//heart factor(体力差)
+    const _C=1/6;//chakra factor(魔力差)
+    let teamCounts=players.reduce((a,c)=>{
+        if(a.hasOwnProperty(c.team)){
+            a[c.team]++;
+        }else{
+            a[c.team]=1;
+        }
+        return a;
+    },{});
+
+    let countdiff=Math.max(...(Object.keys(teamCounts).filter(t=>t!=me.team).map(t=>teamCounts[t])))-teamCounts[me.team];
+    let heartdiff=Math.max(...players.filter(p=>p.team!=me.team).map(p=>p.hp))-me.hp;
+    let chakradiff=Math.max(...players.filter(p=>p.team!=me.team).map(p=>p.charge))-me.charge;
+    console.log(teamCounts);
+    console.log(countdiff);
+    console.log(heartdiff);
+    console.log(chakradiff);
+
+    return 0.1*Math.max(0,Math.floor(countdiff*_T + heartdiff*_H + chakradiff*_C));
+}
+
+let _TURNEND_NONTEAM_DEFAULT=(function(me,players){return;});
+let _TURNEND_TEAM_DEFAULT   =(function(me,players){
+    me.chargeEx += calcAdvIndex(me,players);
+});
+
+let _KIT_OLD=new Kit("初期版",_SKILLS_MOTO,6,"",_TURNEND_NONTEAM_DEFAULT);
+
+let _KIT_ZERO=new Kit("原作",_SKILLS_ZERO,1,"",_TURNEND_NONTEAM_DEFAULT);
+
 let _KIT_STD=new Kit("スタンダード",mergeSkills({},[   
                             _SKILLS_MOTO,
                             _SKILLS_MOD_BEAM,
@@ -497,10 +530,12 @@ let _KIT_STD=new Kit("スタンダード",mergeSkills({},[
                             _SKILLS_MOD_SMASH,
                             _SKILLS_MOD_EXPLODE,
                             _SKILLS_MOD_SALVO,
-                        ]),7,"(標)");
+                        ]),7,"(標)",_TURNEND_NONTEAM_DEFAULT);
+
 let _KIT_JSTD=new Kit("スタンダード",mergeSkills(_KIT_STD.skills,[   
                             _SKILLS_MOD_COVER,
-                        ]),7,"(標)");
+                        ]),7,"(標)",_TURNEND_TEAM_DEFAULT);
+
 let _KIT_EXAT=new Kit("戦士",mergeSkills({},[   
                             _SKILLS_MOTO,
                             _SKILLS_MOD_EXAT,
@@ -509,21 +544,23 @@ let _KIT_EXAT=new Kit("戦士",mergeSkills({},[
                             _SKILLS_MOD_SMASH,
                             _SKILLS_MOD_SALVO,
                             _SKILLS_MOD_COVER,
-                        ]),7,"(戦)");
+                        ]),7,"(戦)",_TURNEND_TEAM_DEFAULT);
+
 let _KIT_HEALER=new Kit("白魔導師",mergeSkills({},[   
                             _SKILLS_MOTO,
                             _SKILLS_MOD_HEALPLUS,
                             _SKILLS_MOD_ATPLUS,
                             _SKILLS_MOD_SMASH,
-                        ]),7,"(白)");
+                        ]),7,"(白)",_TURNEND_TEAM_DEFAULT);
+
 let _KIT_TRICK=new Kit("トリック",mergeSkills({},[   
                             _SKILLS_MOTO,
 			    _SKILLS_MOD_COPY,
-                        ]),7,"(奇)");
+                        ]),7,"(奇)",_TURNEND_TEAM_DEFAULT);
 let kitsets={
-    "スタンダード":[_KIT_STD],
-    "ジョブあり":[_KIT_JSTD,_KIT_HEALER,_KIT_EXAT,],
-    "原作":[_KIT_ZERO],
+    "スタンダード":{set:[_KIT_STD],useEx:false},
+    "ジョブあり":{set:[_KIT_JSTD,_KIT_HEALER,_KIT_EXAT,],useEx:true},
+    "原作":{set:[_KIT_ZERO],useEx:false},
 };
 
 exports.kitsets=kitsets;
@@ -538,7 +575,8 @@ const OKAWARISEC=10;
 
 class Game{
     constructor(kits,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},needokawari=true){
-        this.kits=kits;
+        this.kits=kits.set;
+        this.useEx=kits.useEx;
         this.log=log;
         this.noticewinner= noticewinner;
         this.needokawari = needokawari;
@@ -546,9 +584,9 @@ class Game{
         this.maxPlayers  = args.hasOwnProperty("maxPlayers") ?args.maxPlayers :Infinity;
         this.startnumber = args.hasOwnProperty("startnumber")?args.startnumber:2;
         this.maxTurns    = args.hasOwnProperty("maxTurns")   ?args.maxTurns   :Infinity;
-        kits.map(k=>Object.keys(k.skills)).flat()
+        this.kits.map(k=>Object.keys(k.skills)).flat()
             .reduce((a,c)=>a.includes(c)?a:a.concat(c),[])
-            .forEach((n,i)=>kits.forEach(k=>{
+            .forEach((n,i)=>this.kits.forEach(k=>{
                 if(k.hasOwnProperty(n)){
                     let skcp=Object.assign({},k[n]);
                     skcp.id=i;
@@ -770,6 +808,10 @@ class Game{
         let livingTeams=[];
         players.filter(v=>v.hp>0).forEach(p=>livingTeams.indexOf(p.team)==-1&&livingTeams.push(p.team));
 
+        if(livingTeams.length>0){
+            players.forEach(p=>p.turnend(p,players));
+        }
+
         for(let i=0;i<decisions.length;i++){
             let dstr=" "+damages[i].map((v,j)=>[v,"←「"+players[j].getShowingName()+"」の≪"+decisions[j].skill.name+"≫("+v+"dmg.)"]).filter(d=>d[0]>0).map(d=>d[1]).join("  ");
             let oppindex=decisions[i].skill.args.findIndex(a=>a.name=="to");
@@ -875,6 +917,7 @@ exports.decision=decision;
 function Player(id,nickname,team,game,kit,showJobMark=false){
     this._KIT=kit;
     this._SKILLS=Object.assign({},this._KIT.skills);
+    this.turnend=kit.turnend;
     this.hp=this._KIT.hp;
     this.team=team;
     this.id=id;
@@ -922,7 +965,7 @@ function Player(id,nickname,team,game,kit,showJobMark=false){
     }.bind(this);
 
     this.state=function(){
-        return "♥".repeat(Math.max(this.hp,0))+"   "+"☯".repeat(Math.max(this.charge,0))+" "+"❂".repeat(Math.max(this.chargeEx,0))+"   "+Object.values(this.buffs).map(b=>b.state()).join(" ");
+        return "♥".repeat(Math.max(this.hp,0))+"   "+"☯".repeat(Math.max(this.charge,0))+(this.game.useEx?"   Ex:"+this.chargeEx.toFixed(1):"")+"   "+Object.values(this.buffs).map(b=>b.state()).join(" ");
     }
 
     this.refreshBuffs=function(){
