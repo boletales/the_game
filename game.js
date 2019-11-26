@@ -881,6 +881,7 @@ function Player(id,nickname,team,game,kit,showJobMark=false){
     this.nickname=nickname;
     this.showingname=nickname+(showJobMark?" "+kit.mark:"");
     this.charge=0;
+    this.chargeEx=0;
     this.game=game;
     this.buffs=[];
     Object.keys(Buffs).forEach((key=>this.buffs[key]=new Buffs[key](this)).bind(this));
@@ -905,6 +906,9 @@ function Player(id,nickname,team,game,kit,showJobMark=false){
     this.useChakra=(cost)=>{
         this.charge=Math.max(0,this.charge-cost);
     }
+    this.useChakraEx=(cost)=>{
+        this.chargeEx=Math.max(0,this.chargeEx-cost);
+    }
 
     this.getShowingName=(()=>(this.showingname));
     this.reqDecisionWrapped=function(callBack,candidates){
@@ -918,7 +922,7 @@ function Player(id,nickname,team,game,kit,showJobMark=false){
     }.bind(this);
 
     this.state=function(){
-        return "♥".repeat(Math.max(this.hp,0))+"   "+"☯".repeat(Math.max(this.charge,0))+"   "+Object.values(this.buffs).map(b=>b.state()).join(" ");
+        return "♥".repeat(Math.max(this.hp,0))+"   "+"☯".repeat(Math.max(this.charge,0))+" "+"❂".repeat(Math.max(this.chargeEx,0))+"   "+Object.values(this.buffs).map(b=>b.state()).join(" ");
     }
 
     this.refreshBuffs=function(){
