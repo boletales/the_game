@@ -11,7 +11,7 @@ _DEFENSE_DEFAULT=(user,players,decisions,attacksForMe,args)=>
             Math.floor(a/(2**(user.buffs.mdp.level+user.buffs.mdt.level)))
         )
     );
-_REQUIREMENT_DEFAULT=(skill,p)=>(p.charge>=skill.getCost(p));
+_REQUIREMENT_DEFAULT=(skill,p)=>(p.charge>=skill.getCost(p) && (!skill.hasOwnProperty("getCostEx") || p.chargeEx>=skill.getCostEx(p)));
 exports._ATTACK_DEFAULT=_ATTACK_DEFAULT;
 exports._DEFENSE_DEFAULT=_DEFENSE_DEFAULT;
 
@@ -187,6 +187,28 @@ _SKILLS_MOD_BEAM={
         },
         physical:false,
         getCost:(p)=>(3),
+        requirement:_REQUIREMENT_DEFAULT,
+    },
+};
+
+_SKILLS_MOD_EX_LIGHTBLADE={
+    xlb:{name:"光刃(Ex)",args:[{message:"対象入力",type:"opponent",name:"to"}],
+        attackPhase:function(user,players,decisions,args){
+            let attacks=players.map(p=>0);
+            user.useChakraEx(this.getCostEx(user));
+            let target=players.findIndex(p=>p.id==args[0]);
+            attacks[target] = this.pow;
+            return attacks;
+        },
+
+        defensePhase:function(user,players,decisions,attacksForMe,args){
+            return attacksForMe.map((d,i)=>0);
+        },
+        beam:true,
+        pow:5,
+        physical:false,
+        getCost:(p)=>(0),
+        getCostEx:(p)=>(1),
         requirement:_REQUIREMENT_DEFAULT,
     },
 };
@@ -505,11 +527,6 @@ function calcAdvIndex(me,players){
     let countdiff=Math.max(...(Object.keys(teamCounts).filter(t=>t!=me.team).map(t=>teamCounts[t])))-teamCounts[me.team];
     let heartdiff=Math.max(...players.filter(p=>p.team!=me.team).map(p=>p.hp))-me.hp;
     let chakradiff=Math.max(...players.filter(p=>p.team!=me.team).map(p=>p.charge))-me.charge;
-    console.log(teamCounts);
-    console.log(countdiff);
-    console.log(heartdiff);
-    console.log(chakradiff);
-
     return 0.1*Math.max(0,Math.floor(countdiff*_T + heartdiff*_H + chakradiff*_C));
 }
 
@@ -530,6 +547,7 @@ let _KIT_STD=new Kit("スタンダード",mergeSkills({},[
                             _SKILLS_MOD_SMASH,
                             _SKILLS_MOD_EXPLODE,
                             _SKILLS_MOD_SALVO,
+                            _SKILLS_MOD_EX_LIGHTBLADE,
                         ]),7,"(標)",_TURNEND_NONTEAM_DEFAULT);
 
 let _KIT_JSTD=new Kit("スタンダード",mergeSkills(_KIT_STD.skills,[   
@@ -558,8 +576,8 @@ let _KIT_TRICK=new Kit("トリック",mergeSkills({},[
 			    _SKILLS_MOD_COPY,
                         ]),7,"(奇)",_TURNEND_TEAM_DEFAULT);
 let kitsets={
-    "スタンダード":{set:[_KIT_STD],useEx:false},
     "ジョブあり":{set:[_KIT_JSTD,_KIT_HEALER,_KIT_EXAT,],useEx:true},
+    "スタンダード":{set:[_KIT_STD],useEx:false},
     "原作":{set:[_KIT_ZERO],useEx:false},
 };
 
@@ -707,6 +725,11 @@ class Game{
                                     "cost":player._SKILLS[skillname].getCost(player),
                                     "available":available
                                 };
+                                if(player._SKILLS[skillname].ex){
+                                    acc[skillname].ex=true;
+                                    acc[skillname].costEx=player._SKILLS[skillname].getCostEx(player);
+                                    console.log(skillname+":Ex"+acc[skillname].costEx);
+                                }
                                 return acc;
                             }.bind(this)
                         ,{});

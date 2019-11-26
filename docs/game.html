@@ -184,7 +184,19 @@
                     Object.keys(argsdata.candidates).forEach(cank=>{
                         let candidate=argsdata.candidates[cank];
                         let coststr="";
-                        if(candidate.hasOwnProperty("cost")&&candidate.cost>0)coststr="("+candidate.cost+")"
+                        if(argsdata.type=="action"){
+                            let hasCost=candidate.hasOwnProperty("cost")&&candidate.cost>0;
+                            let hasCostEx=candidate.hasOwnProperty("costEx")&&candidate.costEx>0;
+                            if(hasCostEx){
+                                if(hasCost){
+                                    coststr="("+candidate.cost+"+Ey"+candidate.costEx+")";
+                                }else{
+                                    coststr="(Ez"+candidate.costEx+")";
+                                }
+                            }else if(hasCost){
+                                coststr="("+candidate.cost+")"
+                            }
+                        }
                         if(candidate.available){
                             preCommand.innerHTML+="<span onclick=onCommand('"+cank+"') style='color:#008;border-bottom: dotted;'>"+candidate.name+coststr+"</span> ";
                         }else{
