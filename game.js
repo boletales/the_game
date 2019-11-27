@@ -570,6 +570,7 @@ let _KIT_HEALER=new Kit("白魔導師",mergeSkills({},[
                             _SKILLS_MOD_HEALPLUS,
                             _SKILLS_MOD_ATPLUS,
                             _SKILLS_MOD_SMASH,
+                            _SKILLS_MOD_EX_LIGHTBLADE,
                         ]),7,"(白)",_TURNEND_TEAM_DEFAULT);
 
 let _KIT_TRICK=new Kit("トリック",mergeSkills({},[   
