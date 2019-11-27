@@ -67,7 +67,7 @@ app.get('/android-touch-icon.png',function(req,res){
 });
 function sendFavicon(req,res,size){
     let serverColorMoto = crypto.createHash('sha256').update(req.headers.host, 'utf8').digest("hex");
-    let serverColor=genServerColor(parseInt(serverColorMoto.slice(0,2),16));
+    let serverColor=genServerColor(parseInt(serverColorMoto.slice(0,2),16),parseInt(serverColorMoto.slice(2,4),16));
     console.log("color:"+serverColor+"("+os.hostname()+")");
     let svg='<svg xmlns="http://www.w3.org/2000/svg" height="9" width="9"><text x="0" y="8" fill="'+serverColor+'">☯</text></svg>';
     
@@ -118,11 +118,11 @@ io.on('connection',function(socket){
 http.listen(process.env.PORT || 80);
 console.log('It works!!');
 
-function genServerColor(num){
-    let bri=128;
-    let hue=num*6;
-    let phue=(     (hue%256) *(bri/256)).toString(16);
-    let mhue=((256-(hue%256))*(bri/256)).toString(16);
+function genServerColor(num1,num2){
+    let bri=Math.floor(num2/2);
+    let hue=num1*6;
+    let phue=Math.floor(     (hue%256) *(bri/256)).toString(16);
+    let mhue=Math.floor((256-(hue%256))*(bri/256)).toString(16);
     let _BRI=bri.toString(16);
     switch (true) {
         case hue<256*1:
