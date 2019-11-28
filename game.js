@@ -584,7 +584,12 @@ let _KIT_EXAT=new Kit("戦士",mergeSkills({},[
                             _SKILLS_MOD_SMASH,
                             _SKILLS_MOD_SALVO,
                             _SKILLS_MOD_COVER,
-                        ]),7,"(戦)",_TURNEND_TEAM_DEFAULT);
+                            _SKILLS_MOD_EX_LIGHTBLADE,
+                            _SKILLS_MOD_EX_HARDEN,
+                        ]),7,"(戦)",(function(me,players){
+                            _TURNEND_TEAM_DEFAULT(me,players);
+                            me.buffs.str.level=Math.max(me.buffs.str.level,Math.floor(calcAdvIndex(me,players)*3));
+                        }));
 
 let _KIT_HEALER=new Kit("白魔導師",mergeSkills({},[   
                             _SKILLS_MOTO,
