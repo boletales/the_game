@@ -68,7 +68,7 @@ app.get('/android-touch-icon.png',function(req,res){
 function sendFavicon(req,res,size){
     let serverColorMoto = crypto.createHash('sha256').update(req.headers.host, 'utf8').digest("hex");
     let serverColor=genServerColor(parseInt(serverColorMoto.slice(0,2),16),parseInt(serverColorMoto.slice(2,4),16));
-    console.log("color:"+serverColor+"("+os.hostname()+")");
+    console.log("color:"+serverColor+"("+req.headers.host+")");
     let svg='<svg xmlns="http://www.w3.org/2000/svg" height="9" width="9"><text x="0" y="8" fill="'+serverColor+'">☯</text></svg>';
     
     svg2img(svg,{width:size,height:size},function(error,buffer){
@@ -79,6 +79,30 @@ function sendFavicon(req,res,size){
         });
         res.end(buffer);
     });
+}
+
+function genServerColor(num1,num2){
+    let bri=Math.floor(num2/2);
+    let hue=num1*6;
+    let phue=Math.floor(     (hue%256) *(bri/256)).toString(16);
+    let mhue=Math.floor((256-(hue%256))*(bri/256)).toString(16);
+    let _BRI=bri.toString(16);
+    switch (true) {
+        case hue<256*1:
+            return "#"+_BRI+phue+"00";
+        case hue<256*2:
+            return "#"+mhue+_BRI+"00";
+        case hue<256*3:
+            return "#"+"00"+_BRI+phue;
+        case hue<256*4:
+            return "#"+"00"+mhue+_BRI;
+        case hue<256*5:
+            return "#"+phue+"00"+_BRI;
+        case hue<256*6:
+            return "#"+_BRI+"00"+mhue;
+        default:
+            return "#"+_BRI+"00"+"00";
+    }
 }
 io.on('connection',function(socket){
     socket.join("robby");
@@ -117,30 +141,6 @@ io.on('connection',function(socket){
 });
 http.listen(process.env.PORT || 80);
 console.log('It works!!');
-
-function genServerColor(num1,num2){
-    let bri=Math.floor(num2/2);
-    let hue=num1*6;
-    let phue=Math.floor(     (hue%256) *(bri/256)).toString(16);
-    let mhue=Math.floor((256-(hue%256))*(bri/256)).toString(16);
-    let _BRI=bri.toString(16);
-    switch (true) {
-        case hue<256*1:
-            return "#"+_BRI+phue+"00";
-        case hue<256*2:
-            return "#"+mhue+_BRI+"00";
-        case hue<256*3:
-            return "#"+"00"+_BRI+phue;
-        case hue<256*4:
-            return "#"+"00"+mhue+_BRI;
-        case hue<256*5:
-            return "#"+phue+"00"+_BRI;
-        case hue<256*6:
-            return "#"+_BRI+"00"+mhue;
-        default:
-            return "#"+_BRI+"00"+"00";
-    }
-}
 
 function sendGlobalRecentLog(socket){
     globalRecentLog.forEach(data=>
