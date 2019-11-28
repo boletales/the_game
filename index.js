@@ -82,11 +82,12 @@ function sendFavicon(req,res,size){
 }
 
 function genServerColor(num1,num2){
-    let bri=Math.floor(num2/2);
+    let decToHex2=(dec=>("00"+Math.floor(dec).toString(16)).slice(-2));
+    let bri=Math.floor(num2/2)+64;
     let hue=num1*6;
-    let phue=Math.floor(     (hue%256) *(bri/256)).toString(16);
-    let mhue=Math.floor((256-(hue%256))*(bri/256)).toString(16);
-    let _BRI=bri.toString(16);
+    let phue=decToHex2(     (hue%256) *(bri/256));
+    let mhue=decToHex2((256-(hue%256))*(bri/256));
+    let _BRI=decToHex2(bri);
     switch (true) {
         case hue<256*1:
             return "#"+_BRI+phue+"00";
