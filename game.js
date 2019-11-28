@@ -213,6 +213,26 @@ _SKILLS_MOD_EX_LIGHTBLADE={
         requirement:_REQUIREMENT_DEFAULT,
     },
 };
+
+_SKILLS_MOD_EX_HARDEN={
+    xha:{name:"装甲強化",args:[{message:"対象入力",type:"team",name:"to"}],
+        attackPhase:function(user,players,decisions,args){
+            user.useChakraEx(this.getCost(user));
+            let target=players.find(p=>p.id==args[0]);
+            target.buffs.pdp.levelUp(1);
+            target.buffs.mdp.levelUp(1);
+            return players.map(p=>0);
+        },
+
+        defensePhase:function(user,players,decisions,attacksForMe,args){
+            return attacksForMe.map((d,i)=>0);
+        },
+        getCost:(p)=>(0),
+        getCostEx:(p)=>(2),
+        requirement:_REQUIREMENT_DEFAULT,
+    },
+};
+
 _SKILLS_MOD_COVER={
     cov:{name:"護衛",args:[{message:"対象入力",type:"supporter",name:"to"}], 
             attackPhase:function(user,players,decisions,args){
@@ -548,11 +568,12 @@ let _KIT_STD=new Kit("スタンダード",mergeSkills({},[
                             _SKILLS_MOD_SMASH,
                             _SKILLS_MOD_EXPLODE,
                             _SKILLS_MOD_SALVO,
-                        ]),7,"(標)",_TURNEND_NONTEAM_DEFAULT);
+                        ]),7,"",_TURNEND_NONTEAM_DEFAULT);
 
 let _KIT_JSTD=new Kit("スタンダード",mergeSkills(_KIT_STD.skills,[   
                             _SKILLS_MOD_COVER,
                             _SKILLS_MOD_EX_LIGHTBLADE,
+                            _SKILLS_MOD_EX_HARDEN,
                         ]),7,"(標)",_TURNEND_TEAM_DEFAULT);
 
 let _KIT_EXAT=new Kit("戦士",mergeSkills({},[   
@@ -571,6 +592,7 @@ let _KIT_HEALER=new Kit("白魔導師",mergeSkills({},[
                             _SKILLS_MOD_ATPLUS,
                             _SKILLS_MOD_SMASH,
                             _SKILLS_MOD_EX_LIGHTBLADE,
+                            _SKILLS_MOD_EX_HARDEN,
                         ]),7,"(白)",_TURNEND_TEAM_DEFAULT);
 
 let _KIT_TRICK=new Kit("トリック",mergeSkills({},[   
