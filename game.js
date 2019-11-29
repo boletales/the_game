@@ -533,9 +533,9 @@ function Kit(name,skills,hp,mark,turnend){
 }
 //逆境関数(副作用なし)
 function calcAdvIndex(me,players){
-    const _T=4;//teammate factor(人数差)
-    const _H=1/2;//heart factor(体力差)
-    const _C=1/6;//chakra factor(魔力差)
+    const _T=8;//teammate factor(人数差)
+    const _H=1;//heart factor(体力差)
+    const _C=1/3;//chakra factor(魔力差)
     let teamCounts=players.reduce((a,c)=>{
         if(a.hasOwnProperty(c.team)){
             a[c.team]++;
