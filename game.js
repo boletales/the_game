@@ -624,7 +624,7 @@ exports._KIT_FIGHTER=_KIT_FIGHTER;
 exports._SKILLS_MOTO=_SKILLS_MOTO;
 exports._HP_DEFAULT=6;
 
-const OKAWARISEC=10;
+const OKAWARISEC=5;
 
 class Game{
     constructor(kits,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},needokawari=true){
@@ -658,6 +658,11 @@ class Game{
             //cb:callback
             {start:function(cb){
                 this.log("★第"+this.turns+"ターン★");
+                if(this.turns==1){
+                    this.players.forEach(p=>{
+                        this.log("「"+p.getShowingName()+"」参戦！！");
+                    });
+                }
                 this.waiting.filter(p=>!p.isHuman||p.socket.connected).forEach(p=>{
                     this.players.push(p);
                     this.log("「"+p.getShowingName()+"」参戦！！");

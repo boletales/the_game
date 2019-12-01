@@ -203,7 +203,7 @@ function showRoomState(){
 class Room{
     constructor(name,parent,args={}){
         this.recentLog=[];
-        this.recentLogMax=20;
+        this.recentLogMax=1000;
         this.name=name;
         this.id=generateUuid();
         this.args=args;
@@ -303,6 +303,7 @@ class Room{
 
     okawari(){
         let roomid=makeRoom(this.name,this.args);
+        rooms[roomid].recentLog=this.recentLog.concat([{name:"",message:""},{name:"",message:""},{name:"",message:"*".repeat(30)},{name:"",message:"...次の試合..."},{name:"",message:"*".repeat(30)},{name:"",message:""},{name:"",message:""},]);
         if(io.sockets.adapter.rooms[this.id]!=undefined){
             let humans=Object.keys(io.sockets.adapter.rooms[this.id].sockets);
             let aicount=this.game.players.filter(p=>p.isAI).length+this.game.deadPlayers.filter(p=>p.isAI).length;
