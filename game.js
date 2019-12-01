@@ -70,7 +70,7 @@ _SKILLS_ZERO={
                 return attacks;
             },
             pow:1,
-            getCost:(p)=>(0),
+            getCost:(p)=>(1),
             requirement:_REQUIREMENT_DEFAULT,
             weak:true,
             defensePhase:function(user,players,decisions,attacksForMe,args){
