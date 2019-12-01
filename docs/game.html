@@ -16,6 +16,28 @@
             .output{
                 padding: 5px;width: 100%;height: 20rem;overflow:auto;border-style: dotted;background-color: #eee
             }
+            .avilable{
+                color:#008;border-bottom: dotted;
+            }
+            .avilableEx{
+                animation:rainbow 1s  infinite linear;border-bottom: dotted;
+            }
+            .unavilable{
+                color:#555;text-decoration: line-through;
+            }
+            @keyframes rainbow{
+                0%   {color: hsl(0  ,100%,50%)}
+                10%  {color: hsl(36 ,100%,50%)}
+                20%  {color: hsl(72 ,100%,50%)}
+                30%  {color: hsl(108,100%,50%)}
+                40%  {color: hsl(144,100%,50%)}
+                50%  {color: hsl(180,100%,50%)}
+                60%  {color: hsl(216,100%,50%)}
+                70%  {color: hsl(252,100%,50%)}
+                80%  {color: hsl(288,100%,50%)}
+                90%  {color: hsl(324,100%,50%)}
+                100% {color: hsl(360,100%,50%)}
+            }
         </style>
     </head>
     <body>
@@ -198,9 +220,10 @@
                             }
                         }
                         if(candidate.available){
-                            preCommand.innerHTML+="<span onclick=onCommand('"+cank+"') style='color:#008;border-bottom: dotted;'>"+candidate.name+coststr+"</span> ";
+                            let cl = (candidate.ex?"avilableEx":"avilable");
+                            preCommand.innerHTML+="<span onclick=onCommand('"+cank+"') class='"+cl+"'>"+candidate.name+coststr+"</span> ";
                         }else{
-                            preCommand.innerHTML+="<span style='color:#555;text-decoration: line-through;'>"+candidate.name+coststr+"</span> ";
+                            preCommand.innerHTML+="<span class='unavilable'>"+candidate.name+coststr+"</span> ";
                         }
                     });
                 }
