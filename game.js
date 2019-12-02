@@ -414,8 +414,14 @@ _SKILLS_MOD_COPY={
     },
 };
 
-_SKILLS_MOD_EXAT={
-    atk:{inherit:true,pow:2},
+_SKILLS_MOD_ATPLUS_FIGHTER={
+    str:{   
+            inherit:true,
+            getCost:(p)=>{
+                let costs=[0,4,7,10];
+                return (p.buffs.str.level < costs.length) ? costs[p.buffs.str.level] : Infinity;
+            },
+        },
 };
 
 
@@ -534,7 +540,7 @@ function Kit(name,skills,hp,mark,turnend){
 //逆境関数(副作用なし)
 function calcAdvIndex(me,players){
     const _T=8;//teammate factor(人数差)
-    const _H=1;//heart factor(体力差)
+    const _H=4;//heart factor(体力差)
     const _C=1/3;//chakra factor(魔力差)
     let teamCounts=players.reduce((a,c)=>{
         if(a.hasOwnProperty(c.team)){
@@ -546,7 +552,7 @@ function calcAdvIndex(me,players){
     },{});
 
     let countdiff=Math.max(...(Object.keys(teamCounts).filter(t=>t!=me.team).map(t=>teamCounts[t])))-teamCounts[me.team];
-    let heartdiff=Math.max(...players.filter(p=>p.team!=me.team).map(p=>p.hp))-me.hp;
+    let heartdiff=Math.log(Math.max(...players.filter(p=>p.team!=me.team).map(p=>p.hp))/me.hp)/Math.log(2);
     let chakradiff=Math.max(...players.filter(p=>p.team!=me.team).map(p=>p.charge))-me.charge;
     return 0.1*Math.max(0,Math.floor(countdiff*_T + heartdiff*_H + chakradiff*_C));
 }
@@ -576,11 +582,11 @@ let _KIT_JSTD=new Kit("スタンダード",mergeSkills(_KIT_STD.skills,[
                             _SKILLS_MOD_EX_HARDEN,
                         ]),7,"(標)",_TURNEND_TEAM_DEFAULT);
 
-let _KIT_EXAT=new Kit("戦士",mergeSkills({},[   
+let _KIT_FIGHTER=new Kit("戦士",mergeSkills({},[   
                             _SKILLS_MOTO,
-                            _SKILLS_MOD_EXAT,
-                            _SKILLS_MOD_BEAM,
                             _SKILLS_MOD_ATPLUS,
+                            _SKILLS_MOD_ATPLUS_FIGHTER,
+                            _SKILLS_MOD_BEAM,
                             _SKILLS_MOD_SMASH,
                             _SKILLS_MOD_SALVO,
                             _SKILLS_MOD_COVER,
@@ -588,7 +594,7 @@ let _KIT_EXAT=new Kit("戦士",mergeSkills({},[
                             _SKILLS_MOD_EX_HARDEN,
                         ]),7,"(戦)",(function(me,players){
                             _TURNEND_TEAM_DEFAULT(me,players);
-                            me.buffs.str.level=Math.max(me.buffs.str.level,Math.floor(calcAdvIndex(me,players)*3));
+                            me.buffs.str.level=Math.max(me.buffs.str.level,Math.floor(calcAdvIndex(me,players)*2)+1);
                         }));
 
 let _KIT_HEALER=new Kit("白魔導師",mergeSkills({},[   
@@ -605,7 +611,7 @@ let _KIT_TRICK=new Kit("トリック",mergeSkills({},[
 			    _SKILLS_MOD_COPY,
                         ]),7,"(奇)",_TURNEND_TEAM_DEFAULT);
 let kitsets={
-    "ジョブあり":{set:[_KIT_JSTD,_KIT_HEALER,_KIT_EXAT,],useEx:true},
+    "ジョブあり":{set:[_KIT_JSTD,_KIT_HEALER,_KIT_FIGHTER,],useEx:true},
     "スタンダード":{set:[_KIT_STD],useEx:false},
     "原作":{set:[_KIT_ZERO],useEx:false},
 };
@@ -613,7 +619,7 @@ let kitsets={
 exports.kitsets=kitsets;
 exports._KIT_OLD=_KIT_OLD;
 exports._KIT_STD=_KIT_STD;
-exports._KIT_EXAT=_KIT_EXAT;
+exports._KIT_FIGHTER=_KIT_FIGHTER;
 
 exports._SKILLS_MOTO=_SKILLS_MOTO;
 exports._HP_DEFAULT=6;
@@ -758,7 +764,6 @@ class Game{
                                 if(skill.hasOwnProperty("getCostEx") && skill.getCostEx(player)>0){
                                     acc[skillname].ex=true;
                                     acc[skillname].costEx=skill.getCostEx(player);
-                                    console.log(skillname+":Ex"+acc[skillname].costEx);
                                 }
                                 return acc;
                             }.bind(this)
