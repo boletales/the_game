@@ -874,8 +874,7 @@ class Game{
         if(livingTeams.length>0){
             players.forEach(p=>p.turnend(p,players));
         }
-
-        for(let i=0;i<decisions.length;i++){
+        this.getSortedPId().forEach((i)=>{
             let dstr=" "+damages[i].map((v,j)=>[v,"←「"+players[j].getShowingName()+"」の≪"+decisions[j].skill.name+"≫("+v+"dmg.)"]).filter(d=>d[0]>0).map(d=>d[1]).join("  ");
             let oppindex=decisions[i].skill.args.findIndex(a=>a.name=="to");
             if(oppindex!=-1){
@@ -889,8 +888,9 @@ class Game{
                 this.log("  "+players[i].state()+dstr);
             }
             this.log("");
-        }
-        this.showPlayers(players);
+        });
+        
+        this.showPlayers(this.getSortedPId().map(i=>players[i]));
         this.log("~~~~~");
         if((livingTeams.length>1 || this.waiting.length>0) && this.turns<this.maxTurns){
             return true;
@@ -938,6 +938,18 @@ class Game{
     }
     aki(){
         return this.players.length+this.waiting.length < this.maxPlayers;
+    }
+    getSortedPId(){
+        if(this.teamMode){
+            return this.players.map((p,i)=>({player:p,id:i}))
+                                .sort((a,b)=>sortFun_byName(a.player.nickname,b.player.nickname))
+                                .sort((a,b)=>sortFun_byStr(a.player.team,b.player.team))
+                                .map(d=>d.id);
+        }else{
+            return this.players.map((p,i)=>({player:p,id:i}))
+                                .sort((a,b)=>sortFun_byName(a.player.nickname,b.player.nickname))
+                                .map(d=>d.id);
+        }
     }
     joinPlayer(player,start=true){
         if(!this.aki()){
@@ -1039,6 +1051,21 @@ function Player(id,nickname,team,game,kit,showJobMark=false){
     this.noticeDecisions=function(decisions){};
 }
 
+function sortFun_byStr(a,b){
+    if(a>b){
+        return 1;
+    }else if(a<b){
+        return -1;
+    }else{
+        return 0;
+    }
+}
+
+function sortFun_byName(_a,_b){
+    var a = _a.toUpperCase(); // 大文字と小文字を無視する
+    var b = _b.toUpperCase(); // 大文字と小文字を無視する
+    return sortFun_byStr(a,b);
+}
 function array_shuffle(arr){
     let newarr=[];
     arr.forEach(v=>newarr.splice(Math.floor((newarr.length+1)*Math.random()),0,v));
