@@ -104,8 +104,12 @@
                 document.getElementById("output").innerText+=data.name+"≫"+data.message+"\n";
                 document.getElementById("output").scrollTop = document.getElementById("output").scrollHeight;
             }
+            function onMessageBulk(d){
+                document.getElementById("output").innerText+=d.messages.map((data)=>data.name+"≫"+data.message+"\n").join("");
+                document.getElementById("output").scrollTop = document.getElementById("output").scrollHeight;
+            }
             socket.on("message", (data)=>onMessage(data));
-            socket.on("messagebulk",(data)=>data.messages.forEach((d)=>onMessage(d)));
+            socket.on("messagebulk",(data)=>onMessageBulk(data));
             document.getElementById("chat").onsubmit=function(e){
                 socket.emit("chat", {name : name,message : document.getElementById("msg").value});
                 document.getElementById("msg").value="";
