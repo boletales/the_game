@@ -274,9 +274,7 @@ class Room{
     }
 
     sendRecentLog(socket){
-        this.recentLog.forEach(data=>
-                socket.emit("message",data)
-            ); 
+        socket.emit("messagebulk",{messages:this.recentLog}); 
     }
 
     showPlayers(players){

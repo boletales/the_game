@@ -20,21 +20,6 @@
                 color:#008;border-bottom: dotted;
             }
             .avilableEx{
-                background: linear-gradient(to right,
-                    hsl(0  ,100%,50%) 0%  ,
-                    hsl(36 ,100%,50%) 10% ,
-                    hsl(72 ,100%,50%) 20% ,
-                    hsl(108,100%,50%) 30% ,
-                    hsl(144,100%,50%) 40% ,
-                    hsl(180,100%,50%) 50% ,
-                    hsl(216,100%,50%) 60% ,
-                    hsl(252,100%,50%) 70% ,
-                    hsl(288,100%,50%) 80% ,
-                    hsl(324,100%,50%) 90% ,
-                    hsl(360,100%,50%) 100%
-                )0% center / 200% auto;
-                background-clip: text;
-                color: transparent;
                 animation: rainbow 1s linear infinite;
                 border-bottom: dotted #008;
             }
@@ -42,7 +27,17 @@
                 color:#555;text-decoration: line-through;
             }
             @keyframes rainbow{
-                to { background-position-x: -200%; }
+                0%  {color:hsl(0  ,100%,50%)},
+                10% {color:hsl(36 ,100%,50%)},
+                20% {color:hsl(72 ,100%,50%)},
+                30% {color:hsl(108,100%,50%)},
+                40% {color:hsl(144,100%,50%)},
+                50% {color:hsl(180,100%,50%)},
+                60% {color:hsl(216,100%,50%)},
+                70% {color:hsl(252,100%,50%)},
+                80% {color:hsl(288,100%,50%)},
+                90% {color:hsl(324,100%,50%)},
+                100%{color:hsl(360,100%,50%)}
             }
         </style>
     </head>
@@ -105,10 +100,12 @@
             function clearCommand(){
                 document.getElementById("command").innerHTML="…待機…";
             }
-            socket.on("message", function(data){
+            function onMessage(data){
                 document.getElementById("output").innerText+=data.name+"≫"+data.message+"\n";
                 document.getElementById("output").scrollTop = document.getElementById("output").scrollHeight;
-            });
+            }
+            socket.on("message", (data)=>onMessage(data));
+            socket.on("messagebulk",(data)=>data.messages.forEach((d)=>onMessage(d)));
             document.getElementById("chat").onsubmit=function(e){
                 socket.emit("chat", {name : name,message : document.getElementById("msg").value});
                 document.getElementById("msg").value="";
