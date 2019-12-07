@@ -597,7 +597,7 @@ let _KIT_FIGHTER=new Kit("戦士",mergeSkills({},[
                             _SKILLS_MOD_EX_HARDEN,
                         ]),7,"(戦)",(function(me,players){
                             _TURNEND_TEAM_DEFAULT(me,players);
-                            me.buffs.str.level=Math.max(me.buffs.str.level,Math.floor(calcAdvIndex(me,players)*2)+1);
+                            me.buffs.str.level=Math.max(me.buffs.str.level,1);
                         }));
 
 let _KIT_HEALER=new Kit("白魔導師",mergeSkills({},[   
