@@ -193,7 +193,7 @@ _SKILLS_MOD_BEAM={
 };
 
 _SKILLS_MOD_EX_LIGHTBLADE={
-    xlb:{name:"閃光剣舞",args:[{message:"対象入力",type:"opponent",name:"to"}],
+    xlb:{name:"荷電粒子砲",args:[{message:"対象入力",type:"opponent",name:"to"}],
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             user.useChakraEx(this.getCostEx(user));
@@ -228,7 +228,7 @@ _SKILLS_MOD_EX_HARDEN={
             return attacksForMe.map((d,i)=>0);
         },
         getCost:(p)=>(0),
-        getCostEx:(p)=>(2),
+        getCostEx:(p)=>(Math.max(p.buffs.mdp,p.buffs.pdp)<2?2:Infinity),
         requirement:_REQUIREMENT_DEFAULT,
     },
 };
