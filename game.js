@@ -875,7 +875,7 @@ class Game{
         players.filter(v=>v.hp>0).forEach(p=>livingTeams.indexOf(p.team)==-1&&livingTeams.push(p.team));
 
         if(livingTeams.length>0){
-            players.forEach(p=>p.turnend(p,players));
+            players.filter(v=>v.hp>0).forEach(p=>p.turnend(p,players));
         }
         this.getSortedPId().forEach((i)=>{
             let dstr=" "+damages[i].map((v,j)=>[v,"←「"+players[j].getShowingName()+"」の≪"+decisions[j].skill.name+"≫("+v+"dmg.)"]).filter(d=>d[0]>0).map(d=>d[1]).join("  ");
