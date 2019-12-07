@@ -614,8 +614,8 @@ let _KIT_TRICK=new Kit("トリック",mergeSkills({},[
 			    _SKILLS_MOD_COPY,
                         ]),7,"(奇)",_TURNEND_TEAM_DEFAULT);
 let kitsets={
-    "ジョブあり":{set:[_KIT_JSTD,_KIT_HEALER,_KIT_FIGHTER,],useEx:true},
     "スタンダード":{set:[_KIT_STD],useEx:false},
+    "ジョブあり":{set:[_KIT_JSTD,_KIT_HEALER,_KIT_FIGHTER,],useEx:true},
     "原作":{set:[_KIT_ZERO],useEx:false},
 };
 
