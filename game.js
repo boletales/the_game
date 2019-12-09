@@ -179,7 +179,7 @@ _SKILLS_MOD_BEAM={
         pow:3,
         defensePhase:function(user,players,decisions,attacksForMe,args){
             return attacksForMe.map((d,i)=>{
-                if(decisions[i].skill.weak){
+                if(decisions[i].skill.weak || (decisions[i].skill.beam && d<=this.pow)){
                     return 0;
                 }else{
                     return d;
