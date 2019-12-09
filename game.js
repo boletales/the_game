@@ -228,7 +228,7 @@ _SKILLS_MOD_EX_HARDEN={
             return attacksForMe.map((d,i)=>0);
         },
         getCost:(p)=>(0),
-        getCostEx:(p)=>((Math.max(p.buffs.mdp,p.buffs.pdp)<2)?2:Infinity),
+        getCostEx:(p)=>((Math.max(p.buffs.mdp.level,p.buffs.pdp.level)<2)?2:Infinity),
         requirement:_REQUIREMENT_DEFAULT,
     },
 };
