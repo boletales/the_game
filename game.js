@@ -217,7 +217,7 @@ _SKILLS_MOD_EX_LIGHTBLADE={
 _SKILLS_MOD_EX_HARDEN={
     xha:{name:"装甲強化",args:[{message:"対象入力",type:"team",name:"to"}],
         attackPhase:function(user,players,decisions,args){
-            user.useChakraEx(this.getCost(user));
+            user.useChakraEx(this.getCostEx(user));
             let target=players.find(p=>p.id==args[0]);
             target.buffs.pdp.levelUp(1);
             target.buffs.mdp.levelUp(1);
@@ -228,7 +228,7 @@ _SKILLS_MOD_EX_HARDEN={
             return attacksForMe.map((d,i)=>0);
         },
         getCost:(p)=>(0),
-        getCostEx:(p)=>((Math.max(p.buffs.mdp.level,p.buffs.pdp.level)<2)?2:Infinity),
+        getCostEx:(p)=>([2,5,Infinity][Math.min(2,Math.max(p.buffs.mdp.level,p.buffs.pdp.level))]),
         requirement:_REQUIREMENT_DEFAULT,
     },
 };
