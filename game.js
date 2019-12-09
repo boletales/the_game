@@ -228,7 +228,7 @@ _SKILLS_MOD_EX_HARDEN={
             return attacksForMe.map((d,i)=>0);
         },
         getCost:(p)=>(0),
-        getCostEx:(p)=>(Math.max(p.buffs.mdp,p.buffs.pdp)<2?2:Infinity),
+        getCostEx:(p)=>((Math.max(p.buffs.mdp,p.buffs.pdp)<2)?2:Infinity),
         requirement:_REQUIREMENT_DEFAULT,
     },
 };
@@ -554,9 +554,9 @@ function calcAdvIndex(me,players){
     let countdiff=Math.max(...(Object.keys(teamCounts).filter(t=>t!=me.team).map(t=>teamCounts[t])))-teamCounts[me.team];
     if(isNaN(countdiff))countdiff=0;
     let heartdiff=Math.log(Math.max(...players.filter(p=>p.team!=me.team).map(p=>p.hp+3))/(me.hp+3))/Math.log(2);
-    if(isNaN(heartdiff))countdiff=0;
+    if(isNaN(heartdiff))heartdiff=0;
     let chakradiff=Math.max(...players.filter(p=>p.team!=me.team).map(p=>p.charge))-me.charge;
-    if(isNaN(chakradiff))countdiff=0;
+    if(isNaN(chakradiff))chakradiff=0;
     return 0.1*Math.max(0,Math.floor(countdiff*_T + heartdiff*_H + chakradiff*_C));
 }
 
