@@ -222,14 +222,14 @@ class Room{
         return Object.keys(io.sockets.adapter.rooms[this.id].sockets).length;
     }
     join(socket,nickname,team,kitid){
-        this.log("connected:"+newPlayer.getShowingName());
         let kit=this.kits.set.hasOwnProperty(kitid)?this.kits.set[kitid]:this.kits.set[0];
         let showJobMark=(Object.keys(this.kits.set).length>1);
-	if(!this.args.hasOwnProperty("teamMode")||this.args.teamMode){
+	    if(!this.args.hasOwnProperty("teamMode")||this.args.teamMode){
             var newPlayer=(new Human(nickname,team,this.game,socket,kit,showJobMark));
         }else{
             var newPlayer=(new Human(nickname,socket.id,this.game,socket,kit,showJobMark));
         }
+        this.log("connected:"+newPlayer.getShowingName());
         if(this.game.joinPlayer(newPlayer)){
             socket.emit("joined",{"id":newPlayer.getShowingName(),"team":team,"teamMode":this.teamMode});
             socket.on('chat',function(data){
