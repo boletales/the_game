@@ -356,19 +356,6 @@ class AimanRoom extends Room{
         this.game.joinPlayer(new _game.TaimanAi("名無しAI🤖"+id,this.game,_aidata.data[id]));
     }
 }
-/*function resetGame(){
-    recentLog=[];
-    delete game;
-    game=new _game.Game(_SKILLS_MOTO,_HP_DEFAULT,resetGame,log,showPlayers);
-    Object.keys(io.sockets.connected).forEach(k=>{
-        let socket=io.sockets.connected[k];
-        let id="guest"+Math.floor(Math.random()*10000);
-        socket.emit("reset",{"id":id});
-        log("connected:"+id);
-        game.joinPlayer(new Human(id,game,socket),false);
-    });
-    game.setStartnumber(game.startnumber);
-}*/
 
 function Human(nickname,team,game,socket,kit,showJobMark){
     _game.Player.call(this,socket.id,nickname,team,game,kit,showJobMark);
