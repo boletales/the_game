@@ -53,10 +53,16 @@
                 document.getElementById("roomname").innerHTML=roomname;
             });
 
-            socket.on("message", function(data){
+            function onMessage(data){
                 document.getElementById("output").innerText+=data.name+"≫"+data.message+"\n";
                 document.getElementById("output").scrollTop = document.getElementById("output").scrollHeight;
-            });
+            }
+            function onMessageBulk(d){
+                document.getElementById("output").innerText+=d.messages.map((data)=>data.name+"≫"+data.message+"\n").join("");
+                document.getElementById("output").scrollTop = document.getElementById("output").scrollHeight;
+            }
+            socket.on("message", (data)=>onMessage(data));
+            socket.on("messagebulk",(data)=>onMessageBulk(data));
             socket.on("goRobby", function(data){
                 location.href="../../"
             });

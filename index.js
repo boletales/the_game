@@ -222,6 +222,7 @@ class Room{
         return Object.keys(io.sockets.adapter.rooms[this.id].sockets).length;
     }
     join(socket,nickname,team,kitid){
+        this.log("connected:"+newPlayer.getShowingName());
         let kit=this.kits.set.hasOwnProperty(kitid)?this.kits.set[kitid]:this.kits.set[0];
         let showJobMark=(Object.keys(this.kits.set).length>1);
 	if(!this.args.hasOwnProperty("teamMode")||this.args.teamMode){
@@ -231,9 +232,8 @@ class Room{
         }
         if(this.game.joinPlayer(newPlayer)){
             socket.emit("joined",{"id":newPlayer.getShowingName(),"team":team,"teamMode":this.teamMode});
-            this.log("connected:"+newPlayer.getShowingName());
             socket.on('chat',function(data){
-                this.chat(data);
+                this.chat([data]);
                 if(data.message.startsWith("!")) this.command(data.message.slice(1));
             }.bind(this));
             socket.on('disconnect',((data)=>{
@@ -262,15 +262,17 @@ class Room{
     }
 
     log(str){
-        this.chat({"name":"★system","message":str});
+        this.chat(str.split("\n").map(s=>({"name":"★system","message":s})));
     }
 
     chat(data){
-        data.time=new Date();
-        io.to(this.id).emit('message',data);
-        process.stdout.write(this.name+":"+data.name+"≫"+data.message+"\n");
-        this.recentLog.push(data);
-        if(this.recentLog.length>this.recentLogMax)this.recentLog.shift();
+        data.forEach(d=>{
+            d.time=new Date();
+            process.stdout.write(this.name+":"+d.name+"≫"+d.message+"\n");
+            this.recentLog.push(d);
+            if(this.recentLog.length>this.recentLogMax)this.recentLog.shift();
+        });
+        io.to(this.id).emit("messagebulk",{messages:data}); 
     }
 
     sendRecentLog(socket){

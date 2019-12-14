@@ -633,7 +633,13 @@ class Game{
     constructor(kits,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},needokawari=true){
         this.kits=kits.set;
         this.useEx=kits.useEx;
-        this.log=log;
+        this.sendlog=function(){
+            let str=this.logbuffer.join("\n");
+            log(str);
+            this.logbuffer=[];
+        };
+        this.logbuffer=[];
+        this.log=function(str){this.logbuffer.push(str)};
         this.noticewinner= noticewinner;
         this.needokawari = needokawari;
         this.teamMode    = args.hasOwnProperty("teamMode")   ?args.teamMode   :true;
@@ -670,6 +676,7 @@ class Game{
                     this.players.push(p);
                     this.log("「"+p.getShowingName()+"」参戦！！");
                 });
+                this.sendlog();
                 this.waiting=[];
                 this.todo[1]={};
                 this.acceptingTurn=this.turns;
@@ -678,7 +685,8 @@ class Game{
                             this.todo[1][p.id]=
                                 (cb=>{
                                     p.reqDecision(((input)=>{
-                                            log("行動決定:"+p.getShowingName()+"("+(Object.keys(this.newresult).length+1)+"/"+Object.keys(this.todo[0]).length+")");
+                                            this.log("行動決定:"+p.getShowingName()+"("+(Object.keys(this.newresult).length+1)+"/"+Object.keys(this.todo[0]).length+")");
+                                            this.sendlog();
                                             cb(input);
                                         }).bind(this)
                                     ,this.genCommandcandidates(p));
@@ -687,7 +695,8 @@ class Game{
                             this.todo[1][p.id]=
                                 (cb=>{
                                     p.reqDecision(((input)=>{
-                                            log("行動決定:"+p.getShowingName()+"("+(Object.keys(this.newresult).length+1)+"/"+Object.keys(this.todo[0]).length+")");
+                                            this.log("行動決定:"+p.getShowingName()+"("+(Object.keys(this.newresult).length+1)+"/"+Object.keys(this.todo[0]).length+")");
+                                            this.sendlog();
                                             cb(input);
                                         }).bind(this)
                                     );
@@ -821,7 +830,6 @@ class Game{
     turn(players,decisions){
         players.forEach(p=>p.noticeDecisions(players.map((pl,i)=>{return {"id":pl.id,"decision":decisions[i].skill.id};})));
         players.forEach(p=>p.refreshBuffs());
-        this.log("~~~~~");
 
         let applyAction=function(actname){
                 for(let from=0;from<decisions.length;from++){
@@ -896,6 +904,7 @@ class Game{
         this.showPlayers(this.getSortedPId().map(i=>players[i]));
         this.log("~~~~~");
         if((livingTeams.length>1 || this.waiting.length>0) && this.turns<this.maxTurns){
+            this.sendlog();
             return true;
         }else{
             this.log("試合終了");
@@ -915,6 +924,7 @@ class Game{
                 this.log(OKAWARISEC+"秒後に次の試合");
                 setTimeout(this.okawari,OKAWARISEC*1000);
             }
+            this.sendlog();
             return false;
         }
     }
