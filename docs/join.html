@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta encording="utf-8">
+        <title>Chakra! - 参加</title>
+        <script type="text/javascript" src="../../socket.io/socket.io.js"></script>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+        <link rel="icon" type="image/png" href="/android-touch-icon.png" sizes="192x192">
+        <style>
+            body{
+                width:100%;
+            }
+        </style>
+    </head>
+    <body>
+        <span id="kokoha" style="color:#555"></span><span id="roomname" style="font-size:140%"></span><br>
+        <form id="chat" action="javascript:void(0)" onsubmit="join()">
+                <input id="name" value="名無し"><br>
+                <div id="teambox" style="display: inline-block;">チーム:<input id="team" value="a"><br></div>
+		        <select id="kits"></select>
+                <input id="submit" type="submit" value="参加" style="display: none">
+        </form>
+        <p id="warning" style="color:red"></p>
+        <a href="../../">ロビーに戻る</a>
+        
+        <script>
+            document.getElementById("name").value=getName();
+            let teamMode=true;
+            let socket = io.connect();
+            let roomid=decodeURIComponent(location.pathname.split("/").reverse()[0]);
+            socket.on("goRobby", function(data){
+                location.href="./"
+            });
+            socket.emit("getRoomData",{id:roomid});
+
+            socket.on("roomData",data=>{
+                roomname=data.name;
+                document.title="Chakra! - "+roomname+" - 参加";
+                document.getElementById("kokoha").innerHTML="ここは ";
+                document.getElementById("roomname").innerHTML=roomname;
+                let select=document.getElementById("kits");
+                Object.keys(data.kits).forEach((k,i)=>{
+                    select.innerHTML+="<option value="+i+" name="+k+">"+data.kits[k].name+"</option>";
+		        });
+                let urlVars=getUrlVars();
+                if(urlVars.nickname!=undefined && !data.teamMode && urlVars.kit!=undefined){
+                    var nickname=urlVars.nickname;
+                    var team=nickname;
+                    var kit=urlVars.kit;
+                    location.href="./rooms/"+encodeURIComponent(data.id)+encodeURIComponent(data.id);
+                }else if(urlVars.nickname!=undefined && !urlVars.team==undefined && urlVars.kit!=undefined){
+                    var nickname=urlVars.nickname;
+                    var team=urlVars.team;
+                    var kit=urlVars.kit;
+                    location.href="./rooms/"+encodeURIComponent(data.id)+encodeURIComponent(data.id);
+                }
+                teamMode=data.teamMode;
+                if(!data.teamMode){
+                    document.getElementById("teambox").style.display="none";
+                }
+                document.getElementById("submit").style.display="unset";
+            });
+            function join(){
+                let name = document.getElementById("name").value;
+                let team = teamMode ? document.getElementById("team").value:name;
+                let kit = document.getElementById("kits").value;
+                setNameCookie(name);
+                location.href="../"+encodeURIComponent(roomid)+"?nickname="+encodeURIComponent(name)+"&team="+encodeURIComponent(team)+"&kit="+encodeURIComponent(kit);
+            }
+            function randomID(keta){
+                return ("0".repeat(keta)+Math.floor(Math.random()*(10**keta))).slice(-keta);
+            }
+            function getUrlVars(){
+                var vars = {}; 
+                var param = location.search.substring(1).split('&');
+                for(var i = 0; i < param.length; i++) {
+                    var keySearch = param[i].search(/=/);
+                    var key = '';
+                    if(keySearch != -1) key = param[i].slice(0, keySearch);
+                    var val = param[i].slice(param[i].indexOf('=', 0) + 1);
+                    if(key != '') vars[key] = decodeURI(val);
+                } 
+                return vars; 
+            }
+            
+            function setNameCookie(name){
+                document.cookie="playername="+encodeURIComponent(name)+";expires=1-Jan-2030 00:00:00 GMT;path=/";
+            }
+            function getName(){
+                if(document.cookie.split(";").find(e=>e.includes("playername="))!=undefined){
+                    return decodeURIComponent(document.cookie.split(";").find(e=>e.includes("playername=")).split("=")[1]);
+                }else{
+                    return "名無し"+randomID(3);
+                }
+            }
+        </script>
+    </body>
+</html>

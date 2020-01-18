@@ -5,6 +5,9 @@
         <title>Chakra! - 部屋作成</title>
         <script type="text/javascript" src="./socket.io/socket.io.js"></script>
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+        <link rel="icon" type="image/png" href="/android-touch-icon.png" sizes="192x192">
         <style>
             body{
                 width:100%;
@@ -12,11 +15,12 @@
         </style>
     </head>
     <body>
-        <form id="chat" action="#" onsubmit="makeRoom()">
-                <input id="name" value="room">
-                チーム戦:<input id="team" type="checkbox">
-                プラベ:<input id="hidden" type="checkbox">
-                <input type="submit" value="作成">
+        <form id="chat" action="javascript:void(0)" onsubmit="makeRoom()">
+            <input id="name" value="room">
+            チーム戦:<input id="team" type="checkbox">
+            プラベ:<input id="hidden" type="checkbox">
+		    <select id="kitsset"></select><br>
+            <input type="submit" value="作成"><br>
         </form>
         <p id="warning" style="color:red"></p>
         <a href="../../">ロビーに戻る</a>
@@ -27,21 +31,32 @@
             socket.on("roomExists",data=>{
                 document.getElementById("warning")="もう使われている部屋名です";
             });
-            function randomID(keta){
-                return ("0".repeat(keta)+Math.floor(Math.random()*Math.pow(10,keta))).slice(-keta);
-            }
-            function makeRoom(){
-                socket.emit("makeRoom",{
-                    name:document.getElementById("name").value,
-                    args:{teamMode:document.getElementById("team").checked,hidden:document.getElementById("hidden").checked}})
-                ;
-            }
+            socket.on("kitsset",data=>{
+                let select=document.getElementById("kitsset");
+                data.forEach(k=>{
+                    select.innerHTML+="<option value="+k+">"+k+"</option>";
+		        });
+	        });
             socket.on("goRoom",data=>{
                 location.href="./rooms/"+encodeURIComponent(data.id);
+            });
+            socket.on("goJoin", function(data){
+                location.href="./rooms/join/"+encodeURIComponent(data.id);
             });
             socket.on("goRobby", function(data){
                 location.href="./"
             });
+            socket.emit("getKitsset",{});
+            function makeRoom(){
+                socket.emit("makeRoom",{
+                    name:document.getElementById("name").value,
+                    args:{
+                        teamMode:document.getElementById("team").checked,
+                        hidden:document.getElementById("hidden").checked,
+                        kitsname:document.getElementById("kitsset").value
+                    }
+                });
+            }
             function randomID(keta){
                 return ("0".repeat(keta)+Math.floor(Math.random()*(10**keta))).slice(-keta);
             }

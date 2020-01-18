@@ -6,6 +6,9 @@
         <link rel="main.css">
         <script type="text/javascript" src="../../socket.io/socket.io.js"></script>
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+        <link rel="icon" type="image/png" href="/android-touch-icon.png" sizes="192x192">
         <style>
             body{
                 width:100%;
@@ -27,7 +30,7 @@
         <a href="../../">ロビーに戻る</a><br><br><br>
         
         <h2>全体チャット</h2>
-        <form id="gchat" action="" style="float:left">
+        <form id="gchat" action="javascript:void(0)" style="float:left">
             <input id="gmsg">
             <input type="submit"  value="送信">
         </form>
@@ -50,10 +53,16 @@
                 document.getElementById("roomname").innerHTML=roomname;
             });
 
-            socket.on("message", function(data){
+            function onMessage(data){
                 document.getElementById("output").innerText+=data.name+"≫"+data.message+"\n";
                 document.getElementById("output").scrollTop = document.getElementById("output").scrollHeight;
-            });
+            }
+            function onMessageBulk(d){
+                document.getElementById("output").innerText+=d.messages.map((data)=>data.name+"≫"+data.message+"\n").join("");
+                document.getElementById("output").scrollTop = document.getElementById("output").scrollHeight;
+            }
+            socket.on("message", (data)=>onMessage(data));
+            socket.on("messagebulk",(data)=>onMessageBulk(data));
             socket.on("goRobby", function(data){
                 location.href="../../"
             });

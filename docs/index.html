@@ -6,6 +6,9 @@
         <link rel="main.css">
         <script type="text/javascript" src="./socket.io/socket.io.js"></script>
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+        <link rel="icon" type="image/png" href="/android-touch-icon.png" sizes="192x192">
         <style>
             body{
                 width:100%;
@@ -13,7 +16,7 @@
         </style>
     </head>
     <body>
-        <form id="gchat" action="#" style="float:left">
+        <form id="gchat" action="javascript:void(0)" style="float:left">
             <input id="gname">
             <input id="gmsg" style="width:40%">
             <input type="submit"  value="送信">
@@ -33,13 +36,15 @@
             }
         </script>
         <script>
+            document.getElementById("gname").value=getName();
+
             let socket = io.connect();
             socket.emit("getGlobalLog",{});
             socket.on("roomStates",data=>{
                 let table=document.getElementById("rooms");
                 table.innerHTML="<tr><th>部屋名</th><th>参加</th><th>観戦</th></tr>";
                 data.rooms.forEach(room => {
-                    table.innerHTML+= "<tr><td>"+room.name+"("+room.number+"人)</td><td><a href=./rooms/"+room.id+">参加</td><td><a href=./rooms/spectate/"+room.id+">観戦</td></tr>";
+                    table.innerHTML+= "<tr><td>"+room.name+"("+room.number+"人)</td><td><a href=./rooms/join/"+room.id+">参加</td><td><a href=./rooms/spectate/"+room.id+">観戦</td></tr>";
                 });
                 if(data.taiman){
                     document.getElementById("taiman").innerHTML="1vs1(1人待ち)";
@@ -47,7 +52,6 @@
                     document.getElementById("taiman").innerHTML="1vs1(0人待ち)";
                 }
             });
-            document.getElementById("gname").value="名無し"+randomID(3);
             function randomID(keta){
                 return ("0".repeat(keta)+Math.floor(Math.random()*Math.pow(10,keta))).slice(-keta);
             }
@@ -63,6 +67,9 @@
             socket.on("goRoom",data=>{
                 location.href="./rooms/"+encodeURIComponent(data.id);
             })
+            socket.on("goJoin", function(data){
+                location.href="./rooms/join/"+encodeURIComponent(data.id);
+            });
             socket.on("goRobby", function(data){
                 location.href="./"
             });
@@ -74,8 +81,19 @@
                 socket.emit("globalChat", {name : document.getElementById("gname").value+"@ロビー",message : document.getElementById("gmsg").value});
                 document.getElementById("gmsg").value="";
                 e.preventDefault();
+                setNameCookie(document.getElementById("gname").value);
                 return false;
             };
+            function setNameCookie(name){
+                document.cookie="playername="+encodeURIComponent(name)+";expires=1-Jan-2030 00:00:00 GMT;path=/";
+            }
+            function getName(){
+                if(document.cookie.split(";").find(e=>e.includes("playername="))!=undefined){
+                    return decodeURIComponent(document.cookie.split(";").find(e=>e.includes("playername=")).split("=")[1]);
+                }else{
+                    return "名無し"+randomID(3);
+                }
+            }
         </script>
     </body>
 </html>

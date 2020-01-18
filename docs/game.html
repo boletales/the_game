@@ -6,6 +6,9 @@
         <link rel="main.css">
         <script type="text/javascript" src="../../socket.io/socket.io.js"></script>
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+        <link rel="icon" type="image/png" href="/android-touch-icon.png" sizes="192x192">
         <style>
             body{
                 width:100%;
@@ -13,12 +16,26 @@
             .output{
                 padding: 5px;width: 100%;height: 20rem;overflow:auto;border-style: dotted;background-color: #eee
             }
+            .avilable{
+                color:#008;border-bottom: dotted;
+            }
+            .avilableEx{
+                animation: expulse 1s infinite linear;
+                border-bottom: dotted #008;
+            }
+            .unavilable{
+                color:#555;text-decoration: line-through;
+            }
+            @keyframes expulse{
+                0%  {color:#f00}
+                100%{color:#004}
+            }
         </style>
     </head>
     <body>
         <span id="kokoha" style="color:#555"></span><span id="roomname" style="font-size:140%"></span>　<span id="anataha" style="color:#555"></span><span id="team" style="font-size:100%"></span><span id="name" style="font-size:140%"></span><br>
         <input type="button" value="この部屋へのリンクをコピー" onclick="execCopy(window.location.host+window.location.pathname)">
-        <form id="chat" action="">
+        <form id="chat" action="javascript:void(0)">
             <input id="msg">
             <input type="submit" value="部屋内チャット">
         </form>
@@ -31,7 +48,7 @@
         <a href="../../">ロビーに戻る</a><br><br><br>
         
         <h2>全体チャット</h2>
-        <form id="gchat" action="" style="float:left">
+        <form id="gchat" action="javascript:void(0)" style="float:left">
             <input id="gmsg">
             <input type="submit"  value="送信">
         </form>
@@ -55,26 +72,17 @@
             let preCommand=document.getElementById("command");
             socket.emit("getRoomData",{id:roomid});
             socket.emit("getGlobalLog",{});
+                let urlVars=getUrlVars();
 
             socket.on("roomData",data=>{
                 roomname=data.name;
                 document.title="Chakra! - "+roomname;
                 document.getElementById("kokoha").innerHTML="ここは ";
                 document.getElementById("roomname").innerHTML=roomname;
-                let urlVars=getUrlVars();
-                if(urlVars.nickname!=undefined){
-                    var nickname=urlVars.nickname;
-                }else{
-                    var nickname=prompt("名前を入力してください","名無し"+randomID(3));
+                if(urlVars.nickname==undefined || (data.teamMode && urlVars.team==undefined) || urlVars.kit==undefined){
+                    location.href="./join/"+encodeURIComponent(roomid);
                 }
-                if(!data.teamMode){
-                    var team=nickname;
-                }else if(!(urlVars.team==undefined)){
-                    var team=urlVars.team;
-                }else{
-                    var team=prompt("チームを入力してください","a");
-                }
-                socket.emit("joinRoom",{roomid:roomid,nickname:nickname,team:team});
+                socket.emit("joinRoom",{roomid:roomid,nickname:urlVars.nickname,team:urlVars.team,kitid:parseInt(urlVars.kit)});
                 
             });
             socket.on("input_action", function(data){
@@ -83,10 +91,16 @@
             function clearCommand(){
                 document.getElementById("command").innerHTML="…待機…";
             }
-            socket.on("message", function(data){
+            function onMessage(data){
                 document.getElementById("output").innerText+=data.name+"≫"+data.message+"\n";
                 document.getElementById("output").scrollTop = document.getElementById("output").scrollHeight;
-            });
+            }
+            function onMessageBulk(d){
+                document.getElementById("output").innerText+=d.messages.map((data)=>data.name+"≫"+data.message+"\n").join("");
+                document.getElementById("output").scrollTop = document.getElementById("output").scrollHeight;
+            }
+            socket.on("message", (data)=>onMessage(data));
+            socket.on("messagebulk",(data)=>onMessageBulk(data));
             document.getElementById("chat").onsubmit=function(e){
                 socket.emit("chat", {name : name,message : document.getElementById("msg").value});
                 document.getElementById("msg").value="";
@@ -100,10 +114,13 @@
                 location.href="../../"
             });
             socket.on("goRoom", function(data){
-                location.href="./"+encodeURIComponent(data.name);
+                location.href="./"+encodeURIComponent(data.id);
+            });
+            socket.on("goJoin", function(data){
+                location.href="./join/"+encodeURIComponent(data.id);
             });
             socket.on("okawari", function(data){
-                location.href="./"+data.roomid+"?nickname="+data.nickname+"&team="+data.team;
+                location.href="./"+data.roomid+"?nickname="+data.nickname+"&team="+data.team+"&kit="+urlVars.kit;
             });
             socket.on("showPlayers", function(data){
                 document.getElementById("players").innerHTML="<span style='color:"+getColor(data.you.team)+";border-style: dotted;'>"+data.you.name+"≫"+data.you.state+"</span><br>";
@@ -187,11 +204,24 @@
                     Object.keys(argsdata.candidates).forEach(cank=>{
                         let candidate=argsdata.candidates[cank];
                         let coststr="";
-                        if(candidate.hasOwnProperty("cost")&&candidate.cost>0)coststr="("+candidate.cost+")"
+                        if(argsdata.type=="action"){
+                            let hasCost=candidate.hasOwnProperty("cost")&&candidate.cost>0;
+                            let hasCostEx=candidate.hasOwnProperty("costEx")&&candidate.costEx>0;
+                            if(hasCostEx){
+                                if(hasCost){
+                                    coststr="("+candidate.cost+"+Ex"+candidate.costEx+")";
+                                }else{
+                                    coststr="(Ex"+candidate.costEx+")";
+                                }
+                            }else if(hasCost){
+                                coststr="("+candidate.cost+")"
+                            }
+                        }
                         if(candidate.available){
-                            preCommand.innerHTML+="<span onclick=onCommand('"+cank+"') style='color:#008;border-bottom: dotted;'>"+candidate.name+coststr+"</span> ";
+                            let cl = (candidate.ex?"avilableEx":"avilable");
+                            preCommand.innerHTML+="<span onclick=onCommand('"+cank+"') class='"+cl+"'>"+candidate.name+coststr+"</span> ";
                         }else{
-                            preCommand.innerHTML+="<span style='color:#555;text-decoration: line-through;'>"+candidate.name+coststr+"</span> ";
+                            preCommand.innerHTML+="<span class='unavilable'>"+candidate.name+coststr+"</span> ";
                         }
                     });
                 }

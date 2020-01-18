@@ -4,7 +4,10 @@ const http=require('http').createServer(app);
 const socketIO=require('socket.io');
 const io=socketIO.listen(http);
 const _aidata=require("./aidata.js");
-const _TIMEOUT_SECONDS=240;
+const crypto = require('crypto');
+const os = require('os');
+const svg2img = require("svg2img");
+
 var events = require('events');
 var eventEmitter = new events.EventEmitter();
 eventEmitter.setMaxListeners(40);
@@ -12,6 +15,19 @@ rooms={};
 
 let globalRecentLog=[];
 let globalRecentLogMax=20;
+
+function forceHttps(req, res, next){
+    if (!process.env.HAS_HTTPS) {
+        return next();
+    };
+
+    if (req.headers['x-forwarded-proto'] && req.headers['x-forwarded-proto'] === "http") {
+        res.redirect('https://' + req.headers.host + req.url);
+    }else {
+        return next();
+    }
+};
+app.all('*', forceHttps);
 
 app.get('/',function(req,res){
     res.sendFile(__dirname+'/docs/index.html');
@@ -28,6 +44,9 @@ app.get('/make.html',function(req,res){
 app.get('/rooms/:roomid',function(req,res){
     res.sendFile(__dirname+'/docs/game.html');
 });
+app.get('/rooms/join/:roomid',function(req,res){
+    res.sendFile(__dirname+'/docs/join.html');
+});
 app.get('/rooms/spectate/:roomid',function(req,res){
     res.sendFile(__dirname+'/docs/spectate.html');
 });
@@ -37,6 +56,55 @@ app.get('/clear',function(req,res){
     io.emit("goRobby",{});
     res.redirect('/');
 });
+app.get('/favicon.ico',function(req,res){
+    sendFavicon(req,res,64);
+});
+app.get('/apple-touch-icon.png',function(req,res){
+    sendFavicon(req,res,180);
+});
+app.get('/android-touch-icon.png',function(req,res){
+    sendFavicon(req,res,192);
+});
+function sendFavicon(req,res,size){
+    let serverColorMoto = crypto.createHash('sha256').update(req.headers.host, 'utf8').digest("hex");
+    let serverColor=genServerColor(parseInt(serverColorMoto.slice(0,2),16),parseInt(serverColorMoto.slice(2,4),16));
+    console.log("color:"+serverColor+"("+req.headers.host+")");
+    let svg='<svg xmlns="http://www.w3.org/2000/svg" height="9" width="9"><text x="0" y="8" fill="'+serverColor+'">☯</text></svg>';
+    
+    svg2img(svg,{width:size,height:size},function(error,buffer){
+        res.writeHead(200, {
+            'Content-Type': 'image/png',
+            'Content-Length': buffer.length,
+            'Expires': new Date().toUTCString()
+        });
+        res.end(buffer);
+    });
+}
+
+function genServerColor(num1,num2){
+    let decToHex2=(dec=>("00"+Math.floor(dec).toString(16)).slice(-2));
+    let bri=Math.floor(num2/2)+64;
+    let hue=num1*6;
+    let phue=decToHex2(     (hue%256) *(bri/256));
+    let mhue=decToHex2((256-(hue%256))*(bri/256));
+    let _BRI=decToHex2(bri);
+    switch (true) {
+        case hue<256*1:
+            return "#"+_BRI+phue+"00";
+        case hue<256*2:
+            return "#"+mhue+_BRI+"00";
+        case hue<256*3:
+            return "#"+"00"+_BRI+phue;
+        case hue<256*4:
+            return "#"+"00"+mhue+_BRI;
+        case hue<256*5:
+            return "#"+phue+"00"+_BRI;
+        case hue<256*6:
+            return "#"+_BRI+"00"+mhue;
+        default:
+            return "#"+_BRI+"00"+"00";
+    }
+}
 io.on('connection',function(socket){
     socket.join("robby");
     showRoomState();
@@ -44,7 +112,7 @@ io.on('connection',function(socket){
         makeRoomAndJoin(socket,data.name,data.args);
     });
     socket.on("joinRoom",data=>{
-        joinRoom(data.roomid,socket,data.nickname,data.team);
+        joinRoom(data.roomid,socket,data.nickname,data.team,data.kitid);
     });
     socket.on("spectate",data=>{
         socket.join(data.roomid);
@@ -65,8 +133,11 @@ io.on('connection',function(socket){
     });
     socket.on("getRoomData",data=>{
         if(rooms.hasOwnProperty(data.id)){
-            socket.emit(rooms[data.id].showData(socket));
+            rooms[data.id].showData(socket);
         }
+    });
+    socket.on("getKitsset",data=>{
+        socket.emit("kitsset",Object.keys(_game.kitsets));
     });
 });
 http.listen(process.env.PORT || 80);
@@ -87,12 +158,12 @@ function makeRoom(name,args){
     return r.id;
 }
 function makeRoomAndJoin(socket,name,args){
-    socket.emit("goRoom",{id:makeRoom(name,args)});
+    socket.emit("goJoin",{id:makeRoom(name,args)});
 }
-function joinRoom(roomid,socket,nickname,team){
+function joinRoom(roomid,socket,nickname,team,kitid){
     if(rooms.hasOwnProperty(roomid)){
         socket.join(roomid);
-        if(rooms[roomid].join(socket,nickname,team)){
+        if(rooms[roomid].join(socket,nickname,team,kitid)){
             showRoomState();
         }else{
             socket.emit("goRobby",{});
@@ -112,7 +183,7 @@ function joinTaiman(socket){
         var room=new TaimanRoom(name,rooms);
         rooms[room.id]=room;
     }
-    socket.emit("goRoom",{id:room.id});
+    socket.emit("goJoin",{id:room.id});
 }
 
 function joinAiman(socket){
@@ -120,7 +191,7 @@ function joinAiman(socket){
     let name="AIタイマン"+("000"+(trooms.length+1)).slice(-3);
     var room=new AimanRoom(name,rooms);
     rooms[room.id]=room;
-    socket.emit("goRoom",{id:room.id});
+    socket.emit("goRoom",{id:room.id+"?nickname=名無し&team=名無し&kit=0"});
 }
 function showRoomState(){
     var avr= Object.values(rooms).filter(r=>r.game.countJoined()>0);
@@ -132,14 +203,15 @@ function showRoomState(){
 class Room{
     constructor(name,parent,args={}){
         this.recentLog=[];
-        this.recentLogMax=20;
+        this.recentLogMax=1000;
         this.name=name;
         this.id=generateUuid();
         this.args=args;
         this.taiman=this.args.taiman;
         this.parent=parent;
+        this.kits=_game.kitsets.hasOwnProperty(args.kitsname)?_game.kitsets[args.kitsname]:_game.kitsets["スタンダード"];
         this.hidden=args.hasOwnProperty("hidden")&&args.hidden;
-        this.game=new _game.Game(_game._RULE_NEW,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this));
+	    this.game=new _game.Game(this.kits,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this));
         this.teamMode=this.game.teamMode;
     }
     getNumber(){
@@ -149,22 +221,24 @@ class Room{
         }
         return Object.keys(io.sockets.adapter.rooms[this.id].sockets).length;
     }
-    join(socket,nickname,team){
-        if(!this.args.hasOwnProperty("teamMode")||this.args.teamMode){
-            var newPlayer=(new Human(nickname,team,this.game,socket));
+    join(socket,nickname,team,kitid){
+        let kit=this.kits.set.hasOwnProperty(kitid)?this.kits.set[kitid]:this.kits.set[0];
+        let showJobMark=(Object.keys(this.kits.set).length>1);
+	    if(!this.args.hasOwnProperty("teamMode")||this.args.teamMode){
+            var newPlayer=(new Human(nickname,team,this.game,socket,kit,showJobMark));
         }else{
-            var newPlayer=(new Human(nickname,socket.id,this.game,socket));
+            var newPlayer=(new Human(nickname,socket.id,this.game,socket,kit,showJobMark));
         }
+        this.log("connected:"+newPlayer.getShowingName());
         if(this.game.joinPlayer(newPlayer)){
-            socket.emit("joined",{"id":nickname,"team":team,"teamMode":this.teamMode});
-            this.log("connected:"+nickname);
+            socket.emit("joined",{"id":newPlayer.getShowingName(),"team":team,"teamMode":this.teamMode});
             socket.on('chat',function(data){
-                this.chat(data);
+                this.chat([data]);
                 if(data.message.startsWith("!")) this.command(data.message.slice(1));
             }.bind(this));
             socket.on('disconnect',((data)=>{
                 this.game.players.filter(p=>p.hasOwnProperty("socket")).filter(p=>p.socket==socket).forEach(function(player){
-                    this.log("disconnected:"+player.nickname);
+                    this.log("disconnected:"+player.getShowingName());
                     this.game.killPlayer(player.id);
                 }.bind(this));
                 if(this.getNumber()==0)this.closeGame();
@@ -179,33 +253,40 @@ class Room{
     showData(socket){
         this.sendRecentLog(socket);
         this.game.showPlayers();
-        socket.emit("roomData",{name:this.name,teamMode:this.game.teamMode,available:this.game.aki()});
+        socket.emit("roomData",{
+            name:this.name,
+            teamMode:this.game.teamMode,
+            available:this.game.aki(),
+            kits:Object.keys(this.kits.set).reduce((a,c)=>{a[c]=this.kits.set[c];return a;},{})
+        });
     }
 
     log(str){
-        this.chat({"name":"★system","message":str});
+        this.chat(str.split("\n").map(s=>({"name":"★system","message":s})));
     }
 
     chat(data){
-        data.time=new Date();
-        io.to(this.id).emit('message',data);
-        process.stdout.write(this.name+":"+data.name+"≫"+data.message+"\n");
-        this.recentLog.push(data);
-        if(this.recentLog.length>this.recentLogMax)this.recentLog.shift();
+        data.forEach(d=>{
+            d.time=new Date();
+            process.stdout.write(this.name+":"+d.name+"≫"+d.message+"\n");
+            this.recentLog.push(d);
+            if(this.recentLog.length>this.recentLogMax)this.recentLog.shift();
+        });
+        io.to(this.id).emit("messagebulk",{messages:data}); 
     }
 
     sendRecentLog(socket){
-        this.recentLog.forEach(data=>
-                socket.emit("message",data)
-            ); 
+        socket.emit("messagebulk",{messages:this.recentLog}); 
     }
 
     showPlayers(players){
-        players.filter(p=>p.hasOwnProperty("socket")).map(player=>{
+        players.concat(this.game.deadPlayers).filter(p=>p.hasOwnProperty("socket")).map(player=>{
             player.socket.emit("showPlayers",
                 {
-                    others:players.filter(p=>p!==player).map(p=>({name:p.nickname,state:p.state(),team:p.team}))
-                    ,you:{name:player.nickname,state:player.state(),team:player.team}
+                    others:  players.filter(p=>p.team==player.team).filter(p=>p!==player)
+                                    .concat(players.filter(p=>p.team!=player.team))
+                                    .map(p=>({name:p.getShowingName(),state:p.state(),team:p.team}))
+                    ,you:{name:player.getShowingName(),state:player.state(),team:player.team}
                 });
         });
     }
@@ -221,6 +302,7 @@ class Room{
 
     okawari(){
         let roomid=makeRoom(this.name,this.args);
+        rooms[roomid].recentLog=this.recentLog.concat([{name:"",message:""},{name:"",message:""},{name:"",message:"*".repeat(30)},{name:"",message:"...次の試合..."},{name:"",message:"*".repeat(30)},{name:"",message:""},{name:"",message:""},]);
         if(io.sockets.adapter.rooms[this.id]!=undefined){
             let humans=Object.keys(io.sockets.adapter.rooms[this.id].sockets);
             let aicount=this.game.players.filter(p=>p.isAI).length+this.game.deadPlayers.filter(p=>p.isAI).length;
@@ -274,28 +356,15 @@ class AimanRoom extends Room{
         this.game.joinPlayer(new _game.TaimanAi("名無しAI🤖"+id,this.game,_aidata.data[id]));
     }
 }
-/*function resetGame(){
-    recentLog=[];
-    delete game;
-    game=new _game.Game(_SKILLS_MOTO,_HP_DEFAULT,resetGame,log,showPlayers);
-    Object.keys(io.sockets.connected).forEach(k=>{
-        let socket=io.sockets.connected[k];
-        let id="guest"+Math.floor(Math.random()*10000);
-        socket.emit("reset",{"id":id});
-        log("connected:"+id);
-        game.joinPlayer(new Human(id,game,socket),false);
-    });
-    game.setStartnumber(game.startnumber);
-}*/
 
-function Human(nickname,team,game,socket){
-    _game.Player.call(this,socket.id,nickname,team,game);
+function Human(nickname,team,game,socket,kit,showJobMark){
+    _game.Player.call(this,socket.id,nickname,team,game,kit,showJobMark);
     this.socket=socket;
     this.isHuman=true;
     this.reqDecisionWrapped=function(callBack,candidates){
         this.socket.emit('input_action',{"candidates":candidates});
         this.onAction=function(data){
-            callBack(this.game.genDecision(data.action));
+            callBack(this.game.genDecision(data.action,this));
         }.bind(this);
     }.bind(this);
     this.onAction=function(){};
@@ -323,4 +392,8 @@ function generateUuid() {
         }
     }
     return chars.join("");
+}
+
+function strBytes(str) {
+    return(encodeURIComponent(str).replace(/%../g,"x").length);
 }
