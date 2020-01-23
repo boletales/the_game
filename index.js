@@ -7,6 +7,7 @@ const _aidata=require("./aidata.js");
 const crypto = require('crypto');
 const os = require('os');
 const svg2img = require("svg2img");
+const request = require('request');
 
 var events = require('events');
 var eventEmitter = new events.EventEmitter();
@@ -211,7 +212,7 @@ class Room{
         this.parent=parent;
         this.kits=_game.kitsets.hasOwnProperty(args.kitsname)?_game.kitsets[args.kitsname]:_game.kitsets["スタンダード"];
         this.hidden=args.hasOwnProperty("hidden")&&args.hidden;
-	    this.game=new _game.Game(this.kits,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this));
+	    this.game=new _game.Game(this.kits,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this),()=>{},true,this.sendBattleLogToLogger.bind(this));
         this.teamMode=this.game.teamMode;
     }
     getNumber(){
@@ -265,6 +266,22 @@ class Room{
         this.chat(str.split("\n").map(s=>({"name":"★system","message":s})));
     }
 
+    sendBattleLogToLogger(data){
+        if(process.env.hasOwnProperty("chakra_logger_enable") && process.env.hasOwnProperty("chakra_logger_url") && process.env.chakra_logger_enable=="true"){
+            request.post({
+                url: process.env.chakra_logger_url,
+                headers: {
+                    "content-type": "plain/text"
+                },
+                body: JSON.stringify({
+                    "host":process.domain,
+                    "id":this.id,
+                    "data":data,
+                }, null , "\t")
+            }, function (error, response, body){console.log(body);});
+        }
+    }
+
     chat(data){
         data.forEach(d=>{
             d.time=new Date();
@@ -285,8 +302,8 @@ class Room{
                 {
                     others:  players.filter(p=>p.team==player.team).filter(p=>p!==player)
                                     .concat(players.filter(p=>p.team!=player.team))
-                                    .map(p=>({name:p.getShowingName(),state:p.state(),team:p.team}))
-                    ,you:{name:player.getShowingName(),state:player.state(),team:player.team}
+                                    .map(p=>({name:p.getShowingName(),state:p.getState(),team:p.team}))
+                    ,you:{name:player.getShowingName(),state:player.getState(),team:player.team}
                 });
         });
     }
