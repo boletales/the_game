@@ -630,7 +630,7 @@ exports._HP_DEFAULT=6;
 const OKAWARISEC=5;
 
 class Game{
-    constructor(kits,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},needokawari=true){
+    constructor(kits,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},needokawari=true,sendBattleLog=function(){}){
         this.kits=kits.set;
         this.useEx=kits.useEx;
         this.sendlog=function(){
@@ -638,6 +638,7 @@ class Game{
             log(str);
             this.logbuffer=[];
         };
+        this.sendBattleLog=sendBattleLog;
         this.logbuffer=[];
         this.log=function(str){this.logbuffer.push(str)};
         this.noticewinner= noticewinner;
@@ -655,6 +656,8 @@ class Game{
                     k[n]=skcp;
                 }
             }));
+        
+        this.battleLog=[];
         this.players=[];
         this.deadPlayers=[];
         this.waiting=[];
@@ -828,6 +831,12 @@ class Game{
     
 
     turn(players,decisions){
+        this.battleLog.push(players.map((p,i)=>({
+            id:p.id,
+            nickname:p.nickname,
+            decision:{skill:decisions[i].skill.name,args:decisions[i].args},
+            before:p.getStateData()})
+        ));
         players.forEach(p=>p.noticeDecisions(players.map((pl,i)=>{return {"id":pl.id,"decision":decisions[i].skill.id};})));
         players.forEach(p=>p.refreshBuffs());
 
@@ -876,7 +885,8 @@ class Game{
         //ダメージを与える
         players.forEach((p,i)=>p.hp-=damages[i].reduce((a,c)=>a+c,0));
 
-
+        //結果記録
+        players.forEach((p,i)=>this.battleLog[this.battleLog.length-1][i].after=p.getStateData());
         //結果表示
         this.log("~~~~~");
         let livingTeams=[];
@@ -896,7 +906,7 @@ class Game{
             if(players[i].hp<=0){
                 this.log("  死亡..."+dstr);
             }else{
-                this.log("  "+players[i].state()+dstr);
+                this.log("  "+players[i].getState()+dstr);
             }
             this.log("");
         });
@@ -907,6 +917,7 @@ class Game{
             this.sendlog();
             return true;
         }else{
+            this.sendBattleLog(this.battleLog);
             this.log("試合終了");
             if(livingTeams.length==1){
                 if(this.teamMode){
@@ -1052,8 +1063,11 @@ function Player(id,nickname,team,game,kit,showJobMark=false){
         );
     }.bind(this);
 
-    this.state=function(){
+    this.getState=function(){//プレイヤーの状態（文字列）
         return "♥".repeat(Math.max(this.hp,0))+"   "+"☯".repeat(Math.max(this.charge,0))+(this.game.useEx?"   Ex:"+this.chargeEx.toFixed(1):"")+"   "+Object.values(this.buffs).map(b=>b.state()).join(" ");
+    }
+    this.getStateData=function(){//プレイヤーの状態（オブジェクト）
+        return {hp:this.hp,charge:this.charge,chargeEx:this.chargeEx,buffs:this.buffs.map(b=>({id:b.id,level:b.level}))};
     }
 
     this.refreshBuffs=function(){
