@@ -274,7 +274,7 @@ class Room{
                     "content-type": "plain/text"
                 },
                 body: JSON.stringify({
-                    "host":process.domain,
+                    "host":process.env.hasOwnProperty("chakra_server_name")?process.env.chakra_server_name:"unknown",
                     "id":this.id,
                     "data":data,
                 }, null , "\t")
