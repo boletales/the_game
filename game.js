@@ -805,11 +805,16 @@ class Game{
 
                 //対象（敵）
                 case "opponent":
-                    ret.candidates=candPlayer(this.players.filter(p=>p.team!=player.team));
+                    ret.candidates=
+                        this.players.filter(p=>p.team!==player.team).map(p=>p.id).reduce(
+                            function(a,playerid){
+                                a[playerid]={"name":this.players.find(p=>p.id==playerid).getShowingName(),"args":expansion(args.slice(1)),"available":true};
+                                return a;
+                            }.bind(this)
+                        ,{});
                     break;
                 //対象（自分含む味方）
                 case "team":
-                    ret.candidates=candPlayer(this.players.filter(p=>p.team==player.team));
                     ret.candidates=
                         this.players.filter(p=>p.team==player.team).map(p=>p.id).reduce(
                             function(a,playerid){
@@ -820,7 +825,13 @@ class Game{
                     break;
                 //対象（味方）
                 case "supporter":
-                    ret.candidates=candPlayer(this.players.filter(p=>p.team==player.team&&p.id!=player.id));
+                    ret.candidates=
+                        this.players.filter(p=>p.team==player.team && p.id!=player.id).map(p=>p.id).reduce(
+                            function(a,playerid){
+                                a[playerid]={"name":this.players.find(p=>p.id==playerid).getShowingName(),"args":expansion(args.slice(1)),"available":true};
+                                return a;
+                            }.bind(this)
+                        ,{});
                     break;
                 default:
                     break;
@@ -828,15 +839,6 @@ class Game{
             return ret;
         }.bind(this);
         return expansion([{message:"行動入力",type:"action"}]);
-        
-        function candPlayer(cands){
-            cands.map(p=>p.id).reduce(
-                function(a,playerid){
-                    a[playerid]={"name":this.players.find(p=>p.id==playerid).getShowingName(),"args":expansion(args.slice(1)),"available":true};
-                    return a;
-                }.bind(this)
-            ,{});
-        }
     }
     
 
