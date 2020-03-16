@@ -67,8 +67,12 @@ app.get('/android-touch-icon.png',function(req,res){
     sendFavicon(req,res,192);
 });
 function sendFavicon(req,res,size){
-    let serverColorMoto = crypto.createHash('sha256').update(req.headers.host, 'utf8').digest("hex");
-    let serverColor=genServerColor(parseInt(serverColorMoto.slice(0,2),16),parseInt(serverColorMoto.slice(2,4),16));
+    if(!process.env.chakra_server_name){
+        var serverColor="#000";
+    }else{
+        let serverColorMoto = crypto.createHash('sha256').update(process.env.chakra_server_name, 'utf8').digest("hex");
+        var serverColor=genServerColor(parseInt(serverColorMoto.slice(0,2),16),parseInt(serverColorMoto.slice(2,4),16));
+    }
     console.log("color:"+serverColor+"("+req.headers.host+")");
     let svg='<svg xmlns="http://www.w3.org/2000/svg" height="9" width="9"><text x="0" y="8" fill="'+serverColor+'">☯</text></svg>';
     
