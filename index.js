@@ -7,6 +7,7 @@ const _aidata=require("./aidata.js");
 const crypto = require('crypto');
 const os = require('os');
 const svg2img = require("svg2img");
+const request = require('request');
 
 var events = require('events');
 var eventEmitter = new events.EventEmitter();
@@ -17,7 +18,7 @@ let globalRecentLog=[];
 let globalRecentLogMax=20;
 
 function forceHttps(req, res, next){
-    if (!process.env.HAS_HTTPS) {
+    if (!process.env.chakra_force_https) {
         return next();
     };
 
@@ -66,8 +67,12 @@ app.get('/android-touch-icon.png',function(req,res){
     sendFavicon(req,res,192);
 });
 function sendFavicon(req,res,size){
-    let serverColorMoto = crypto.createHash('sha256').update(req.headers.host, 'utf8').digest("hex");
-    let serverColor=genServerColor(parseInt(serverColorMoto.slice(0,2),16),parseInt(serverColorMoto.slice(2,4),16));
+    if(!process.env.chakra_server_name){
+        var serverColor="#000";
+    }else{
+        let serverColorMoto = crypto.createHash('sha256').update(process.env.chakra_server_name, 'utf8').digest("hex");
+        var serverColor=genServerColor(parseInt(serverColorMoto.slice(0,2),16),parseInt(serverColorMoto.slice(2,4),16));
+    }
     console.log("color:"+serverColor+"("+req.headers.host+")");
     let svg='<svg xmlns="http://www.w3.org/2000/svg" height="9" width="9"><text x="0" y="8" fill="'+serverColor+'">☯</text></svg>';
     
@@ -211,7 +216,7 @@ class Room{
         this.parent=parent;
         this.kits=_game.kitsets.hasOwnProperty(args.kitsname)?_game.kitsets[args.kitsname]:_game.kitsets["スタンダード"];
         this.hidden=args.hasOwnProperty("hidden")&&args.hidden;
-	    this.game=new _game.Game(this.kits,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this));
+	    this.game=new _game.Game(this.kits,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this),()=>{},true,this.sendBattleLogToLogger.bind(this));
         this.teamMode=this.game.teamMode;
     }
     getNumber(){
@@ -265,6 +270,22 @@ class Room{
         this.chat(str.split("\n").map(s=>({"name":"★system","message":s})));
     }
 
+    sendBattleLogToLogger(data){
+        if(process.env.hasOwnProperty("chakra_logger_enable") && process.env.hasOwnProperty("chakra_logger_url") && process.env.chakra_logger_enable=="true"){
+            request.post({
+                url: process.env.chakra_logger_url,
+                headers: {
+                    "content-type": "plain/text"
+                },
+                body: JSON.stringify({
+                    "host":process.env.hasOwnProperty("chakra_server_name")?process.env.chakra_server_name:"unknown",
+                    "id":this.id,
+                    "data":data,
+                }, null , "\t")
+            }, function (error, response, body){console.log(body);});
+        }
+    }
+
     chat(data){
         data.forEach(d=>{
             d.time=new Date();
@@ -285,8 +306,8 @@ class Room{
                 {
                     others:  players.filter(p=>p.team==player.team).filter(p=>p!==player)
                                     .concat(players.filter(p=>p.team!=player.team))
-                                    .map(p=>({name:p.getShowingName(),state:p.state(),team:p.team}))
-                    ,you:{name:player.getShowingName(),state:player.state(),team:player.team}
+                                    .map(p=>({name:p.getShowingName(),state:p.getState(),team:p.team}))
+                    ,you:{name:player.getShowingName(),state:player.getState(),team:player.team}
                 });
         });
     }

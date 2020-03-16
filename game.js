@@ -4,18 +4,56 @@ if(typeof process == 'undefined'){
 const _DEF_FACTOR=2;//ダメージ半減に必要な防御バフレベル
 
 _ATTACK_DEFAULT=(user,players,decisions,args)=>players.map(p=>0);
-_MIDDLE_DEFAULT=(user,players,decisions,attacksAll,args)=>{};
 _DEFENSE_DEFAULT=(user,players,decisions,attacksForMe,args)=>
     attacksForMe.map((a,i)=>(
-        decisions[i].skill.physical?
-            Math.floor(a/(2**((user.buffs.pdp.level+user.buffs.pdt.level)/_DEF_FACTOR))):
-            Math.floor(a/(2**((user.buffs.mdp.level+user.buffs.mdt.level)/_DEF_FACTOR)))
+        decisions[i].skill.beam?
+            Math.floor(a/(2**((user.buffs.mdp.level+user.buffs.mdt.level)/_DEF_FACTOR))):
+            Math.floor(a/(2**((user.buffs.pdp.level+user.buffs.pdt.level)/_DEF_FACTOR)))
         )
     );
 _REQUIREMENT_DEFAULT=(skill,p)=>(p.charge>=skill.getCost(p) && (!skill.hasOwnProperty("getCostEx") || p.chargeEx>=skill.getCostEx(p)));
 exports._ATTACK_DEFAULT=_ATTACK_DEFAULT;
 exports._DEFENSE_DEFAULT=_DEFENSE_DEFAULT;
 
+
+/*
+「技」型の解説です
+その場しのぎの実装が多すぎて草生える 時間たってから改造しようとすると苦労するやつやこれ
+特にboolの技属性周りは実装ぐっちゃぐちゃ 許して(⋈◍＞◡＜◍)。✧♡
+
+***表記***
+    配列についてはその添え字の種類を[]内に記しています
+    関数については(引数...)=>返り値 と表記します
+    id->プレイヤー番号
+    * で始まる行はオプショナル
+
+***解説***
+    name(string):技の表示名
+    args(array):技引数 今のところ対象指定のみ [{message:"ex.「対象入力」",type:"opponent|team(自分含む)|supporter",name:"今のところtoのみ"},...]
+    *pow(int):技の威力
+    *beam(bool):光学攻撃か 被ダメ計算・反射・強奪キャンセルに使用
+    *weak(bool):光線族に相殺されるか
+    *def(bool):防御族であるか 強奪キャンセルに使用
+    *reflect(bool):反射族であるか 光学キャンセルに使用
+
+    attackPhase(function array):この技の使用者から他プレイヤーへの攻撃の威力を返す(攻撃しないなら0) 必要ならここで攻撃時に必要な処理をする（☯消費とか）
+                    (使用者,プレイヤーリスト[id],行動リスト[id],技引数)=>威力リスト[対象id]
+
+    defensePhase(function array):自分への攻撃の威力リストを受け取り,各攻撃から実際に喰らうダメージを返す 必要ならここで攻撃を食らったときの処理をする（「防御」の☯吸収とか）
+                    (使用者,プレイヤーリスト[id],行動リスト[id],威力リスト[攻撃者id],技引数)=>ダメージリスト[攻撃者id]
+
+    *好きなPhaseなんでも(funciton void):game.turnに処理書けば勝手にPhase増やせる 「模倣」とか
+                    (使用者,プレイヤーリスト[id],行動リスト[id],技引数)=>undefined        
+
+    getCost(function int):(使用者)=>技コスト
+    
+    *getExCost(function int):(使用者)=>必殺コスト この関数が存在したら必殺技扱いだった"気がする"
+
+    requirement(funciton bool):プレイヤーがこの技を使用できるか 実装の都合上第一引数は「この技」 判定自体はgame.checkReq(skill,player)で
+                    (技,使用者)=>使用できるか
+
+    **inherit(bool):mod系skillのみで使用 modで定義されている以外の親スキルのプロパティを受け継ぐか
+*/
 _SKILLS_ZERO={
     non:{name:"スカ",args:[],
         attackPhase :_ATTACK_DEFAULT,
@@ -40,25 +78,18 @@ _SKILLS_ZERO={
                 return attacksForMe.map((d,i)=>(decisions[i].skill.beam ? d : 0));
             },
             getCost:(p)=>(0),
-            requirement:_REQUIREMENT_DEFAULT.bind(this),
+            requirement:_REQUIREMENT_DEFAULT,
             def:true,
         },
     
     mir:{name:"反射",args:[],
             attackPhase:_ATTACK_DEFAULT,
-            middlePhase:function(user,players,decisions,attacksAll,args){
-                let myId=players.indexOf(user);
-                decisions.forEach((d,i)=>{
-                    if(d.skill.hasOwnProperty("beam")){
-                        attacksAll[i][myId]=attacksAll[myId][i];
-                        attacksAll[myId][i]=0;
-                    }
-                })
-            },
-            getCost:(p)=>(0),
             requirement:_REQUIREMENT_DEFAULT,
-            defensePhase:_DEFENSE_DEFAULT,
+            defensePhase:function(user,players,decisions,attacksForMe,args){
+                return _DEFENSE_DEFAULT(user,players,decisions,attacksForMe.map((e,i)=>decisions[i].skill.beam?0:e),args);
+            },
             reflect:true,
+            getCost:(p)=>(0),
         },
 
     atk:{name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
@@ -85,24 +116,19 @@ _SKILLS_ZERO={
             let target=players.findIndex(p=>p.id==args[0]);
             attacks[target] = this.pow;
             return attacks;
+        }
+        ,defensePhase:function(user,players,decisions,attacksForMe,args){
+            let target=players.findIndex(p=>p.id==args[0]);
+            return attacksForMe.map((d,i)=>(i==target && decisions[i].skill.reflect)?this.pow:0);
         },
         beam:true,
         pow:1,
-        defensePhase:function(user,players,decisions,attacksForMe,args){
-            return attacksForMe.map((d,i)=>0);
-        },
         getCost:(p)=>(5),
         requirement:_REQUIREMENT_DEFAULT,
     },
 };
 
 _SKILLS_MOTO={
-    //id:技id name:技名
-    //atk:(技主,対象,対象の使用技)=>対象への攻撃力(防御前)
-    //dmg:(技主,対象,対象の使用技,対象の攻撃力)=>対象からのダメージ(防御後)
-    //act:技主=>使用時エフェクト
-    //forone:対象は一人か (falseなら自分用の技か全体攻撃)
-    //pow:威力(攻撃技専用)
     non:{name:"スカ",args:[],
         attackPhase :_ATTACK_DEFAULT,
         defensePhase:_DEFENSE_DEFAULT,
@@ -111,59 +137,52 @@ _SKILLS_MOTO={
     },
 
     def:{name:"防御",args:[], 
-            attackPhase:function(user,players,decisions,args){
-                user.buffs.pdt.levelUp(_DEF_FACTOR);
-                return players.map(p=>0);
-            },
-            defensePhase:function(user,players,decisions,attacksForMe,args){
-                attacksForMe.forEach(d=>user.charge+=Math.max(0,d));
-                return _DEFENSE_DEFAULT(user,players,decisions,attacksForMe,args);
-            },
-            getCost:(p)=>(0),
-            requirement:_REQUIREMENT_DEFAULT.bind(this),
-            def:true,
+        attackPhase:function(user,players,decisions,args){
+            user.buffs.pdt.levelUp(_DEF_FACTOR);
+            return players.map(p=>0);
         },
+        defensePhase:function(user,players,decisions,attacksForMe,args){
+            attacksForMe.forEach(d=>user.charge+=Math.max(0,d));
+            return _DEFENSE_DEFAULT(user,players,decisions,attacksForMe,args);
+        },
+        requirement:_REQUIREMENT_DEFAULT,
+        getCost:(p)=>(0),
+        def:true,
+    },
 
     atk:{name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
-            attackPhase:function(user,players,decisions,args){
-                let attacks=players.map(p=>0);
-                attacks[players.findIndex(p=>p.id==args[0])] = this.pow+user.buffs.str.getPower();
-                return attacks;
-            },pow:1,
-            getCost:(p)=>(0),
-            requirement:_REQUIREMENT_DEFAULT,
-            physical:true,
-            weak:true,
-            defensePhase:_DEFENSE_DEFAULT
+        attackPhase:function(user,players,decisions,args){
+            let attacks=players.map(p=>0);
+            attacks[players.findIndex(p=>p.id==args[0])] = this.pow+user.buffs.str.getPower();
+            return attacks;
         },
+        requirement:_REQUIREMENT_DEFAULT,
+        defensePhase:_DEFENSE_DEFAULT,
+        pow:1,
+        getCost:(p)=>(0),
+        weak:true,
+    },
 
     chr:{name:"溜め",args:[],
-            attackPhase:function(user,players,decisions,args){
-                let attacks=players.map(p=>0);
-                user.charge+=3;
-                return attacks;
-            },
-            getCost:(p)=>(0),
-            requirement:_REQUIREMENT_DEFAULT,
-            defensePhase:_DEFENSE_DEFAULT
+        attackPhase:function(user,players,decisions,args){
+            let attacks=players.map(p=>0);
+            user.charge+=3;
+            return attacks;
         },
+        requirement:_REQUIREMENT_DEFAULT,
+        defensePhase:_DEFENSE_DEFAULT,
+        getCost:(p)=>(0),
+    },
     
     mir:{name:"反射",args:[],
-            attackPhase:_ATTACK_DEFAULT,
-            middlePhase:function(user,players,decisions,attacksAll,args){
-                let myId=players.indexOf(user);
-                decisions.forEach((d,i)=>{
-                    if(d.skill.hasOwnProperty("beam")){
-                        attacksAll[i][myId]=attacksAll[myId][i];
-                        attacksAll[myId][i]=0;
-                    }
-                })
-            },
-            getCost:(p)=>(0),
-            requirement:_REQUIREMENT_DEFAULT,
-            defensePhase:_DEFENSE_DEFAULT,
-            reflect:true,
+        attackPhase:_ATTACK_DEFAULT,
+        requirement:_REQUIREMENT_DEFAULT,
+        defensePhase:function(user,players,decisions,attacksForMe,args){
+            return _DEFENSE_DEFAULT(user,players,decisions,attacksForMe.map((e,i)=>decisions[i].skill.beam?0:e),args);
         },
+        reflect:true,
+        getCost:(p)=>(0),
+    },
 
 };
 _SKILLS_MOD_BEAM={
@@ -175,20 +194,22 @@ _SKILLS_MOD_BEAM={
             attacks[target] = this.pow;
             return attacks;
         },
-        beam:true,
-        pow:3,
         defensePhase:function(user,players,decisions,attacksForMe,args){
+            let target=players.findIndex(p=>p.id==args[0]);
             return attacksForMe.map((d,i)=>{
-                if(decisions[i].skill.weak || (decisions[i].skill.beam && d<=this.pow)){
+                if(i==target && decisions[i].skill.reflect){
+                    return this.pow;
+                }else if(decisions[i].skill.weak || (decisions[i].skill.beam && d<=this.pow)){
                     return 0;
                 }else{
                     return d;
                 }
             });
         },
-        physical:false,
-        getCost:(p)=>(3),
         requirement:_REQUIREMENT_DEFAULT,
+        beam:true,
+        pow:3,
+        getCost:(p)=>(3),
     },
 };
 
@@ -205,12 +226,11 @@ _SKILLS_MOD_EX_LIGHTBLADE={
         defensePhase:function(user,players,decisions,attacksForMe,args){
             return attacksForMe.map((d,i)=>0);
         },
+        requirement:_REQUIREMENT_DEFAULT,
         beam:true,
         pow:5,
-        physical:false,
         getCost:(p)=>(0),
         getCostEx:(p)=>(2),
-        requirement:_REQUIREMENT_DEFAULT,
     },
 };
 
@@ -227,163 +247,159 @@ _SKILLS_MOD_EX_HARDEN={
         defensePhase:function(user,players,decisions,attacksForMe,args){
             return attacksForMe.map((d,i)=>0);
         },
+        requirement:_REQUIREMENT_DEFAULT,
         getCost:(p)=>(0),
         getCostEx:(p)=>([2,5,Infinity][Math.min(2,Math.max(p.buffs.mdp.level,p.buffs.pdp.level))]),
-        requirement:_REQUIREMENT_DEFAULT,
     },
 };
 
 _SKILLS_MOD_COVER={
     cov:{name:"護衛",args:[{message:"対象入力",type:"supporter",name:"to"}], 
-            attackPhase:function(user,players,decisions,args){
-                let attacks=players.map(p=>0);
-                user.useChakra(this.getCost(user));
-                players.find(p=>p.id==args[0]).buffs.pdt.levelUp(1);
-                return attacks;
-            },
-            getCost:(p)=>(2),
-            requirement:_REQUIREMENT_DEFAULT,
-            middlePhase:_MIDDLE_DEFAULT,
-            defensePhase:_DEFENSE_DEFAULT,
+        attackPhase:function(user,players,decisions,args){
+            let attacks=players.map(p=>0);
+            user.useChakra(this.getCost(user));
+            players.find(p=>p.id==args[0]).buffs.pdt.levelUp(1);
+            return attacks;
         },
+        requirement:_REQUIREMENT_DEFAULT,
+        defensePhase:_DEFENSE_DEFAULT,
+        getCost:(p)=>(2),
+    },
 };
 _SKILLS_MOD_HEAL={
     hea:{name:"回復",args:[{message:"対象入力",type:"team",name:"to"}], 
-            attackPhase:function(user,players,decisions,args){
-                let attacks=players.map(p=>0);
-                user.useChakra(this.getCost(user));
-                players.find(p=>p.id==args[0]).hp += 3;
-                return attacks;
-            },
-            getCost:(p)=>(6),
-            requirement:_REQUIREMENT_DEFAULT,
-            defensePhase:_DEFENSE_DEFAULT,
+        attackPhase:function(user,players,decisions,args){
+            let attacks=players.map(p=>0);
+            user.useChakra(this.getCost(user));
+            players.find(p=>p.id==args[0]).hp += 3;
+            return attacks;
         },
+        requirement:_REQUIREMENT_DEFAULT,
+        defensePhase:_DEFENSE_DEFAULT,
+        getCost:(p)=>(6),
+    },
 };
 _SKILLS_MOD_HEALPLUS={
     the:{name:"全体回復",args:[], 
-            attackPhase:function(user,players,decisions,args){
-                let attacks=players.map(p=>0);
-                user.useChakra(this.getCost(user));
-                players.filter(p=>p.team==user.team).forEach(p=>p.hp += 3);
-                return attacks;
-            },
-            getCost:(p)=>(6),
-            requirement:_REQUIREMENT_DEFAULT,
-            defensePhase:_DEFENSE_DEFAULT,
+        attackPhase:function(user,players,decisions,args){
+            let attacks=players.map(p=>0);
+            user.useChakra(this.getCost(user));
+            players.filter(p=>p.team==user.team).forEach(p=>p.hp += 3);
+            return attacks;
         },
+        requirement:_REQUIREMENT_DEFAULT,
+        defensePhase:_DEFENSE_DEFAULT,
+        getCost:(p)=>(6),
+    },
     mhe:{name:"強回復",args:[{message:"対象入力",type:"team",name:"to"}], 
-            attackPhase:function(user,players,decisions,args){
-                let attacks=players.map(p=>0);
-                user.useChakra(this.getCost(user));
-                players.find(p=>p.id==args[0]).hp += 6;
-                return attacks;
-            },
-            getCost:(p)=>(6),
-            requirement:_REQUIREMENT_DEFAULT,
-            defensePhase:_DEFENSE_DEFAULT,
+        attackPhase:function(user,players,decisions,args){
+            let attacks=players.map(p=>0);
+            user.useChakra(this.getCost(user));
+            players.find(p=>p.id==args[0]).hp += 6;
+            return attacks;
         },
+        requirement:_REQUIREMENT_DEFAULT,
+        defensePhase:_DEFENSE_DEFAULT,
+        getCost:(p)=>(6),
+    },
 };
 _SKILLS_MOD_ATPLUS={
     str:{name:"強化",args:[],
-            attackPhase:function(user,players,decisions,args){
-                user.useChakra(this.getCost(user));
-                user.buffs.str.levelUp();
-                return players.map(p=>0);
-            },
-            getCost:(p)=>{
-                let costs=[4,7,10];
-                return (p.buffs.str.level < costs.length) ? costs[p.buffs.str.level] : Infinity;
-            },
-            requirement:_REQUIREMENT_DEFAULT,
-            defensePhase:_DEFENSE_DEFAULT
+        attackPhase:function(user,players,decisions,args){
+            user.useChakra(this.getCost(user));
+            user.buffs.str.levelUp();
+            return players.map(p=>0);
         },
+        requirement:_REQUIREMENT_DEFAULT,
+        defensePhase:_DEFENSE_DEFAULT,
+        getCost:(p)=>{
+            let costs=[4,7,10];
+            return (p.buffs.str.level < costs.length) ? costs[p.buffs.str.level] : Infinity;
+        },
+    },
 };
 _SKILLS_MOD_STUN={
     stu:{name:"麻痺",args:[{message:"対象入力",type:"opponent",name:"to"}], 
-            attackPhase:function(user,players,decisions,args){
-                user.useChakra(this.getCost(user));
-                let target=players.findIndex(p=>p.id==args[0]);
-                if(decisions[target].skill.reflect){
-                	user.buffs.stu.level++;
-                }else{
-                	players[target].buffs.stu.level++;
-                }
-                let attacks=players.map(p=>0);
-                return attacks;
-            },
-            getCost:(p)=>(3),
-            requirement:_REQUIREMENT_DEFAULT,
-            defensePhase:_DEFENSE_DEFAULT
+        attackPhase:function(user,players,decisions,args){
+            user.useChakra(this.getCost(user));
+            let target=players.findIndex(p=>p.id==args[0]);
+            if(decisions[target].skill.reflect){
+                user.buffs.stu.level++;
+            }else{
+                players[target].buffs.stu.level++;
+            }
+            let attacks=players.map(p=>0);
+            return attacks;
         },
+        requirement:_REQUIREMENT_DEFAULT,
+        defensePhase:_DEFENSE_DEFAULT,
+        getCost:(p)=>(3),
+    },
 };
 _SKILLS_MOD_SMASH={
     sma:{name:"強奪",args:[{message:"対象入力",type:"opponent",name:"to"}],
-            attackPhase:function(user,players,decisions,args){
-                let attacks=players.map(p=>0);
-                let targetIndex=players.findIndex(p=>p.id==args[0]);
-                attacks[targetIndex] = this.pow+user.buffs.str.getPower();
-                return attacks;
-            },
-            pow:1,
-            getCost:(p)=>(2),
-            requirement:_REQUIREMENT_DEFAULT,
-            physical:true,
-            weak:true,
-            middlePhase:function(user,players,decisions,attacksAll,args){
-                let targetIndex=players.findIndex(p=>p.id==args[0]);
-                if(  !decisions[targetIndex].skill.def 
-                   &&!decisions[targetIndex].skill.beam){
-                    
-                    let target=players.find(p=>p.id==args[0]);
-                    target.buffs.chd.levelUp(2)
-                    user.charge+=Math.min(target.charge,2);
-                }else{
-                    user.useChakra(this.getCost(user));
-                }
-                let opp=players.find(p=>p.id==args[0]);
-                opp.buffs.chd.tick();
-            },
-            defensePhase:_DEFENSE_DEFAULT
+        attackPhase:function(user,players,decisions,args){
+            let attacks=players.map(p=>0);
+            let targetIndex=players.findIndex(p=>p.id==args[0]);
+            attacks[targetIndex] = this.pow+user.buffs.str.getPower();
+            return attacks;
         },
+        smashPhase:function(user,players,decisions,args){
+            let targetIndex=players.findIndex(p=>p.id==args[0]);
+            if(  !decisions[targetIndex].skill.def 
+                &&!decisions[targetIndex].skill.beam){
+                
+                let target=players.find(p=>p.id==args[0]);
+                target.buffs.chd.levelUp(2)
+                user.charge+=Math.min(target.charge,2);
+            }else{
+                user.useChakra(this.getCost(user));
+            }
+            let opp=players.find(p=>p.id==args[0]);
+            opp.buffs.chd.tick();
+        },
+        defensePhase:_DEFENSE_DEFAULT,
+        requirement:_REQUIREMENT_DEFAULT,
+        pow:1,
+        getCost:(p)=>(2),
+        weak:true,
+    },
 };
 _SKILLS_MOD_EXPLODE={
     exp:{name:"爆発",args:[],
-            attackPhase:function(user,players,decisions,args){
-                let attacks=players.map(p=>0);
-                user.useChakra(this.getCost(user));
-                let at=this.pow+user.buffs.str.getPower();
-                user.game.players.forEach((p,i)=>{
-                    if(p.team!=user.team){
-                        attacks[i]=at;
-                    }
-                });
-                return attacks;
-            },
-            pow:1,
-            getCost:((p)=>(_SKILLS_MOD_EXPLODE.exp.countOpponents(p)*(_SKILLS_MOD_EXPLODE.exp.pow+p.buffs.str.getPower()))),
-            countOpponents:((user)=>user.game.players.filter(p=>p.team!=user.team).length),
-            requirement:_REQUIREMENT_DEFAULT,
-            physical:true,
-            weak:true,
-            defensePhase:_DEFENSE_DEFAULT
+        attackPhase:function(user,players,decisions,args){
+            let attacks=players.map(p=>0);
+            user.useChakra(this.getCost(user));
+            let at=this.pow+user.buffs.str.getPower();
+            user.game.players.forEach((p,i)=>{
+                if(p.team!=user.team){
+                    attacks[i]=at;
+                }
+            });
+            return attacks;
         },
+        defensePhase:_DEFENSE_DEFAULT,
+        requirement:_REQUIREMENT_DEFAULT,
+        pow:1,
+        getCost:((p)=>(_SKILLS_MOD_EXPLODE.exp.countOpponents(p)*(_SKILLS_MOD_EXPLODE.exp.pow+p.buffs.str.getPower()))),
+        countOpponents:((user)=>user.game.players.filter(p=>p.team!=user.team).length),
+        weak:true,
+    },
 };
 _SKILLS_MOD_SALVO={
     sal:{name:"斉射",args:[{message:"対象入力",type:"opponent",name:"to"}],
-            attackPhase:function(user,players,decisions,args){
-                let attacks=players.map(p=>0);
-                attacks[players.findIndex(p=>p.id==args[0])] = user.charge+user.buffs.str.getPower();
-                user.charge=0;
-                return attacks;
-            },pow:1,
-            getCost:(p)=>Math.max(p.charge,1),
-            requirement:_REQUIREMENT_DEFAULT,
-            physical:true,
-            weak:true,
-            defensePhase:_DEFENSE_DEFAULT,
-            pow:1,
-        },
+        attackPhase:function(user,players,decisions,args){
+            let attacks=players.map(p=>0);
+            attacks[players.findIndex(p=>p.id==args[0])] = user.charge+user.buffs.str.getPower();
+            user.charge=0;
+            return attacks;
+        },pow:1,
+        defensePhase:_DEFENSE_DEFAULT,
+        requirement:_REQUIREMENT_DEFAULT,
+        getCost:(p)=>Math.max(p.charge,1),
+        weak:true,
+        pow:1,
+    },
 };
 
 _SKILLS_MOD_COPY={
@@ -398,7 +414,7 @@ _SKILLS_MOD_COPY={
                 }else if(e.type=="team"||e.type=="supporter"){
                     return user.id;
                 }else{
-                return undefined;
+                    return undefined;
                 }
             }).filter(e=>e!=undefined);
             decisions[myIndex].args.push({skill:targetSkill,args:skillArgs}); 
@@ -407,24 +423,34 @@ _SKILLS_MOD_COPY={
             decisions[players.findIndex(p=>p.id==user.id)]=args[args.length-1];
         },
         attackPhase:_ATTACK_DEFAULT,
+        requirement:_REQUIREMENT_DEFAULT,
+        defensePhase:_DEFENSE_DEFAULT,
         copy:true,
         getCost:(p)=>(0),
-        requirement:_REQUIREMENT_DEFAULT,
-        defensePhase:_DEFENSE_DEFAULT
     },
 };
 
 _SKILLS_MOD_ATPLUS_FIGHTER={
     str:{   
-            inherit:true,
-            getCost:(p)=>{
-                let costs=[0,4,7,10];
-                return (p.buffs.str.level < costs.length) ? costs[p.buffs.str.level] : Infinity;
-            },
+        inherit:true,
+        getCost:(p)=>{
+            let costs=[0,4,7,10];
+            return (p.buffs.str.level < costs.length) ? costs[p.buffs.str.level] : Infinity;
         },
+    },
 };
 
 
+/*
+「バフ」型の解説です
+
+***解説***
+    id(string):バフid
+    level(int property):バフの強さ
+    user(Player property):バフの持ち主
+    tick(function void):ターン経過時のアクション ()=>undefined
+    state(function str):()=>現在のバフレベルに応じた表示文字列
+*/
 const Buffs={
     //↓物理攻撃強化
     str:function(user){
@@ -611,7 +637,7 @@ let _KIT_HEALER=new Kit("白魔導師",mergeSkills({},[
 
 let _KIT_TRICK=new Kit("トリック",mergeSkills({},[   
                             _SKILLS_MOTO,
-			    _SKILLS_MOD_COPY,
+			                _SKILLS_MOD_COPY,
                         ]),7,"(奇)",_TURNEND_TEAM_DEFAULT);
 let kitsets={
     "スタンダード":{set:[_KIT_STD],useEx:false},
@@ -630,7 +656,7 @@ exports._HP_DEFAULT=6;
 const OKAWARISEC=5;
 
 class Game{
-    constructor(kits,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},needokawari=true){
+    constructor(kits,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},needokawari=true,sendBattleLog=function(){}){
         this.kits=kits.set;
         this.useEx=kits.useEx;
         this.sendlog=function(){
@@ -638,6 +664,7 @@ class Game{
             log(str);
             this.logbuffer=[];
         };
+        this.sendBattleLog=sendBattleLog;
         this.logbuffer=[];
         this.log=function(str){this.logbuffer.push(str)};
         this.noticewinner= noticewinner;
@@ -655,6 +682,8 @@ class Game{
                     k[n]=skcp;
                 }
             }));
+        
+        this.battleLog=[];
         this.players=[];
         this.deadPlayers=[];
         this.waiting=[];
@@ -681,29 +710,16 @@ class Game{
                 this.todo[1]={};
                 this.acceptingTurn=this.turns;
                 this.players.forEach(p=>{
-                        if(p.isHuman){
-                            this.todo[1][p.id]=
-                                (cb=>{
-                                    p.reqDecision(((input)=>{
-                                            this.log("行動決定:"+p.getShowingName()+"("+(Object.keys(this.newresult).length+1)+"/"+Object.keys(this.todo[0]).length+")");
-                                            this.sendlog();
-                                            cb(input);
-                                        }).bind(this)
-                                    ,this.genCommandcandidates(p));
+                    this.todo[1][p.id]=
+                        (cb=>{
+                            p.reqDecision(((input)=>{
+                                    this.log("行動決定:"+p.getShowingName()+"("+(Object.keys(this.newresult).length+1)+"/"+Object.keys(this.todo[0]).length+")");
+                                    this.sendlog();
+                                    cb(input);
                                 }).bind(this)
-                        }else{
-                            this.todo[1][p.id]=
-                                (cb=>{
-                                    p.reqDecision(((input)=>{
-                                            this.log("行動決定:"+p.getShowingName()+"("+(Object.keys(this.newresult).length+1)+"/"+Object.keys(this.todo[0]).length+")");
-                                            this.sendlog();
-                                            cb(input);
-                                        }).bind(this)
-                                    );
-                                }).bind(this)
-                        }
-                    }
-                );
+                            ,this.genCommandcandidates(p));
+                        }).bind(this);
+                });
                 this.showPlayers();
                 cb(null);
             }.bind(this)},
@@ -768,17 +784,17 @@ class Game{
                 //行動（使用可能なスキル,スキルの引数）
                 case "action":
                     ret.candidates=
-                        Object.keys(player._SKILLS).reduce(
+                        Object.keys(player.skills).reduce(
                             function(acc,skillname){
-                                let skill=player._SKILLS[skillname];
-                                let available=this.checkRec(player,skill);
+                                let skill=player.skills[skillname];
+                                let available=this.checkReq(player,skill);
                                 acc[skillname]={
                                     "name":skill.name,
                                     "args":expansion(skill.args.concat(args.slice(1))),
                                     "cost":skill.getCost(player),
                                     "available":available
                                 };
-                                if(skill.hasOwnProperty("getCostEx") && skill.getCostEx(player)>0){
+                                if(skill.hasOwnProperty("getCostEx")){
                                     acc[skillname].ex=true;
                                     acc[skillname].costEx=skill.getCostEx(player);
                                 }
@@ -810,7 +826,7 @@ class Game{
                 //対象（味方）
                 case "supporter":
                     ret.candidates=
-                        this.players.filter(p=>p.team==player.team).filter(p=>p.id!=player.id).map(p=>p.id).reduce(
+                        this.players.filter(p=>p.team==player.team && p.id!=player.id).map(p=>p.id).reduce(
                             function(a,playerid){
                                 a[playerid]={"name":this.players.find(p=>p.id==playerid).getShowingName(),"args":expansion(args.slice(1)),"available":true};
                                 return a;
@@ -822,30 +838,35 @@ class Game{
             }
             return ret;
         }.bind(this);
-
         return expansion([{message:"行動入力",type:"action"}]);
     }
     
 
     turn(players,decisions){
+        function applyAction(actname){
+            for(let from=0;from<decisions.length;from++){
+                if(decisions[from].skill.hasOwnProperty(actname)){
+                    decisions[from].skill[actname](players[from],players,decisions,decisions[from].args);
+                }
+            }
+        }
+
+        this.battleLog.push(players.map((p,i)=>({
+            id:p.id,
+            nickname:p.nickname,
+            decision:{skill:decisions[i].skill.name,args:decisions[i].args},
+            before:p.getStateData()})
+        ));
         players.forEach(p=>p.noticeDecisions(players.map((pl,i)=>{return {"id":pl.id,"decision":decisions[i].skill.id};})));
         players.forEach(p=>p.refreshBuffs());
-
-        let applyAction=function(actname){
-                for(let from=0;from<decisions.length;from++){
-                    if(decisions[from].skill.hasOwnProperty(actname)){
-                        decisions[from].skill[actname](players[from],players,decisions,decisions[from].args);
-                    }
-                }
-        }
         //初期処理
         //模倣計算
         applyAction("prePhaseCopyA");
         
         //条件処理
         for(let from=0;from<decisions.length;from++){
-            if(!this.checkRec(players[from],decisions[from].skill)){
-                decisions[from].skill=players[from]._SKILLS.non;
+            if(!this.checkReq(players[from],decisions[from].skill)){
+                decisions[from].skill=players[from].skills.non;
             }
         }
 
@@ -860,12 +881,8 @@ class Game{
             });
         }
         
-        //中間処理
-        for(let from=0;from<decisions.length;from++){
-            if(decisions[from].skill.hasOwnProperty("middlePhase")){
-		decisions[from].skill.middlePhase(players[from],players,decisions,attacks,decisions[from].args);
-	    }
-        }
+        //強奪処理
+        applyAction("smashPhase");
 
         //防御処理
         let damages=[];
@@ -876,7 +893,8 @@ class Game{
         //ダメージを与える
         players.forEach((p,i)=>p.hp-=damages[i].reduce((a,c)=>a+c,0));
 
-
+        //結果記録
+        players.forEach((p,i)=>this.battleLog[this.battleLog.length-1][i].after=p.getStateData());
         //結果表示
         this.log("~~~~~");
         let livingTeams=[];
@@ -896,7 +914,7 @@ class Game{
             if(players[i].hp<=0){
                 this.log("  死亡..."+dstr);
             }else{
-                this.log("  "+players[i].state()+dstr);
+                this.log("  "+players[i].getState()+dstr);
             }
             this.log("");
         });
@@ -907,18 +925,17 @@ class Game{
             this.sendlog();
             return true;
         }else{
+            this.sendBattleLog(this.battleLog);
             this.log("試合終了");
-            if(livingTeams.length==1){
-                if(this.teamMode){
-                    this.log("勝者...🎉 チーム「"+livingTeams[0]+"」 🎉");
-                    this.noticewinner(livingTeams[0]);
-                }else{
-                    this.log("勝者...🎉 "+players.filter(v=>v.hp>0)[0].getShowingName()+" 🎉");
-                    this.noticewinner(players.filter(v=>v.hp>0)[0].id);
-                }
-            }else{
+            if(livingTeams.length!=1){
                 this.log("勝者...なし");
                 this.noticewinner(null);
+            }else if(this.teamMode){
+                this.log("勝者...🎉 チーム「"+livingTeams[0]+"」 🎉");
+                this.noticewinner(livingTeams[0]);
+            }else{
+                this.log("勝者...🎉 "+players.filter(v=>v.hp>0)[0].getShowingName()+" 🎉");
+                this.noticewinner(players.filter(v=>v.hp>0)[0].id);
             }
             if(this.needokawari){
                 this.log(OKAWARISEC+"秒後に次の試合");
@@ -928,17 +945,17 @@ class Game{
             return false;
         }
     }
-    checkRec(player,skill){
+    checkReq(player,skill){
         return (skill.requirement.bind(null,skill))(player);
     }
     killPlayer(id){
         this.players.filter(p=>p.id==id).forEach(player=>{
             player.hp=0;
             player.reqDecision=function(cb){
-                cb(new decision([player._SKILLS.non]));
+                cb(new decision([player.skills.non]));
             }.bind(this);
             if(this.todo.length>1 && this.todo[1].hasOwnProperty("turn")){
-                this.newresult[player.id]=new decision([player._SKILLS.non]);
+                this.newresult[player.id]=new decision([player.skills.non]);
                 if(Object.keys(this.newresult).length==Object.keys(this.todo[0]).length){
                     this.todo.shift();
                     this.result=Object.assign({},this.newresult);
@@ -989,11 +1006,11 @@ class Game{
     }
     genDecision(args,player){
         if(args==undefined || args.length==0){
-            return {skill:player._SKILLS.non,args:[]};
+            return {skill:player.skills.non,args:[]};
         }else if(args.length==1){
-            return {skill:player._SKILLS[args[0]],args:[]};
+            return {skill:player.skills[args[0]],args:[]};
         }else{
-            return {skill:player._SKILLS[args[0]],args:args.slice(1)};
+            return {skill:player.skills[args[0]],args:args.slice(1)};
         }
     }
 }
@@ -1004,7 +1021,7 @@ function decision(args){
 exports.decision=decision;
 function Player(id,nickname,team,game,kit,showJobMark=false){
     this._KIT=kit;
-    this._SKILLS=Object.assign({},this._KIT.skills);
+    this.skills=Object.assign({},this._KIT.skills);
     this.turnend=kit.turnend;
     this.hp=this._KIT.hp;
     this.team=team;
@@ -1016,14 +1033,14 @@ function Player(id,nickname,team,game,kit,showJobMark=false){
     this.game=game;
     this.buffs=[];
     Object.keys(Buffs).forEach((key=>this.buffs[key]=new Buffs[key](this)).bind(this));
-    this.decision=function(player,supporter,opponents,candidates){return new _game.decision([this._SKILLS.non])}.bind(this);
+    this.decision=function(player,supporter,opponents,candidates){return new _game.decision([this.skills.non])}.bind(this);
     this.reqDecision=function(callBack,candidates){
         if(this.buffs.stu.level>0){//麻痺
-        	callBack(new decision([this._SKILLS.non]));
+        	callBack(new decision([this.skills.non]));
         }else{
             //遅刻入力対策
         	if(this.game.hasOwnProperty("timeout") && this.game.timeout!=-1){
-                setTimeout(callBack.bind(null,new decision([this._SKILLS.non])),this.game.timeout);
+                setTimeout(callBack.bind(null,new decision([this.skills.non])),this.game.timeout);
             }
             let cbw=(function(turnstart,callBack,...args){
                 if(turnstart==this.acceptingTurn){
@@ -1052,8 +1069,11 @@ function Player(id,nickname,team,game,kit,showJobMark=false){
         );
     }.bind(this);
 
-    this.state=function(){
+    this.getState=function(){//プレイヤーの状態（文字列）
         return "♥".repeat(Math.max(this.hp,0))+"   "+"☯".repeat(Math.max(this.charge,0))+(this.game.useEx?"   Ex:"+this.chargeEx.toFixed(1):"")+"   "+Object.values(this.buffs).map(b=>b.state()).join(" ");
+    }
+    this.getStateData=function(){//プレイヤーの状態（オブジェクト）
+        return {hp:this.hp,charge:this.charge,chargeEx:this.chargeEx,buffs:this.buffs.map(b=>({id:b.id,level:b.level}))};
     }
 
     this.refreshBuffs=function(){
@@ -1092,7 +1112,7 @@ exports.Player=Player;
 function TaimanAi(id,game,param){
     Player.call(this,id,id,id,game,_KIT_STD);
     this.isAI=true;
-    this.skillsCount=Object.keys(this._SKILLS).length + 0;
+    this.skillsCount=Object.keys(this.skills).length + 0;
     let nonSuka=this.skillsCount-1; 
     if(param.length<nonSuka){
         let paramSkills=param.length;
@@ -1139,8 +1159,8 @@ function TaimanAi(id,game,param){
                 rx-=probs[i];
                 if(rx>0)decid++;
             }
-            let decstr=Object.keys(this._SKILLS)[decid];
-            if(this._SKILLS[decstr].args.length>0){
+            let decstr=Object.keys(this.skills)[decid];
+            if(this.skills[decstr].args.length>0){
                 return [decstr,opponentid];
             }else{
                 return [decstr];
