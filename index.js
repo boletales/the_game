@@ -18,7 +18,7 @@ let globalRecentLog=[];
 let globalRecentLogMax=20;
 
 function forceHttps(req, res, next){
-    if (!process.env.HAS_HTTPS) {
+    if (!process.env.chakra_force_https) {
         return next();
     };
 
