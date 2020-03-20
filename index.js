@@ -9,7 +9,6 @@ const crypto = require('crypto');
 const os = require('os');
 const svg2img = require("svg2img");
 const request = require('request');
-const crypto = require('crypto');
 
 var events = require('events');
 var eventEmitter = new events.EventEmitter();
