@@ -9,10 +9,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "canvas": "^2.6.0",
-    "express": "^4.16.3",
-    "node-gyp-build": "^4.2.0",
+    "canvas": "^2.6.1",
+    "express": "^4.17.1",
+    "node-gyp-build": "^4.2.1",
     "socket.io": "^2.1.1",
-    "svg2img": "^0.6.1"
+    "svg2img": "^0.6.1",
+    "express-session": "^1.17.0"
   }
 }

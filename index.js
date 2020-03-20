@@ -9,6 +9,7 @@ const crypto = require('crypto');
 const os = require('os');
 const svg2img = require("svg2img");
 const request = require('request');
+const session = require('express-session');
 
 var events = require('events');
 var eventEmitter = new events.EventEmitter();
@@ -34,6 +35,16 @@ function forceHttps(req, res, next){
     }
 };
 
+app.use(session({
+    secret: 'do you like this game?',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        maxAge: 30 * 60 * 1000
+    }
+}));
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }));
 if( process.env.hasOwnProperty("chakra_ranking_enable") &&
     process.env.hasOwnProperty("chakra_ranking_url") &&
     process.env.chakra_ranking_enable=="true"){
@@ -41,9 +52,15 @@ if( process.env.hasOwnProperty("chakra_ranking_enable") &&
     
     app.post('/',function(req,res){
         let verifier=crypto.createVerify("RSA-SHA256");
-        verifier.update(req.body.data);
-        console.log(verifier.verify(rankingPublicKey, req.body.sign, 'base64'));
+        verifier.update(new Buffer(req.body.data));
+        let data=JSON.parse(req.body.data);
+        if( verifier.verify(rankingPublicKey, req.body.sign, 'base64') &&
+            data.server==process.env.chakra_server_name &&
+            new Date()-Date.parse(data.time.replace("+"," "))<60*1000){
 
+            console.log("Welcome 「"+data.playerinfo.nickname+"☆"+data.playerinfo.rating+"」(@"+data.player+")!!");
+            req.session.id=data.player; 
+        }
         res.sendFile(__dirname+'/docs/index.html');
     });
 }
@@ -87,9 +104,6 @@ app.get('/android-touch-icon.png',function(req,res){
     sendFavicon(req,res,192);
 });
 
-
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }));
 
 function sendFavicon(req,res,size){
     if(!process.env.chakra_server_name){
