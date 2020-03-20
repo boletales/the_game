@@ -9,6 +9,7 @@ const crypto = require('crypto');
 const os = require('os');
 const svg2img = require("svg2img");
 const request = require('request');
+const crypto = require('crypto');
 
 var events = require('events');
 var eventEmitter = new events.EventEmitter();
@@ -17,6 +18,10 @@ rooms={};
 
 let globalRecentLog=[];
 let globalRecentLogMax=20;
+
+request.get({
+    url: process.env.chakra_ranking_url+"/public.pem",
+}, function (error, response, body){rankingPublicKey=body;});
 
 function forceHttps(req, res, next){
     if (!process.env.chakra_force_https) {
@@ -36,10 +41,10 @@ if( process.env.hasOwnProperty("chakra_ranking_enable") &&
 
     
     app.post('/',function(req,res){
-        //console.log(req.body);
-        //console.log(req.body.data);
-        //console.log(req.body.sign);
-        
+        let verifier=crypto.createVerify("RSA-SHA256");
+        verifier.update(body.data);
+        console.log(verifier.verify(rankingPublicKey, body.sign, 'base64'));
+
         res.sendFile(__dirname+'/docs/index.html');
     });
 }
