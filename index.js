@@ -67,10 +67,8 @@ app.get('/android-touch-icon.png',function(req,res){
 });
 
 
-app.use(bodyParser.urlencoded({
-    extended: true
-}));
-app.use(bodyParser.json());
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }));
 
 app.post('/',function(req,res){
     console.log(req.body);
