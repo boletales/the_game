@@ -41,8 +41,8 @@ if( process.env.hasOwnProperty("chakra_ranking_enable") &&
     
     app.post('/',function(req,res){
         let verifier=crypto.createVerify("RSA-SHA256");
-        verifier.update(body.data);
-        console.log(verifier.verify(rankingPublicKey, body.sign, 'base64'));
+        verifier.update(req.body.data);
+        console.log(verifier.verify(rankingPublicKey, req.body.sign, 'base64'));
 
         res.sendFile(__dirname+'/docs/index.html');
     });
