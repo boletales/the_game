@@ -29,6 +29,22 @@ function forceHttps(req, res, next){
         return next();
     }
 };
+
+if( process.env.hasOwnProperty("chakra_ranking_enable") &&
+    process.env.hasOwnProperty("chakra_ranking_url") &&
+    process.env.chakra_ranking_enable=="true"){
+
+    
+    app.post('/',function(req,res){
+        //console.log(req.body);
+        //console.log(req.body.data);
+        //console.log(req.body.sign);
+        
+        res.sendFile(__dirname+'/docs/index.html');
+    });
+}
+
+
 app.all('*', forceHttps);
 app.get('/',function(req,res){
     res.sendFile(__dirname+'/docs/index.html');
@@ -70,14 +86,6 @@ app.get('/android-touch-icon.png',function(req,res){
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
-
-app.post('/',function(req,res){
-    console.log(req.body);
-    console.log(req.body.data);
-    console.log(req.body.sign);
-    res.sendFile(__dirname+'/docs/index.html');
-});
-
 
 function sendFavicon(req,res,size){
     if(!process.env.chakra_server_name){
@@ -284,9 +292,9 @@ class Room{
     }
 
     sendBattleLogToLogger(data){
-        if(process.env.hasOwnProperty("chakra_logger_enable") && process.env.hasOwnProperty("chakra_logger_url") && process.env.chakra_logger_enable=="true"){
+        if(process.env.hasOwnProperty("chakra_ranking_enable") && process.env.hasOwnProperty("chakra_ranking_url") && process.env.chakra_ranking_enable=="true"){
             request.post({
-                url: process.env.chakra_logger_url,
+                url: process.env.chakra_ranking_url+"/log",
                 headers: {
                     "content-type": "plain/text"
                 },
