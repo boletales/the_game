@@ -29,7 +29,6 @@ function forceHttps(req, res, next){
     }
 };
 app.all('*', forceHttps);
-
 app.get('/',function(req,res){
     res.sendFile(__dirname+'/docs/index.html');
 });
@@ -66,6 +65,21 @@ app.get('/apple-touch-icon.png',function(req,res){
 app.get('/android-touch-icon.png',function(req,res){
     sendFavicon(req,res,192);
 });
+
+
+app.use(bodyParser.urlencoded({
+    extended: true
+}));
+app.use(bodyParser.json());
+
+app.post('/',function(req,res){
+    console.log(req.body);
+    console.log(req.body.data);
+    console.log(req.body.sign);
+    res.sendFile(__dirname+'/docs/index.html');
+});
+
+
 function sendFavicon(req,res,size){
     if(!process.env.chakra_server_name){
         var serverColor="#000";
