@@ -10,6 +10,8 @@ const os = require('os');
 const svg2img = require("svg2img");
 const request = require('request');
 const session = require('express-session');
+const querystring = require('querystring');
+
 const RATING_PREFIX="⚝";
 const RATING_PREFIX_ALT="☆";
 
@@ -266,7 +268,7 @@ class Room{
         this.parent=parent;
         this.kits=_game.kitsets.hasOwnProperty(args.kitsname)?_game.kitsets[args.kitsname]:_game.kitsets["スタンダード"];
         this.hidden=args.hasOwnProperty("hidden")&&args.hidden;
-	    this.game=new _game.Game(this.kits,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this),()=>{},true,this.sendBattleLogToLogger.bind(this));
+	    this.game=new _game.Game(this.kits,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this),()=>{},true,this.sendBattleLogToServer.bind(this),this.sendRatingLogToServer.bind(this));
         this.teamMode=this.game.teamMode;
     }
     getNumber(){
@@ -282,11 +284,13 @@ class Room{
         let nickname=_nickname.replace(RATING_PREFIX,RATING_PREFIX_ALT);
         console.log(socket.request.session.playerid);
         if(rankingPlayerTable.hasOwnProperty(socket.request.session.playerid)){
-            nickname+=RATING_PREFIX+rankingPlayerTable[socket.request.session.playerid].rating;
+            var suffix=RATING_PREFIX+rankingPlayerTable[socket.request.session.playerid].rating;
+        }else{
+            var suffix="";
         }
 
-        let team=(!this.args.hasOwnProperty("teamMode")||!this.args.teamMode)?socket.id:_team;
-        var newPlayer=(new Human(nickname,team,this.game,socket,kit,showJobMark));
+        let team=(!this.args.hasOwnProperty("teamMode")||this.args.teamMode)?_team:socket.id;
+        var newPlayer=(new Human(nickname,team,this.game,socket,kit,showJobMark,suffix));
 
         this.log("connected:"+newPlayer.getShowingName());
         if(this.game.joinPlayer(newPlayer)){
@@ -324,7 +328,7 @@ class Room{
         this.chat(str.split("\n").map(s=>({"name":"★system","message":s})));
     }
 
-    sendBattleLogToLogger(data){
+    sendBattleLogToServer(data){
         if(process.env.hasOwnProperty("chakra_ranking_enable") && process.env.hasOwnProperty("chakra_ranking_url") && process.env.chakra_ranking_enable=="true"){
             request.post({
                 url: process.env.chakra_ranking_url+"/log",
@@ -336,7 +340,26 @@ class Room{
                     "id":this.id,
                     "data":data,
                 }, null , "\t")
-            }, function (error, response, body){console.log(body);});
+            }, function (error, response, body){});
+        }
+    }
+    sendRatingLogToServer(body){
+        if(process.env.hasOwnProperty("chakra_ranking_enable") && process.env.hasOwnProperty("chakra_ranking_url") && process.env.chakra_ranking_enable=="true"){
+            let data={"data":JSON.stringify({
+                "type":"ranking_ver1",
+                "servername":process.env.chakra_server_name,
+                "body":body,
+                "serverpass":process.env.chakra_ranking_pass
+            })};
+            request.post({
+                url: process.env.chakra_ranking_url+"/battle/",
+                headers: {
+                    "content-type": "application/x-www-form-urlencoded"
+                },
+                body: querystring.stringify(data)
+            }, function (players,error, response, body){
+                players.forEach(p=>updatePlayerInfo(p));
+            }.bind(null,body.players));
         }
     }
 
@@ -432,13 +455,13 @@ class AimanRoom extends Room{
     }
 }
 
-function Human(nickname,team,game,socket,kit,showJobMark,playerid){
-    _game.Player.call(this,socket.id,nickname,team,game,kit,showJobMark);
+function Human(nickname,team,game,socket,kit,showJobMark,suffix){
+    _game.Player.call(this,socket.id,nickname,team,game,kit,showJobMark,suffix);
     this.socket=socket;
     this.isHuman=true;
-    if(playerid){
+    if(socket.request.session.playerid){
         this.isRanked=true;
-        this.playerid=playerid;
+        this.playerid=socket.request.session.playerid;
     }
     this.reqDecisionWrapped=function(callBack,candidates){
         this.socket.emit('input_action',{"candidates":candidates});
@@ -485,7 +508,8 @@ function updatePlayerInfo(playerid){
         request.get({
             url: process.env.chakra_ranking_url+"/player?"+querystring.stringify({player:playerid,server:process.env.chakra_server_name})
         }, function (error, response, body){
-            rankingPlayerTable[playerid].info=JSON.parse(body);
+            let playerinfo=JSON.parse(body);
+            rankingPlayerTable[playerid].info=playerinfo;
             io.emit("updatePlayerInfo",{"id":playerid,"info":playerinfo});
         });
     }
