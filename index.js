@@ -1,4 +1,5 @@
 const _game=require("./game.js");
+const _cookieSecret_js = require('./cookieSecret.js');
 const express=require('express');
 const app=express();
 const http=require('http').createServer(app);
@@ -19,6 +20,8 @@ rooms={};
 let globalRecentLog=[];
 let globalRecentLogMax=20;
 
+let rankingPlayerTable={};
+
 request.get({
     url: process.env.chakra_ranking_url+"/public.pem",
 }, function (error, response, body){rankingPublicKey=body;});
@@ -36,7 +39,7 @@ function forceHttps(req, res, next){
 };
 
 app.use(session({
-    secret: 'do you like this game?',
+    secret: _cookieSecret_js.cookieSecret,
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -48,7 +51,6 @@ app.use(express.urlencoded({ extended: true }));
 if( process.env.hasOwnProperty("chakra_ranking_enable") &&
     process.env.hasOwnProperty("chakra_ranking_url") &&
     process.env.chakra_ranking_enable=="true"){
-
     
     app.post('/',function(req,res){
         let verifier=crypto.createVerify("RSA-SHA256");
@@ -59,7 +61,8 @@ if( process.env.hasOwnProperty("chakra_ranking_enable") &&
             new Date()-Date.parse(data.time.replace("+"," "))<60*1000){
 
             console.log("Welcome 「"+data.playerinfo.nickname+"☆"+data.playerinfo.rating+"」(@"+data.player+")!!");
-            req.session.id=data.player; 
+            req.session.id=data.player;
+            rankingPlayerTable[req.sessionID]={"id":data.player,"info":data.playerinfo};
         }
         res.sendFile(__dirname+'/docs/index.html');
     });
@@ -149,6 +152,9 @@ function genServerColor(num1,num2){
             return "#"+_BRI+"00"+"00";
     }
 }
+io.use(function(socket,next){
+    session(socket.req,so)
+});
 io.on('connection',function(socket){
     socket.join("robby");
     showRoomState();
@@ -417,10 +423,14 @@ class AimanRoom extends Room{
     }
 }
 
-function Human(nickname,team,game,socket,kit,showJobMark){
+function Human(nickname,team,game,socket,kit,showJobMark,playerid){
     _game.Player.call(this,socket.id,nickname,team,game,kit,showJobMark);
     this.socket=socket;
     this.isHuman=true;
+    if(playerid){
+        this.isRanked=true;
+        this.playerid=playerid;
+    }
     this.reqDecisionWrapped=function(callBack,candidates){
         this.socket.emit('input_action',{"candidates":candidates});
         this.onAction=function(data){
@@ -456,4 +466,18 @@ function generateUuid() {
 
 function strBytes(str) {
     return(encodeURIComponent(str).replace(/%../g,"x").length);
+}
+
+function updatePlayerInfo(playerid){
+    if( process.env.hasOwnProperty("chakra_ranking_enable") &&
+        process.env.hasOwnProperty("chakra_ranking_url") &&
+        process.env.chakra_ranking_enable=="true"){
+
+        request.get({
+            url: process.env.chakra_ranking_url+"/player?"+querystring.stringify({player:playerid,server:process.env.chakra_server_name})
+        }, function (error, response, body){
+            rankingPlayerTable.filter(p=>p.id==playerid).map(p=>p.info=JSON.parse(body));
+            io.emit("updatePlayerInfo",{"updates":rankingPlayerTable.filter(p=>p.id==playerid)});
+        });
+    }
 }
