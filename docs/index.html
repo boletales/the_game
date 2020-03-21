@@ -36,8 +36,8 @@
             }
         </script>
         <script>
+            let doesSetNameCookie=true;
             document.getElementById("gname").value=getName();
-
             let socket = io.connect();
             socket.emit("getGlobalLog",{});
             socket.on("roomStates",data=>{
@@ -77,6 +77,10 @@
                 document.getElementById("gmessages").innerHTML+=data.name+"≫"+data.message+"\n";
                 document.getElementById("gmessages").scrollTop = document.getElementById("gmessages").scrollHeight;
             });
+            socket.on("yourinfo", function(data){
+                document.getElementById("gname").value=data.nickname;
+                doesSetNameCookie=false;
+            });
             document.getElementById("gchat").onsubmit=function(e){
                 socket.emit("globalChat", {name : document.getElementById("gname").value+"@ロビー",message : document.getElementById("gmsg").value});
                 document.getElementById("gmsg").value="";
@@ -85,7 +89,7 @@
                 return false;
             };
             function setNameCookie(name){
-                document.cookie="playername="+encodeURIComponent(name)+";expires=1-Jan-2030 00:00:00 GMT;path=/";
+                if(doesSetNameCookie)document.cookie="playername="+encodeURIComponent(name)+";expires=1-Jan-2030 00:00:00 GMT;path=/";
             }
             function getName(){
                 if(document.cookie.split(";").find(e=>e.includes("playername="))!=undefined){

@@ -1,5 +1,4 @@
 const _game=require("./game.js");
-const _cookieSecret_js = require('./cookieSecret.js');
 const express=require('express');
 const app=express();
 const http=require('http').createServer(app);
@@ -11,6 +10,8 @@ const os = require('os');
 const svg2img = require("svg2img");
 const request = require('request');
 const session = require('express-session');
+const RATING_PREFIX="⚝";
+const RATING_PREFIX_ALT="☆";
 
 var events = require('events');
 var eventEmitter = new events.EventEmitter();
@@ -37,15 +38,15 @@ function forceHttps(req, res, next){
         return next();
     }
 };
-
-app.use(session({
-    secret: _cookieSecret_js.cookieSecret,
+var sessionMiddleware=session({
+    secret: "do you like this game?",
     resave: false,
     saveUninitialized: false,
     cookie: {
         maxAge: 30 * 60 * 1000
     }
-}));
+})
+app.use(sessionMiddleware);
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
 if( process.env.hasOwnProperty("chakra_ranking_enable") &&
@@ -60,9 +61,9 @@ if( process.env.hasOwnProperty("chakra_ranking_enable") &&
             data.server==process.env.chakra_server_name &&
             new Date()-Date.parse(data.time.replace("+"," "))<60*1000){
 
-            console.log("Welcome 「"+data.playerinfo.nickname+"☆"+data.playerinfo.rating+"」(@"+data.player+")!!");
-            req.session.id=data.player;
-            rankingPlayerTable[req.sessionID]={"id":data.player,"info":data.playerinfo};
+            console.log("Welcome 「"+data.playerinfo.nickname+RATING_PREFIX+data.playerinfo.rating+"」(@"+data.player+")!!");
+            req.session.playerid=data.player;
+            rankingPlayerTable[data.player]=data.playerinfo;
         }
         res.sendFile(__dirname+'/docs/index.html');
     });
@@ -153,7 +154,7 @@ function genServerColor(num1,num2){
     }
 }
 io.use(function(socket,next){
-    session(socket.req,so)
+    sessionMiddleware(socket.request, socket.request.res, next);
 });
 io.on('connection',function(socket){
     socket.join("robby");
@@ -189,6 +190,10 @@ io.on('connection',function(socket){
     socket.on("getKitsset",data=>{
         socket.emit("kitsset",Object.keys(_game.kitsets));
     });
+
+    if(rankingPlayerTable.hasOwnProperty(socket.request.session.playerid)){
+        socket.emit("yourinfo",rankingPlayerTable[socket.request.session.playerid]);
+    }
 });
 http.listen(process.env.PORT || 80);
 console.log('It works!!');
@@ -271,14 +276,18 @@ class Room{
         }
         return Object.keys(io.sockets.adapter.rooms[this.id].sockets).length;
     }
-    join(socket,nickname,team,kitid){
+    join(socket,_nickname,_team,kitid){
         let kit=this.kits.set.hasOwnProperty(kitid)?this.kits.set[kitid]:this.kits.set[0];
         let showJobMark=(Object.keys(this.kits.set).length>1);
-	    if(!this.args.hasOwnProperty("teamMode")||this.args.teamMode){
-            var newPlayer=(new Human(nickname,team,this.game,socket,kit,showJobMark));
-        }else{
-            var newPlayer=(new Human(nickname,socket.id,this.game,socket,kit,showJobMark));
+        let nickname=_nickname.replace(RATING_PREFIX,RATING_PREFIX_ALT);
+        console.log(socket.request.session.playerid);
+        if(rankingPlayerTable.hasOwnProperty(socket.request.session.playerid)){
+            nickname+=RATING_PREFIX+rankingPlayerTable[socket.request.session.playerid].rating;
         }
+
+        let team=(!this.args.hasOwnProperty("teamMode")||!this.args.teamMode)?socket.id:_team;
+        var newPlayer=(new Human(nickname,team,this.game,socket,kit,showJobMark));
+
         this.log("connected:"+newPlayer.getShowingName());
         if(this.game.joinPlayer(newPlayer)){
             socket.emit("joined",{"id":newPlayer.getShowingName(),"team":team,"teamMode":this.teamMode});
@@ -476,8 +485,8 @@ function updatePlayerInfo(playerid){
         request.get({
             url: process.env.chakra_ranking_url+"/player?"+querystring.stringify({player:playerid,server:process.env.chakra_server_name})
         }, function (error, response, body){
-            rankingPlayerTable.filter(p=>p.id==playerid).map(p=>p.info=JSON.parse(body));
-            io.emit("updatePlayerInfo",{"updates":rankingPlayerTable.filter(p=>p.id==playerid)});
+            rankingPlayerTable[playerid].info=JSON.parse(body);
+            io.emit("updatePlayerInfo",{"id":playerid,"info":playerinfo});
         });
     }
 }

@@ -26,6 +26,7 @@
         <a href="../../">ロビーに戻る</a>
         
         <script>
+            let doesSetNameCookie=true;
             document.getElementById("name").value=getName();
             let teamMode=true;
             let socket = io.connect();
@@ -62,6 +63,10 @@
                 }
                 document.getElementById("submit").style.display="unset";
             });
+            socket.on("yourinfo", function(data){
+                document.getElementById("name").value=data.nickname;
+                doesSetNameCookie=false;
+            });
             function join(){
                 let name = document.getElementById("name").value;
                 let team = teamMode ? document.getElementById("team").value:name;
@@ -86,7 +91,7 @@
             }
             
             function setNameCookie(name){
-                document.cookie="playername="+encodeURIComponent(name)+";expires=1-Jan-2030 00:00:00 GMT;path=/";
+                if(doesSetNameCookie)document.cookie="playername="+encodeURIComponent(name)+";expires=1-Jan-2030 00:00:00 GMT;path=/";
             }
             function getName(){
                 if(document.cookie.split(";").find(e=>e.includes("playername="))!=undefined){

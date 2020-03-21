@@ -1,0 +1,5 @@
+chakra_server_name->サーバーid。ランキングを使用する際は必ずユニーク（他サーバーと被らない）なものにすること！！！　サーバー色生成とかにも使われる
+chakra_ranking_url->ランキングサーバーのurl。試合結果受付:/battle 試合ログ受付:/log プレイヤーデータ取得:/player 公開鍵:/public.pem
+chakra_ranking_pass->ランキング登録時のこのサーバーのパスワード
+chakra_ranking_enable->"true"でランキング有効化
+chakra_force_https->"true"でhttps強制
