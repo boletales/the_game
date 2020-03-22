@@ -656,7 +656,7 @@ exports._HP_DEFAULT=6;
 const OKAWARISEC=5;
 
 class Game{
-    constructor(kits,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},needokawari=true,sendBattleLog=function(){}){
+    constructor(kits,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},needokawari=true,sendBattleLog=function(){},sendRatingLog=function(){}){
         this.kits=kits.set;
         this.useEx=kits.useEx;
         this.sendlog=function(){
@@ -665,10 +665,12 @@ class Game{
             this.logbuffer=[];
         };
         this.sendBattleLog=sendBattleLog;
+        this.sendRatingLog=sendRatingLog;
         this.logbuffer=[];
         this.log=function(str){this.logbuffer.push(str)};
         this.noticewinner= noticewinner;
         this.needokawari = needokawari;
+        this.playersLog  = [];//id,isHuman,isRanked,playerid
         this.teamMode    = args.hasOwnProperty("teamMode")   ?args.teamMode   :true;
         this.maxPlayers  = args.hasOwnProperty("maxPlayers") ?args.maxPlayers :Infinity;
         this.startnumber = args.hasOwnProperty("startnumber")?args.startnumber:2;
@@ -702,7 +704,7 @@ class Game{
                     });
                 }
                 this.waiting.filter(p=>!p.isHuman||p.socket.connected).forEach(p=>{
-                    this.players.push(p);
+                    this.dealJoin(p);
                     this.log("「"+p.getShowingName()+"」参戦！！");
                 });
                 this.sendlog();
@@ -743,6 +745,10 @@ class Game{
         this.todo=this.todoMoto.map(v=>Object.assign({},v));
         this.result={};
         this.newresult={};
+    }
+    dealJoin(player){
+        this.players.push(player);
+        this.playersLog.push({id:player.id,isHuman:player.isHuman,isRanked:player.isRanked,playerid:player.playerid});
     }
     tick(){
         for(let id in this.todo[0]){
@@ -937,6 +943,15 @@ class Game{
                 this.log("勝者...🎉 "+players.filter(v=>v.hp>0)[0].getShowingName()+" 🎉");
                 this.noticewinner(players.filter(v=>v.hp>0)[0].id);
             }
+            if(this.wasRankedTaimanGame()){
+                if(livingTeams.length!=1)var result=0.5
+                else if(players.filter(v=>v.hp>0)[0].id==this.playersLog[0].id)var result=0;
+                else if(players.filter(v=>v.hp>0)[0].id==this.playersLog[1].id)var result=1;
+                else var result=0.5;
+
+                let body={"time":this.getDateStr(),"players":this.playersLog.map(p=>p.playerid),"result":result};
+                this.sendRatingLog(body);
+            }
             if(this.needokawari){
                 this.log(OKAWARISEC+"秒後に次の試合");
                 setTimeout(this.okawari,OKAWARISEC*1000);
@@ -945,11 +960,25 @@ class Game{
             return false;
         }
     }
+    getDateStr(){
+        let pad0=(str,len)=>("0".repeat(len)+str).slice(-len);
+        let now=new Date();
+        return pad0(now.getFullYear(),4)+"-"+pad0(now.getMonth(),2)+"-"+pad0(now.getDate(),2)+" "+pad0(now.getHours(),2)+":"+pad0(now.getMinutes(),2)+":"+pad0(now.getSeconds(),2);
+    }
+    wasRankedTaimanGame(){
+        return  this.playersLog.length==2 &&
+                this.playersLog.every(p=>p.isRanked) &&
+                this.playersLog.every(p=>p.isHuman) &&
+                this.playersLog.every(p=>!p.isKicked) &&
+                this.playersLog.every(p=>p.hasOwnProperty("playerid")) &&
+                this.playersLog[0].playerid != this.playersLog[1].playerid;
+    }
     checkReq(player,skill){
         return (skill.requirement.bind(null,skill))(player);
     }
     killPlayer(id){
         this.players.filter(p=>p.id==id).forEach(player=>{
+            if(this.playersLog.findIndex(p=>p.id==id)!=-1)this.playersLog.find(p=>p.id==id).isKicked=true;
             player.hp=0;
             player.reqDecision=function(cb){
                 cb(new decision([player.skills.non]));
@@ -986,7 +1015,7 @@ class Game{
             return false;
         }
         if(this.turns==0){
-            this.players.push(player);
+            this.dealJoin(player);
             if(start && this.players.length>=this.startnumber){
                 this.init();
             }
@@ -1019,7 +1048,7 @@ function decision(args){
     return {skill:args[0],args:args.slice(1)};
 }
 exports.decision=decision;
-function Player(id,nickname,team,game,kit,showJobMark=false){
+function Player(id,nickname,team,game,kit,showJobMark=false,suffix=""){
     this._KIT=kit;
     this.skills=Object.assign({},this._KIT.skills);
     this.turnend=kit.turnend;
@@ -1027,7 +1056,7 @@ function Player(id,nickname,team,game,kit,showJobMark=false){
     this.team=team;
     this.id=id;
     this.nickname=nickname;
-    this.showingname=nickname+(showJobMark?" "+kit.mark:"");
+    this.showingname=nickname+suffix+(showJobMark?" "+kit.mark:"");
     this.charge=0;
     this.chargeEx=0;
     this.game=game;

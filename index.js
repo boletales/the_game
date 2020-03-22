@@ -1,5 +1,6 @@
 const _game=require("./game.js");
-const app=require('express')();
+const express=require('express');
+const app=express();
 const http=require('http').createServer(app);
 const socketIO=require('socket.io');
 const io=socketIO.listen(http);
@@ -8,6 +9,11 @@ const crypto = require('crypto');
 const os = require('os');
 const svg2img = require("svg2img");
 const request = require('request');
+const session = require('express-session');
+const querystring = require('querystring');
+
+const RATING_PREFIX="⚝";
+const RATING_PREFIX_ALT="☆";
 
 var events = require('events');
 var eventEmitter = new events.EventEmitter();
@@ -16,6 +22,12 @@ rooms={};
 
 let globalRecentLog=[];
 let globalRecentLogMax=20;
+
+let rankingPlayerTable={};
+
+request.get({
+    url: process.env.chakra_ranking_url+"/public.pem",
+}, function (error, response, body){rankingPublicKey=body;});
 
 function forceHttps(req, res, next){
     if (!process.env.chakra_force_https) {
@@ -28,8 +40,39 @@ function forceHttps(req, res, next){
         return next();
     }
 };
-app.all('*', forceHttps);
+var sessionMiddleware=session({
+    secret: "do you like this game?",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        maxAge: 30 * 60 * 1000
+    }
+})
+app.use(sessionMiddleware);
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }));
+if( process.env.hasOwnProperty("chakra_ranking_enable") &&
+    process.env.hasOwnProperty("chakra_ranking_url") &&
+    process.env.chakra_ranking_enable=="true"){
+    
+    app.post('/',function(req,res){
+        let verifier=crypto.createVerify("RSA-SHA256");
+        verifier.update(new Buffer(req.body.data));
+        let data=JSON.parse(req.body.data);
+        if( verifier.verify(rankingPublicKey, req.body.sign, 'base64') &&
+            data.server==process.env.chakra_server_name &&
+            new Date()-Date.parse(data.time.replace("+"," "))<60*1000){
 
+            console.log("Welcome 「"+data.playerinfo.nickname+RATING_PREFIX+data.playerinfo.rating+"」(@"+data.player+")!!");
+            req.session.playerid=data.player;
+            rankingPlayerTable[data.player]=data.playerinfo;
+        }
+        res.sendFile(__dirname+'/docs/index.html');
+    });
+}
+
+
+app.all('*', forceHttps);
 app.get('/',function(req,res){
     res.sendFile(__dirname+'/docs/index.html');
 });
@@ -66,6 +109,8 @@ app.get('/apple-touch-icon.png',function(req,res){
 app.get('/android-touch-icon.png',function(req,res){
     sendFavicon(req,res,192);
 });
+
+
 function sendFavicon(req,res,size){
     if(!process.env.chakra_server_name){
         var serverColor="#000";
@@ -110,6 +155,9 @@ function genServerColor(num1,num2){
             return "#"+_BRI+"00"+"00";
     }
 }
+io.use(function(socket,next){
+    sessionMiddleware(socket.request, socket.request.res, next);
+});
 io.on('connection',function(socket){
     socket.join("robby");
     showRoomState();
@@ -144,6 +192,10 @@ io.on('connection',function(socket){
     socket.on("getKitsset",data=>{
         socket.emit("kitsset",Object.keys(_game.kitsets));
     });
+
+    if(rankingPlayerTable.hasOwnProperty(socket.request.session.playerid)){
+        socket.emit("yourinfo",rankingPlayerTable[socket.request.session.playerid]);
+    }
 });
 http.listen(process.env.PORT || 80);
 console.log('It works!!');
@@ -216,7 +268,7 @@ class Room{
         this.parent=parent;
         this.kits=_game.kitsets.hasOwnProperty(args.kitsname)?_game.kitsets[args.kitsname]:_game.kitsets["スタンダード"];
         this.hidden=args.hasOwnProperty("hidden")&&args.hidden;
-	    this.game=new _game.Game(this.kits,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this),()=>{},true,this.sendBattleLogToLogger.bind(this));
+	    this.game=new _game.Game(this.kits,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this),()=>{},true,this.sendBattleLogToServer.bind(this),this.sendRatingLogToServer.bind(this));
         this.teamMode=this.game.teamMode;
     }
     getNumber(){
@@ -226,14 +278,19 @@ class Room{
         }
         return Object.keys(io.sockets.adapter.rooms[this.id].sockets).length;
     }
-    join(socket,nickname,team,kitid){
+    join(socket,_nickname,_team,kitid){
         let kit=this.kits.set.hasOwnProperty(kitid)?this.kits.set[kitid]:this.kits.set[0];
         let showJobMark=(Object.keys(this.kits.set).length>1);
-	    if(!this.args.hasOwnProperty("teamMode")||this.args.teamMode){
-            var newPlayer=(new Human(nickname,team,this.game,socket,kit,showJobMark));
+        let nickname=_nickname.replace(RATING_PREFIX,RATING_PREFIX_ALT);
+        if(rankingPlayerTable.hasOwnProperty(socket.request.session.playerid)){
+            var suffix=RATING_PREFIX+rankingPlayerTable[socket.request.session.playerid].rating;
         }else{
-            var newPlayer=(new Human(nickname,socket.id,this.game,socket,kit,showJobMark));
+            var suffix="";
         }
+
+        let team=(!this.args.hasOwnProperty("teamMode")||this.args.teamMode)?_team:socket.id;
+        var newPlayer=(new Human(nickname,team,this.game,socket,kit,showJobMark,suffix));
+
         this.log("connected:"+newPlayer.getShowingName());
         if(this.game.joinPlayer(newPlayer)){
             socket.emit("joined",{"id":newPlayer.getShowingName(),"team":team,"teamMode":this.teamMode});
@@ -270,10 +327,10 @@ class Room{
         this.chat(str.split("\n").map(s=>({"name":"★system","message":s})));
     }
 
-    sendBattleLogToLogger(data){
-        if(process.env.hasOwnProperty("chakra_logger_enable") && process.env.hasOwnProperty("chakra_logger_url") && process.env.chakra_logger_enable=="true"){
+    sendBattleLogToServer(data){
+        if(process.env.hasOwnProperty("chakra_ranking_enable") && process.env.hasOwnProperty("chakra_ranking_url") && process.env.chakra_ranking_enable=="true"){
             request.post({
-                url: process.env.chakra_logger_url,
+                url: process.env.chakra_ranking_url+"/log",
                 headers: {
                     "content-type": "plain/text"
                 },
@@ -282,7 +339,27 @@ class Room{
                     "id":this.id,
                     "data":data,
                 }, null , "\t")
-            }, function (error, response, body){console.log(body);});
+            }, function (error, response, body){});
+        }
+    }
+    sendRatingLogToServer(body){
+        if(process.env.hasOwnProperty("chakra_ranking_enable") && process.env.hasOwnProperty("chakra_ranking_url") && process.env.chakra_ranking_enable=="true"){
+            let data={"data":JSON.stringify({
+                "type":"ranking_ver1",
+                "servername":process.env.chakra_server_name,
+                "body":body,
+                "serverpass":process.env.chakra_ranking_pass
+            })};
+            request.post({
+                url: process.env.chakra_ranking_url+"/battle/",
+                headers: {
+                    "content-type": "application/x-www-form-urlencoded"
+                },
+                body: querystring.stringify(data)
+            }, function (players,error, response, body){
+                console.log(body);
+                players.forEach(p=>updatePlayerInfo(p));
+            }.bind(null,body.players));
         }
     }
 
@@ -378,10 +455,14 @@ class AimanRoom extends Room{
     }
 }
 
-function Human(nickname,team,game,socket,kit,showJobMark){
-    _game.Player.call(this,socket.id,nickname,team,game,kit,showJobMark);
+function Human(nickname,team,game,socket,kit,showJobMark,suffix){
+    _game.Player.call(this,socket.id,nickname,team,game,kit,showJobMark,suffix);
     this.socket=socket;
     this.isHuman=true;
+    if(socket.request.session.playerid){
+        this.isRanked=true;
+        this.playerid=socket.request.session.playerid;
+    }
     this.reqDecisionWrapped=function(callBack,candidates){
         this.socket.emit('input_action',{"candidates":candidates});
         this.onAction=function(data){
@@ -417,4 +498,20 @@ function generateUuid() {
 
 function strBytes(str) {
     return(encodeURIComponent(str).replace(/%../g,"x").length);
+}
+
+function updatePlayerInfo(playerid){
+    if( process.env.hasOwnProperty("chakra_ranking_enable") &&
+        process.env.hasOwnProperty("chakra_ranking_url") &&
+        process.env.chakra_ranking_enable=="true"){
+
+        request.get({
+            url: process.env.chakra_ranking_url+"/player?"+querystring.stringify({player:playerid,server:process.env.chakra_server_name})
+        }, function (error, response, body){
+            let playerinfo=JSON.parse(body);
+            rankingPlayerTable[playerid]=playerinfo;
+            //io.emit("updatePlayerInfo",{"id":playerid,"info":playerinfo});
+            console.log("updatePlayerInfo "+"id:"+playerid+",info:"+JSON.stringify(playerinfo));
+        });
+    }
 }
