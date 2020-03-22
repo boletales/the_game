@@ -282,7 +282,6 @@ class Room{
         let kit=this.kits.set.hasOwnProperty(kitid)?this.kits.set[kitid]:this.kits.set[0];
         let showJobMark=(Object.keys(this.kits.set).length>1);
         let nickname=_nickname.replace(RATING_PREFIX,RATING_PREFIX_ALT);
-        console.log(socket.request.session.playerid);
         if(rankingPlayerTable.hasOwnProperty(socket.request.session.playerid)){
             var suffix=RATING_PREFIX+rankingPlayerTable[socket.request.session.playerid].rating;
         }else{
@@ -358,6 +357,7 @@ class Room{
                 },
                 body: querystring.stringify(data)
             }, function (players,error, response, body){
+                console.log(body);
                 players.forEach(p=>updatePlayerInfo(p));
             }.bind(null,body.players));
         }
@@ -509,8 +509,9 @@ function updatePlayerInfo(playerid){
             url: process.env.chakra_ranking_url+"/player?"+querystring.stringify({player:playerid,server:process.env.chakra_server_name})
         }, function (error, response, body){
             let playerinfo=JSON.parse(body);
-            rankingPlayerTable[playerid].info=playerinfo;
-            io.emit("updatePlayerInfo",{"id":playerid,"info":playerinfo});
+            rankingPlayerTable[playerid]=playerinfo;
+            //io.emit("updatePlayerInfo",{"id":playerid,"info":playerinfo});
+            console.log("updatePlayerInfo "+"id:"+playerid+",info:"+JSON.stringify(playerinfo));
         });
     }
 }

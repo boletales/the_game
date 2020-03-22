@@ -961,8 +961,9 @@ class Game{
         }
     }
     getDateStr(){
+        let pad0=(str,len)=>("0".repeat(len)+str).slice(-len);
         let now=new Date();
-        let nowStr=now.getFullYear()+"-"+now.getMonth()+"-"+now.getDate()+" "+now.getHours()+":"+now.getMinutes()+":"+now.getSeconds();
+        return pad0(now.getFullYear(),4)+"-"+pad0(now.getMonth(),2)+"-"+pad0(now.getDate(),2)+" "+pad0(now.getHours(),2)+":"+pad0(now.getMinutes(),2)+":"+pad0(now.getSeconds(),2);
     }
     wasRankedTaimanGame(){
         return  this.playersLog.length==2 &&
