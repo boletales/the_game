@@ -7,8 +7,8 @@ _ATTACK_DEFAULT=(user,players,decisions,args)=>players.map(p=>0);
 _DEFENSE_DEFAULT=(user,players,decisions,attacksForMe,args)=>
     attacksForMe.map((a,i)=>(
         decisions[i].skill.beam?
-            Math.floor(a/(2**((user.buffs.mdp.level+user.buffs.mdt.level)/_DEF_FACTOR))):
-            Math.floor(a/(2**((user.buffs.pdp.level+user.buffs.pdt.level)/_DEF_FACTOR)))
+            Math.floor(a/(2**((user.buffs.mdef.getPower())/_DEF_FACTOR))):
+            Math.floor(a/(2**((user.buffs.pdef.getPower())/_DEF_FACTOR)))
         )
     );
 _REQUIREMENT_DEFAULT=(skill,p)=>(p.charge>=skill.getCost(p) && (!skill.hasOwnProperty("getCostEx") || p.chargeEx>=skill.getCostEx(p)));
@@ -63,7 +63,7 @@ _SKILLS_ZERO={
     },
 
 
-    chr:{name:"溜め",args:[],
+    charge:{name:"溜め",args:[],
             attackPhase:function(user,players,decisions,args){
                 user.charge+=1;
                 return players.map(p=>0);
@@ -72,7 +72,7 @@ _SKILLS_ZERO={
             requirement:_REQUIREMENT_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT
         },
-    def:{name:"防御",args:[], 
+    defense:{name:"防御",args:[], 
             attackPhase:_ATTACK_DEFAULT,
             defensePhase:function(user,players,decisions,attacksForMe,args){
                 return attacksForMe.map((d,i)=>(decisions[i].skill.beam ? d : 0));
@@ -82,7 +82,7 @@ _SKILLS_ZERO={
             def:true,
         },
     
-    mir:{name:"反射",args:[],
+    mirror:{name:"反射",args:[],
             attackPhase:_ATTACK_DEFAULT,
             requirement:_REQUIREMENT_DEFAULT,
             defensePhase:function(user,players,decisions,attacksForMe,args){
@@ -92,7 +92,7 @@ _SKILLS_ZERO={
             getCost:(p)=>(0),
         },
 
-    atk:{name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
+    attack:{name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
                 user.useChakra(this.getCost(user));
@@ -109,7 +109,7 @@ _SKILLS_ZERO={
             },
         },
 
-    wav:{name:"強攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
+    wave:{name:"強攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             user.useChakra(this.getCost(user));
@@ -136,9 +136,9 @@ _SKILLS_MOTO={
         requirement:_REQUIREMENT_DEFAULT,
     },
 
-    def:{name:"防御",args:[], 
+    defense:{name:"防御",args:[], 
         attackPhase:function(user,players,decisions,args){
-            user.buffs.pdt.levelUp(_DEF_FACTOR);
+            user.buffs.pdef.templevel+=_DEF_FACTOR;
             return players.map(p=>0);
         },
         defensePhase:function(user,players,decisions,attacksForMe,args){
@@ -150,7 +150,7 @@ _SKILLS_MOTO={
         def:true,
     },
 
-    atk:{name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
+    attack:{name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             attacks[players.findIndex(p=>p.id==args[0])] = this.pow+user.buffs.str.getPower();
@@ -163,7 +163,7 @@ _SKILLS_MOTO={
         weak:true,
     },
 
-    chr:{name:"溜め",args:[],
+    charge:{name:"溜め",args:[],
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             user.charge+=3;
@@ -174,7 +174,7 @@ _SKILLS_MOTO={
         getCost:(p)=>(0),
     },
     
-    mir:{name:"反射",args:[],
+    mirror:{name:"反射",args:[],
         attackPhase:_ATTACK_DEFAULT,
         requirement:_REQUIREMENT_DEFAULT,
         defensePhase:function(user,players,decisions,attacksForMe,args){
@@ -186,7 +186,7 @@ _SKILLS_MOTO={
 
 };
 _SKILLS_MOD_BEAM={
-    bea:{name:"光線",args:[{message:"対象入力",type:"opponent",name:"to"}],
+    beam:{name:"光線",args:[{message:"対象入力",type:"opponent",name:"to"}],
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             user.useChakra(this.getCost(user));
@@ -214,7 +214,7 @@ _SKILLS_MOD_BEAM={
 };
 
 _SKILLS_MOD_EX_LIGHTBLADE={
-    xlb:{name:"荷電粒子砲",args:[{message:"対象入力",type:"opponent",name:"to"}],
+    exion:{name:"荷電粒子砲",args:[{message:"対象入力",type:"opponent",name:"to"}],
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             user.useChakraEx(this.getCostEx(user));
@@ -235,12 +235,12 @@ _SKILLS_MOD_EX_LIGHTBLADE={
 };
 
 _SKILLS_MOD_EX_HARDEN={
-    xha:{name:"装甲強化",args:[{message:"対象入力",type:"team",name:"to"}],
+    exharden:{name:"装甲強化",args:[{message:"対象入力",type:"team",name:"to"}],
         attackPhase:function(user,players,decisions,args){
             user.useChakraEx(this.getCostEx(user));
             let target=players.find(p=>p.id==args[0]);
-            target.buffs.pdp.levelUp(1);
-            target.buffs.mdp.levelUp(1);
+            target.buffs.pdef.level+=1;
+            target.buffs.mdef.level+=1;
             return players.map(p=>0);
         },
 
@@ -249,16 +249,16 @@ _SKILLS_MOD_EX_HARDEN={
         },
         requirement:_REQUIREMENT_DEFAULT,
         getCost:(p)=>(0),
-        getCostEx:(p)=>([2,5,Infinity][Math.min(2,Math.max(p.buffs.mdp.level,p.buffs.pdp.level))]),
+        getCostEx:(p)=>([2,5,Infinity][Math.min(2,Math.max(p.buffs.mdef.level,p.buffs.pdef.level))]),
     },
 };
 
 _SKILLS_MOD_COVER={
-    cov:{name:"護衛",args:[{message:"対象入力",type:"supporter",name:"to"}], 
+    cover:{name:"護衛",args:[{message:"対象入力",type:"supporter",name:"to"}], 
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             user.useChakra(this.getCost(user));
-            players.find(p=>p.id==args[0]).buffs.pdt.levelUp(1);
+            players.find(p=>p.id==args[0]).buffs.pdef.templevel+=1;
             return attacks;
         },
         requirement:_REQUIREMENT_DEFAULT,
@@ -267,7 +267,7 @@ _SKILLS_MOD_COVER={
     },
 };
 _SKILLS_MOD_HEAL={
-    hea:{name:"回復",args:[{message:"対象入力",type:"team",name:"to"}], 
+    heal:{name:"回復",args:[{message:"対象入力",type:"team",name:"to"}], 
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             user.useChakra(this.getCost(user));
@@ -280,7 +280,7 @@ _SKILLS_MOD_HEAL={
     },
 };
 _SKILLS_MOD_HEALPLUS={
-    the:{name:"全体回復",args:[], 
+    healall:{name:"全体回復",args:[], 
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             user.useChakra(this.getCost(user));
@@ -291,7 +291,7 @@ _SKILLS_MOD_HEALPLUS={
         defensePhase:_DEFENSE_DEFAULT,
         getCost:(p)=>(6),
     },
-    mhe:{name:"強回復",args:[{message:"対象入力",type:"team",name:"to"}], 
+    heal:{name:"強回復",args:[{message:"対象入力",type:"team",name:"to"}], 
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             user.useChakra(this.getCost(user));
@@ -304,10 +304,10 @@ _SKILLS_MOD_HEALPLUS={
     },
 };
 _SKILLS_MOD_ATPLUS={
-    str:{name:"強化",args:[],
+    strengthen:{name:"強化",args:[],
         attackPhase:function(user,players,decisions,args){
             user.useChakra(this.getCost(user));
-            user.buffs.str.levelUp();
+            user.buffs.str.level+=1;
             return players.map(p=>0);
         },
         requirement:_REQUIREMENT_DEFAULT,
@@ -319,7 +319,7 @@ _SKILLS_MOD_ATPLUS={
     },
 };
 _SKILLS_MOD_STUN={
-    stu:{name:"麻痺",args:[{message:"対象入力",type:"opponent",name:"to"}], 
+    stun:{name:"麻痺",args:[{message:"対象入力",type:"opponent",name:"to"}], 
         attackPhase:function(user,players,decisions,args){
             user.useChakra(this.getCost(user));
             let target=players.findIndex(p=>p.id==args[0]);
@@ -337,7 +337,7 @@ _SKILLS_MOD_STUN={
     },
 };
 _SKILLS_MOD_SMASH={
-    sma:{name:"強奪",args:[{message:"対象入力",type:"opponent",name:"to"}],
+    smash:{name:"強奪",args:[{message:"対象入力",type:"opponent",name:"to"}],
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             let targetIndex=players.findIndex(p=>p.id==args[0]);
@@ -350,7 +350,7 @@ _SKILLS_MOD_SMASH={
                 &&!decisions[targetIndex].skill.beam){
                 
                 let target=players.find(p=>p.id==args[0]);
-                target.buffs.chd.levelUp(2)
+                target.buffs.chd.level+=2;
                 user.charge+=Math.min(target.charge,2);
             }else{
                 user.useChakra(this.getCost(user));
@@ -366,7 +366,7 @@ _SKILLS_MOD_SMASH={
     },
 };
 _SKILLS_MOD_EXPLODE={
-    exp:{name:"爆発",args:[],
+    explode:{name:"爆発",args:[],
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             user.useChakra(this.getCost(user));
@@ -381,13 +381,13 @@ _SKILLS_MOD_EXPLODE={
         defensePhase:_DEFENSE_DEFAULT,
         requirement:_REQUIREMENT_DEFAULT,
         pow:1,
-        getCost:((p)=>(_SKILLS_MOD_EXPLODE.exp.countOpponents(p)*(_SKILLS_MOD_EXPLODE.exp.pow+p.buffs.str.getPower()))),
+        getCost:((p)=>(_SKILLS_MOD_EXPLODE.explode.countOpponents(p)*(_SKILLS_MOD_EXPLODE.explode.pow/*+p.buffs.str.getPower()*/))),
         countOpponents:((user)=>user.game.players.filter(p=>p.team!=user.team).length),
         weak:true,
     },
 };
 _SKILLS_MOD_SALVO={
-    sal:{name:"斉射",args:[{message:"対象入力",type:"opponent",name:"to"}],
+    salvo:{name:"斉射",args:[{message:"対象入力",type:"opponent",name:"to"}],
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             attacks[players.findIndex(p=>p.id==args[0])] = user.charge+user.buffs.str.getPower();
@@ -403,7 +403,7 @@ _SKILLS_MOD_SALVO={
 };
 
 _SKILLS_MOD_COPY={
-    cop:{name:"模倣",args:[{message:"対象入力",type:"opponent",name:"to"}], 
+    copy:{name:"模倣",args:[{message:"対象入力",type:"opponent",name:"to"}], 
 	    prePhaseCopyA:function(user,players,decisions,args){
             let targetIndex=players.findIndex(p=>p.id==args[0]);
             let myIndex=players.findIndex(p=>p.id==user.id);
@@ -430,16 +430,83 @@ _SKILLS_MOD_COPY={
     },
 };
 
-_SKILLS_MOD_ATPLUS_FIGHTER={
-    str:{   
-        inherit:true,
-        getCost:(p)=>{
-            let costs=[0,4,7,10];
-            return (p.buffs.str.level < costs.length) ? costs[p.buffs.str.level] : Infinity;
+
+_SKILLS_MOD_SUMMONER={
+    summonred:{name:"紅球",args:[],
+        attackPhase:function(user,players,decisions,args){
+            user.useChakra(this.getCost(user));
+            user.game.waiting.push(new SupporterBot_red(user));
+            return players.map(p=>0);
         },
+        defensePhase:_DEFENSE_DEFAULT,
+        requirement:_REQUIREMENT_DEFAULT,
+        getCost:(p)=>3,
+    },
+    summonred:{name:"碧球",args:[],
+        attackPhase:function(user,players,decisions,args){
+            user.useChakra(this.getCost(user));
+            user.game.waiting.push(new SupporterBot_blue(user));
+            return players.map(p=>0);
+        },
+        defensePhase:_DEFENSE_DEFAULT,
+        requirement:_REQUIREMENT_DEFAULT,
+        getCost:(p)=>3,
+    },
+    summonblack:{name:"黒球",args:[],
+        attackPhase:function(user,players,decisions,args){
+            user.useChakra(this.getCost(user));
+            user.game.waiting.push(new SupporterBot_black(user));
+            return players.map(p=>0);
+        },
+        defensePhase:_DEFENSE_DEFAULT,
+        requirement:_REQUIREMENT_DEFAULT,
+        getCost:(p)=>3,
+    },
+    summonblack:{name:"白球",args:[],
+        attackPhase:function(user,players,decisions,args){
+            user.useChakra(this.getCost(user));
+            user.game.waiting.push(new SupporterBot_white(user));
+            return players.map(p=>0);
+        },
+        defensePhase:_DEFENSE_DEFAULT,
+        requirement:_REQUIREMENT_DEFAULT,
+        getCost:(p)=>3,
     },
 };
 
+_SKILLS_MOD_BOTS={
+    red:{name:"強化",args:[],
+        tempBuffPhase:function(user,players,decisions,args){
+            players.filter(p=>p.team==user.parent.team).forEach(p=>p.buffs.str.templevel += 1);
+            return players.map(p=>0);
+        },
+        attackPhase:_ATTACK_DEFAULT,
+        requirement:_REQUIREMENT_DEFAULT,
+        defensePhase:_DEFENSE_DEFAULT,
+        getCost:(p)=>0
+    },
+    white:{name:"回復",args:[], 
+        attackPhase:function(user,players,decisions,args){
+            let attacks=players.map(p=>0);
+            user.useChakra(this.getCost(user));
+            players.filter(p=>p.team==user.parent.team).forEach(p=>p.hp += 1);
+            return attacks;
+        },
+        requirement:_REQUIREMENT_DEFAULT,
+        defensePhase:_DEFENSE_DEFAULT,
+        getCost:(p)=>(3),
+    },
+    blue:{name:"守護",args:[], 
+        attackPhase:function(user,players,decisions,args){
+            let attacks=players.map(p=>0);
+            players.filter(p=>p.team==user.parent.team).forEach(p=>{p.buffs.pdef.templevel+=1;p.buffs.mdef.templevel+=1;});
+            return attacks;
+        },
+        requirement:_REQUIREMENT_DEFAULT,
+        defensePhase:_DEFENSE_DEFAULT,
+        getCost:(p)=>(0),
+    },
+};
 
 /*
 「バフ」型の解説です
@@ -452,22 +519,6 @@ _SKILLS_MOD_ATPLUS_FIGHTER={
     state(function str):()=>現在のバフレベルに応じた表示文字列
 */
 const Buffs={
-    //↓物理攻撃強化
-    str:function(user){
-        this.tick=function(){};
-        this.level=0;
-        this.user=user;
-        this.id="str";
-        this.getPower=function(){
-            return this.level;
-        }.bind(this);
-        this.levelUp=function(){
-            this.level++;
-        }.bind(this);
-        this.state=function(){
-            return "⚔".repeat(this.level);
-        }.bind(this);
-    },
     //↓麻痺
     stu:function(user){
         this.tick=function(){
@@ -494,49 +545,44 @@ const Buffs={
         this.state=function(){
             return "";
         }.bind(this);
-        this.levelUp=function(level){
-                this.level+=level;
-        }
     },
-    //↓物理防御(永続)
-    pdp:function(user){
-        this.tick=(()=>(undefined));
+    //↓物理攻撃強化
+    str:function(user){
+        this.tick=(()=>(this.templevel=0)).bind(this);
         this.level=0;
+        this.templevel=0;
         this.user=user;
-        this.id="pdp";
+        this.id="str";
+        this.getPower=function(){
+            return this.level+this.templevel;
+        }.bind(this);
+        this.state=function(){
+            return "⚔".repeat(this.level);
+        }.bind(this);
+    },
+    //↓物理防御
+    pdef:function(user){
+        this.tick=(()=>(this.templevel=0)).bind(this);
+        this.getPower=function(){
+            return this.level+this.templevel;
+        }.bind(this);
+        this.level=0;
+        this.templevel=0;
+        this.user=user;
+        this.id="pdef";
         this.state=(()=>"⛑".repeat(this.level)).bind(this);
-        this.levelUp=(level=>(this.level+=level)).bind(this);
     },
-    //↓物理防御(1ターン)
-    pdt:function(user){
-        this.tick=function(){
-            this.level=0;
+    //↓魔法防御
+    mdef:function(user){
+        this.tick=(()=>(this.templevel=0)).bind(this);
+        this.getPower=function(){
+            return this.level+this.templevel;
         }.bind(this);
         this.level=0;
+        this.templevel=0;
         this.user=user;
-        this.id="pdt";
-        this.state=(()=>"");
-        this.levelUp=(level=>(this.level+=level)).bind(this);
-    },
-    //↓魔法防御(永続)
-    mdp:function(user){
-        this.tick=(()=>(undefined));
-        this.level=0;
-        this.user=user;
-        this.id="mdp";
+        this.id="mdef";
         this.state=(()=>"☂".repeat(this.level)).bind(this);
-        this.levelUp=(level=>(this.level+=level)).bind(this);
-    },
-    //↓魔法防御(1ターン)
-    mdt:function(user){
-        this.tick=function(){
-            this.level=0;
-        }.bind(this);
-        this.level=0;
-        this.user=user;
-        this.id="mdt";
-        this.state=(()=>"");
-        this.levelUp=(level=>(this.level+=level)).bind(this);
     },
 }
 function mergeSkills(_skills,arraySkills){
@@ -568,7 +614,7 @@ function calcAdvIndex(me,players){
     const _T=8;//teammate factor(人数差)
     const _H=4;//heart factor(体力差)
     const _C=1/3;//chakra factor(魔力差)
-    let teamCounts=players.reduce((a,c)=>{
+    let teamCounts=players.filter(p=>!p.isChild).reduce((a,c)=>{
         if(a.hasOwnProperty(c.team)){
             a[c.team]++;
         }else{
@@ -586,14 +632,14 @@ function calcAdvIndex(me,players){
     return 0.1*Math.max(0,Math.floor(countdiff*_T + heartdiff*_H + chakradiff*_C));
 }
 
-let _TURNEND_NONTEAM_DEFAULT=(function(me,players){return;});
-let _TURNEND_TEAM_DEFAULT   =(function(me,players){
+let _TURNEND_NOJOB_DEFAULT=(function(me,players){return;});
+let _TURNEND_JOB_DEFAULT   =(function(me,players){
     me.chargeEx += calcAdvIndex(me,players);
 });
 
-let _KIT_OLD=new Kit("初期版",_SKILLS_MOTO,6,"",_TURNEND_NONTEAM_DEFAULT);
+let _KIT_OLD=new Kit("初期版",_SKILLS_MOTO,6,"",_TURNEND_NOJOB_DEFAULT);
 
-let _KIT_ZERO=new Kit("原作",_SKILLS_ZERO,1,"",_TURNEND_NONTEAM_DEFAULT);
+let _KIT_ZERO=new Kit("原作",_SKILLS_ZERO,1,"",_TURNEND_NOJOB_DEFAULT);
 
 let _KIT_STD=new Kit("スタンダード",mergeSkills({},[   
                             _SKILLS_MOTO,
@@ -603,18 +649,17 @@ let _KIT_STD=new Kit("スタンダード",mergeSkills({},[
                             _SKILLS_MOD_SMASH,
                             _SKILLS_MOD_EXPLODE,
                             _SKILLS_MOD_SALVO,
-                        ]),7,"",_TURNEND_NONTEAM_DEFAULT);
+                        ]),7,"",_TURNEND_NOJOB_DEFAULT);
 
 let _KIT_JSTD=new Kit("スタンダード",mergeSkills(_KIT_STD.skills,[   
                             _SKILLS_MOD_COVER,
                             _SKILLS_MOD_EX_LIGHTBLADE,
                             _SKILLS_MOD_EX_HARDEN,
-                        ]),7,"(標)",_TURNEND_TEAM_DEFAULT);
+                        ]),7,"(標)",_TURNEND_JOB_DEFAULT);
 
 let _KIT_FIGHTER=new Kit("戦士",mergeSkills({},[   
                             _SKILLS_MOTO,
                             _SKILLS_MOD_ATPLUS,
-                            _SKILLS_MOD_ATPLUS_FIGHTER,
                             _SKILLS_MOD_BEAM,
                             _SKILLS_MOD_SMASH,
                             _SKILLS_MOD_SALVO,
@@ -622,9 +667,16 @@ let _KIT_FIGHTER=new Kit("戦士",mergeSkills({},[
                             _SKILLS_MOD_EX_LIGHTBLADE,
                             _SKILLS_MOD_EX_HARDEN,
                         ]),7,"(戦)",(function(me,players){
-                            _TURNEND_TEAM_DEFAULT(me,players);
-                            me.buffs.str.level=Math.max(me.buffs.str.level,1);
+                            _TURNEND_JOB_DEFAULT(me,players);
+                            me.buffs.str.templevel=Math.max(me.buffs.str.templevel,1);
                         }));
+
+let _KIT_SUMMONER=new Kit("召喚術士",mergeSkills({},[   
+    _SKILLS_MOTO,
+    _SKILLS_MOD_SUMMONER,
+]),7,"(召)",(function(me,players){
+    _TURNEND_JOB_DEFAULT(me,players);
+}));
 
 let _KIT_HEALER=new Kit("白魔導師",mergeSkills({},[   
                             _SKILLS_MOTO,
@@ -633,15 +685,22 @@ let _KIT_HEALER=new Kit("白魔導師",mergeSkills({},[
                             _SKILLS_MOD_SMASH,
                             _SKILLS_MOD_EX_LIGHTBLADE,
                             _SKILLS_MOD_EX_HARDEN,
-                        ]),7,"(白)",_TURNEND_TEAM_DEFAULT);
+                        ]),7,"(白)",_TURNEND_JOB_DEFAULT);
 
 let _KIT_TRICK=new Kit("トリック",mergeSkills({},[   
                             _SKILLS_MOTO,
 			                _SKILLS_MOD_COPY,
-                        ]),7,"(奇)",_TURNEND_TEAM_DEFAULT);
+                        ]),7,"(奇)",_TURNEND_JOB_DEFAULT);
+
+let _KIT_BOT_NORMAL=new Kit("球（召喚専用）",mergeSkills({},[   
+                            _SKILLS_MOTO,
+                            _SKILLS_MOD_EXPLODE,
+                            _SKILLS_MOD_BOTS,
+                        ]),2,"",_TURNEND_NOJOB_DEFAULT);
+
 let kitsets={
     "スタンダード":{set:[_KIT_STD],useEx:false},
-    "ジョブあり":{set:[_KIT_JSTD,_KIT_HEALER,_KIT_FIGHTER,],useEx:true},
+    "ジョブあり":{set:[_KIT_JSTD,_KIT_HEALER,_KIT_FIGHTER,_KIT_SUMMONER],useEx:true},
     "原作":{set:[_KIT_ZERO],useEx:false},
 };
 
@@ -705,7 +764,7 @@ class Game{
                 }
                 this.waiting.filter(p=>!p.isHuman||p.socket.connected).forEach(p=>{
                     this.dealJoin(p);
-                    this.log("「"+p.getShowingName()+"」参戦！！");
+                    if(!p.isChild)this.log("「"+p.getShowingName()+"」参戦！！");
                 });
                 this.sendlog();
                 this.waiting=[];
@@ -715,8 +774,10 @@ class Game{
                     this.todo[1][p.id]=
                         (cb=>{
                             p.reqDecision(((input)=>{
-                                    this.log("行動決定:"+p.getShowingName()+"("+(Object.keys(this.newresult).length+1)+"/"+Object.keys(this.todo[0]).length+")");
-                                    this.sendlog();
+                                    if(!p.isChild){
+                                        this.log("行動決定:"+p.getShowingName()+"("+(Object.keys(this.newresult).filter(k=>!this.players.find(p=>p.id==k).isChild).length+1)+"/"+Object.keys(this.todo[0]).filter(k=>!this.players.find(p=>p.id==k).isChild).length+")");
+                                        this.sendlog();
+                                    }
                                     cb(input);
                                 }).bind(this)
                             ,this.genCommandcandidates(p));
@@ -748,7 +809,7 @@ class Game{
     }
     dealJoin(player){
         this.players.push(player);
-        this.playersLog.push({id:player.id,isHuman:player.isHuman,isRanked:player.isRanked,playerid:player.playerid});
+        if(!player.isChild)this.playersLog.push({id:player.id,isHuman:player.isHuman,isRanked:player.isRanked,playerid:player.playerid});
     }
     tick(){
         for(let id in this.todo[0]){
@@ -879,6 +940,9 @@ class Game{
         //模倣適用
         applyAction("prePhaseCopyB");
             
+        //一時バフ
+        applyAction("tempBuffPhase");
+
         //攻撃処理
         let attacks=players.map(p=>[]);
         for(let from=0;from<decisions.length;from++){
@@ -904,25 +968,27 @@ class Game{
         //結果表示
         this.log("~~~~~");
         let livingTeams=[];
-        players.filter(v=>v.hp>0).forEach(p=>livingTeams.indexOf(p.team)==-1&&livingTeams.push(p.team));
+        players.filter(p=>!p.isChild).filter(v=>v.hp>0).forEach(p=>livingTeams.indexOf(p.team)==-1&&livingTeams.push(p.team));
 
         if(livingTeams.length>0){
             players.filter(v=>v.hp>0).forEach(p=>p.turnend(p,players));
         }
         this.getSortedPId().forEach((i)=>{
-            let dstr=" "+damages[i].map((v,j)=>[v,"←「"+players[j].getShowingName()+"」の≪"+decisions[j].skill.name+"≫("+v+"dmg.)"]).filter(d=>d[0]>0).map(d=>d[1]).join("  ");
-            let oppindex=decisions[i].skill.args.findIndex(a=>a.name=="to");
-            if(oppindex!=-1){
-                this.log(players[i].getShowingName()+":≪"+decisions[i].skill.name+"≫⇢「"+players.find(p=>p.id==decisions[i].args[oppindex]).getShowingName()+"」");
-            }else{
-                this.log(players[i].getShowingName()+":≪"+decisions[i].skill.name+"≫");
+            if(!players[i].isChild){
+                let dstr=" "+damages[i].map((v,j)=>[v,"←「"+players[j].getShowingName()+"」の≪"+decisions[j].skill.name+"≫("+v+"dmg.)"]).filter(d=>d[0]>0).map(d=>d[1]).join("  ");
+                let oppindex=decisions[i].skill.args.findIndex(a=>a.name=="to");
+                if(oppindex!=-1){
+                    this.log(players[i].getShowingName()+":≪"+decisions[i].skill.name+"≫⇢「"+players.find(p=>p.id==decisions[i].args[oppindex]).getShowingName()+"」");
+                }else{
+                    this.log(players[i].getShowingName()+":≪"+decisions[i].skill.name+"≫");
+                }
+                if(players[i].hp<=0){
+                    this.log("  死亡..."+dstr);
+                }else{
+                    this.log("  "+players[i].getState()+dstr);
+                }
+                this.log("");
             }
-            if(players[i].hp<=0){
-                this.log("  死亡..."+dstr);
-            }else{
-                this.log("  "+players[i].getState()+dstr);
-            }
-            this.log("");
         });
         
         this.showPlayers(this.getSortedPId().map(i=>players[i]));
@@ -968,7 +1034,6 @@ class Game{
     wasRankedTaimanGame(){
         return  this.playersLog.length==2 &&
                 this.playersLog.every(p=>p.isRanked) &&
-                this.playersLog.every(p=>p.isHuman) &&
                 this.playersLog.every(p=>!p.isKicked) &&
                 this.playersLog.every(p=>p.hasOwnProperty("playerid")) &&
                 this.playersLog[0].playerid != this.playersLog[1].playerid;
@@ -1088,6 +1153,9 @@ function Player(id,nickname,team,game,kit,showJobMark=false,suffix=""){
     }
 
     this.getShowingName=(()=>(this.showingname));
+    this.genDecision=function(args){
+        return this.game.genDecision(args,this);
+    }
     this.reqDecisionWrapped=function(callBack,candidates){
         callBack(
             this.decision(
@@ -1135,6 +1203,44 @@ function array_shuffle(arr){
 }
 exports.Player=Player;
 
+function SupporterBot(parent,name,kit=_KIT_BOT_NORMAL){
+    Player.call(this,generateUuid(),name,parent.team,parent.game,kit);
+    this.isHuman=false;
+    this.isChild=true;
+    this.parent=parent;
+}
+function SupporterBot_red(parent){
+    SupporterBot.call(this,parent,"紅球");
+    this.reqDecision=function(callBack,candidates){
+        return callBack(this.genDecision(["red"]));
+    }
+}
+function SupporterBot_blue(parent){
+    SupporterBot.call(this,parent,"碧球");
+    this.reqDecision=function(callBack,candidates){
+        return callBack(this.genDecision(["blue"]));
+    }
+}
+function SupporterBot_black(parent){
+    SupporterBot.call(this,parent,"黒球");
+    this.reqDecision=function(callBack,canddata){
+        if(Object.keys(canddata.candidates).some(k=>k=="explode"&&canddata.candidates[k].available)){
+            callBack(this.genDecision(["explode"]));
+        }else{
+            callBack(this.genDecision(["charge"]));
+        }
+    }
+}
+function SupporterBot_white(parent){
+    SupporterBot.call(this,parent,"白球");
+    this.reqDecision=function(callBack,canddata){
+        if(Object.keys(canddata.candidates).some(k=>k=="white"&&canddata.candidates[k].available)){
+            callBack(this.genDecision(["white"]));
+        }else{
+            callBack(this.genDecision(["charge"]));
+        }
+    }
+}
 
 
 //param: [action][data]
@@ -1165,16 +1271,16 @@ function TaimanAi(id,game,param){
         this.decisionCounts[decisions.find(d=>d.id!=this.id).decision]++;
     };
     this.decision=function(player,supporter,opponents,candidates){
-        return this.game.genDecision(this.ai(opponents[0].id,
+        return this.genDecision(this.ai(opponents[0].id,
                     [   
                         1,
                         player.hp,
                         player.charge,
-                        player.buffs.str.level,
+                        player.buffs.str.getPower(),
                         opponents[0].hp,
                         opponents[0].charge,
-                        opponents[0].buffs.str.level,
-                    ].concat(this.decisionCounts[0]).concat(this.decisionCounts[1]).concat(this.decisionCounts[2])),this);
+                        opponents[0].buffs.str.getPower(),
+                    ].concat(this.decisionCounts[0]).concat(this.decisionCounts[1]).concat(this.decisionCounts[2])));
     }.bind(this);
     this.ai=function(opponentid,data){
         let probs=MxV(this.param,data).map(v=>Math.max(v,0));
@@ -1201,3 +1307,20 @@ function MxV(matrix,cvec){
     return matrix.map(rvec=>rvec.reduce((prev,current,i,rvec)=>prev+rvec[i]*cvec[i],0));
 }
 exports.TaimanAi=TaimanAi;
+
+function generateUuid() {
+    // https://github.com/GoogleChrome/chrome-platform-analytics/blob/master/src/internal/identifier.js
+    // const FORMAT: string = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx";
+    let chars = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".split("");
+    for (let i = 0, len = chars.length; i < len; i++) {
+        switch (chars[i]) {
+            case "x":
+                chars[i] = Math.floor(Math.random() * 16).toString(16);
+                break;
+            case "y":
+                chars[i] = (Math.floor(Math.random() * 4) + 8).toString(16);
+                break;
+        }
+    }
+    return chars.join("");
+}

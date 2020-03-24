@@ -27,7 +27,7 @@ let rankingPlayerTable={};
 
 request.get({
     url: process.env.chakra_ranking_url+"/public.pem",
-}, function (error, response, body){rankingPublicKey=body;});
+}, function (error, response, body){rankingPublicKey=body;console.log("got public.pem:\n"+body)});
 
 function forceHttps(req, res, next){
     if (!process.env.chakra_force_https) {
@@ -466,7 +466,7 @@ function Human(nickname,team,game,socket,kit,showJobMark,suffix){
     this.reqDecisionWrapped=function(callBack,candidates){
         this.socket.emit('input_action',{"candidates":candidates});
         this.onAction=function(data){
-            callBack(this.game.genDecision(data.action,this));
+            callBack(this.genDecision(data.action));
         }.bind(this);
     }.bind(this);
     this.onAction=function(){};
