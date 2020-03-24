@@ -442,7 +442,7 @@ _SKILLS_MOD_SUMMONER={
         requirement:_REQUIREMENT_DEFAULT,
         getCost:(p)=>3,
     },
-    summonred:{name:"碧球",args:[],
+    summonblue:{name:"碧球",args:[],
         attackPhase:function(user,players,decisions,args){
             user.useChakra(this.getCost(user));
             user.game.waiting.push(new SupporterBot_blue(user));
@@ -462,7 +462,7 @@ _SKILLS_MOD_SUMMONER={
         requirement:_REQUIREMENT_DEFAULT,
         getCost:(p)=>3,
     },
-    summonblack:{name:"白球",args:[],
+    summonwhite:{name:"白球",args:[],
         attackPhase:function(user,players,decisions,args){
             user.useChakra(this.getCost(user));
             user.game.waiting.push(new SupporterBot_white(user));
