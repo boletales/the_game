@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <meta encording="utf-8">
+        <meta charset="utf-8"/>
         <title>Chakra! - ロビー</title>
         <link rel="main.css">
         <script type="text/javascript" src="./socket.io/socket.io.js"></script>
@@ -14,8 +14,10 @@
                 width:100%;
             }
         </style>
+        <!--player info-->
     </head>
     <body>
+        <div id="ranking_div" hidden><span style='color:#000'>⏵successfully logged in as "<span id="ranking_nickname"></span>⚝<span id="ranking_rating"></span>" (@<span id="ranking_player"></span>)! <span style="color:#888">*number after ⚝ is rating.</span><br></div>
         <form id="gchat" action="javascript:void(0)" style="float:left">
             <input id="gname">
             <input id="gmsg" style="width:40%">
@@ -38,6 +40,17 @@
         <script>
             let doesSetNameCookie=true;
             document.getElementById("gname").value=getName();
+
+            
+            if(typeof playerinfo !== "undefined"){
+                document.getElementById("gname").value=playerinfo.nickname;
+                document.getElementById("ranking_nickname").innerText=playerinfo.nickname;
+                document.getElementById("ranking_player").innerText=playerinfo.player;
+                document.getElementById("ranking_rating").innerText=playerinfo.rating;
+                document.getElementById("ranking_div").hidden=false;
+                doesSetNameCookie=false;
+            }
+
             let socket = io.connect();
             socket.emit("getGlobalLog",{});
             socket.on("roomStates",data=>{
@@ -76,10 +89,6 @@
             socket.on("globalMessage", function(data){
                 document.getElementById("gmessages").innerHTML+=data.name+"≫"+data.message+"\n";
                 document.getElementById("gmessages").scrollTop = document.getElementById("gmessages").scrollHeight;
-            });
-            socket.on("yourinfo", function(data){
-                document.getElementById("gname").value=data.nickname;
-                doesSetNameCookie=false;
             });
             document.getElementById("gchat").onsubmit=function(e){
                 socket.emit("globalChat", {name : document.getElementById("gname").value+"@ロビー",message : document.getElementById("gmsg").value});

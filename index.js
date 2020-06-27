@@ -7,6 +7,7 @@ const io=socketIO.listen(http);
 const _aidata=require("./aidata.js");
 const crypto = require('crypto');
 const os = require('os');
+const fs = require('fs');
 const svg2img = require("svg2img");
 const request = require('request');
 const session = require('express-session');
@@ -14,6 +15,8 @@ const querystring = require('querystring');
 
 const RATING_PREFIX="⚝";
 const RATING_PREFIX_ALT="☆";
+
+const Transform = require('stream').Transform;
 
 var events = require('events');
 var eventEmitter = new events.EventEmitter();
@@ -39,7 +42,23 @@ function forceHttps(req, res, next){
     }else {
         return next();
     }
-};
+}
+function sendfile_withplayerinfo(res, path, playerinfo){
+    const parser_insert_playerdata = new Transform();
+    parser_insert_playerdata._transform = function(data, encoding, done) {
+        const str = data.toString().replace('<!--player info-->', '<script>var playerinfo = '+JSON.stringify(playerinfo)+';</script>');
+        this.push(str);
+        done();
+    };
+
+    res.write('<!-- Begin stream -->\n');
+    fs
+    .createReadStream(path,{encoding:"utf-8"})
+    .pipe(parser_insert_playerdata)
+    .on('end', () => {
+        res.write('\n<!-- End stream -->')
+    }).pipe(res);
+}
 var sessionMiddleware=session({
     secret: "do you like this game?",
     resave: false,
@@ -63,10 +82,17 @@ if( process.env.hasOwnProperty("chakra_ranking_enable") &&
             data.server==process.env.chakra_server_name &&
             new Date()-Date.parse(data.time.replace("+"," "))<60*1000){
 
-            console.log("Welcome 「"+data.playerinfo.nickname+RATING_PREFIX+data.playerinfo.rating+"」(@"+data.player+")!!");
-            req.session.playerid=data.player;
-            rankingPlayerTable[data.player]=data.playerinfo;
+            let playerinfo = data.playerinfo;
+            console.log("Welcome 「"+playerinfo.nickname+RATING_PREFIX+playerinfo.rating+"」(@"+playerinfo.player+")!!");
+            req.session.playerid=playerinfo.player;
+            rankingPlayerTable[playerinfo.player]=playerinfo;
+            sendfile_withplayerinfo(res, __dirname+'/docs/index.html', playerinfo);
+        }else{
+            res.sendFile(__dirname+'/docs/index.html');
         }
+    });
+}else{
+    app.get('/',function(req,res){
         res.sendFile(__dirname+'/docs/index.html');
     });
 }
@@ -89,7 +115,11 @@ app.get('/rooms/:roomid',function(req,res){
     res.sendFile(__dirname+'/docs/game.html');
 });
 app.get('/rooms/join/:roomid',function(req,res){
-    res.sendFile(__dirname+'/docs/join.html');
+    if(req.session.playerid !== undefined){
+        sendfile_withplayerinfo(res, __dirname+'/docs/join.html', rankingPlayerTable[req.session.playerid]);
+    }else{
+        res.sendFile(__dirname+'/docs/join.html');
+    }
 });
 app.get('/rooms/spectate/:roomid',function(req,res){
     res.sendFile(__dirname+'/docs/spectate.html');
@@ -193,9 +223,9 @@ io.on('connection',function(socket){
         socket.emit("kitsset",Object.keys(_game.kitsets));
     });
 
-    if(rankingPlayerTable.hasOwnProperty(socket.request.session.playerid)){
+    /*if(rankingPlayerTable.hasOwnProperty(socket.request.session.playerid)){
         socket.emit("yourinfo",rankingPlayerTable[socket.request.session.playerid]);
-    }
+    }*/
 });
 http.listen(process.env.PORT || 80);
 console.log('It works!!');

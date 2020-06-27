@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <meta encording="utf-8">
+        <meta charset="utf-8"/>
         <title>Chakra! - 参加</title>
         <script type="text/javascript" src="../../socket.io/socket.io.js"></script>
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -13,6 +13,7 @@
                 width:100%;
             }
         </style>
+        <!--player info-->
     </head>
     <body>
         <span id="kokoha" style="color:#555"></span><span id="roomname" style="font-size:140%"></span><br>
@@ -31,6 +32,12 @@
             let teamMode=true;
             let socket = io.connect();
             let roomid=decodeURIComponent(location.pathname.split("/").reverse()[0]);
+            
+            if(typeof playerinfo !== "undefined"){
+                document.getElementById("name").value=playerinfo.nickname;
+                doesSetNameCookie=false;
+            }
+
             socket.on("goRobby", function(data){
                 location.href="./"
             });
@@ -62,10 +69,6 @@
                     document.getElementById("teambox").style.display="none";
                 }
                 document.getElementById("submit").style.display="unset";
-            });
-            socket.on("yourinfo", function(data){
-                document.getElementById("name").value=data.nickname;
-                doesSetNameCookie=false;
             });
             function join(){
                 let name = document.getElementById("name").value;
