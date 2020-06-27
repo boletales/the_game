@@ -100,7 +100,11 @@ if( process.env.hasOwnProperty("chakra_ranking_enable") &&
 
 app.all('*', forceHttps);
 app.get('/',function(req,res){
-    res.sendFile(__dirname+'/docs/index.html');
+    if(req.session.playerid !== undefined){
+        sendfile_withplayerinfo(res, __dirname+'/docs/index.html', rankingPlayerTable[req.session.playerid]);
+    }else{
+        res.sendFile(__dirname+'/docs/index.html');
+    }
 });
 app.get('/explain.html',function(req,res){
     res.sendFile(__dirname+'/docs/explain.html');
