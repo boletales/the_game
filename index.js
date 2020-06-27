@@ -223,10 +223,15 @@ io.on('connection',function(socket){
         socket.emit("kitsset",Object.keys(_game.kitsets));
     });
 
+    socket.on('disconnect',data=>recount());
+    recount();
     /*if(rankingPlayerTable.hasOwnProperty(socket.request.session.playerid)){
         socket.emit("yourinfo",rankingPlayerTable[socket.request.session.playerid]);
     }*/
 });
+function recount(){
+    io.emit("connectedCount",Object.keys(io.sockets.connected).length);
+};
 http.listen(process.env.PORT || 80);
 console.log('It works!!');
 
