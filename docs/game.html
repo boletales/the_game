@@ -39,6 +39,7 @@
             <input id="msg" placeholder="部屋内チャット">
             <input type="submit" value="送信">
         </form>
+        <span id="info">⏵接続中: <span id="connected_count"></span>人<br></span>
         <pre id="output" class="output"></pre>
         
         <pre id="command" style="padding: 5px;width: 100%;background-color: #ffd;white-space: pre-wrap;">次のターンまでお待ちください</pre>
@@ -128,6 +129,7 @@
                     document.getElementById("players").innerHTML+="<span style='color:"+getColor(player.team)+"'>"+player.name+"≫"+player.state+"</span><br>";
                 })
             });
+            socket.on("connectedCount",data=>document.getElementById("connected_count").innerHTML=data);
             
             function setName(data){
                 name=data.id;

@@ -19,6 +19,7 @@
         </style>
     </head>
     <body>
+        <span id="info">⏵接続中: <span id="connected_count"></span>人<br></span><br>
         <span id="kokoha" style="color:#555"></span><span id="roomname" style="font-size:140%"></span>
         <input type="button" value="参戦" onclick="join()">
         
@@ -79,6 +80,7 @@
                 })
             });
             
+            socket.on("connectedCount",data=>document.getElementById("connected_count").innerHTML=data);
 
             socket.on("globalMessage", function(data){
                 document.getElementById("gmessages").innerHTML+=data.name+"≫"+data.message+"\n";
