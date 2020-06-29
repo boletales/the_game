@@ -42,14 +42,14 @@ exports._DEFENSE_DEFAULT=_DEFENSE_DEFAULT;
     defensePhase(function array):自分への攻撃の威力リストを受け取り,各攻撃から実際に喰らうダメージを返す 必要ならここで攻撃を食らったときの処理をする（「防御」の☯吸収とか）
                     (使用者,プレイヤーリスト[id],行動リスト[id],威力リスト[攻撃者id],技引数)=>ダメージリスト[攻撃者id]
 
-    *好きなPhaseなんでも(funciton void):game.turnに処理書けば勝手にPhase増やせる 「模倣」とか
+    *好きなPhaseなんでも(function void):game.turnに処理書けば勝手にPhase増やせる 「模倣」とか
                     (使用者,プレイヤーリスト[id],行動リスト[id],技引数)=>undefined        
 
     getCost(function int):(使用者)=>技コスト
     
     *getExCost(function int):(使用者)=>必殺コスト この関数が存在したら必殺技扱いだった"気がする"
 
-    requirement(funciton bool):プレイヤーがこの技を使用できるか 実装の都合上第一引数は「この技」 判定自体はgame.checkReq(skill,player)で
+    requirement(function bool):プレイヤーがこの技を使用できるか 実装の都合上第一引数は「この技」 判定自体はgame.checkReq(skill,player)で
                     (技,使用者)=>使用できるか
 
     **inherit(bool):mod系skillのみで使用 modで定義されている以外の親スキルのプロパティを受け継ぐか
@@ -656,7 +656,7 @@ exports._HP_DEFAULT=6;
 const OKAWARISEC=5;
 
 class Game{
-    constructor(kits,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},needokawari=true,sendBattleLog=function(){},sendRatingLog=function(){}){
+    constructor(kits,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},needokawari=true,sendBattleLog=function(){},sendRatingLog=function(){},isRanked=false){
         this.kits=kits.set;
         this.useEx=kits.useEx;
         this.sendlog=function(){
@@ -666,6 +666,7 @@ class Game{
         };
         this.sendBattleLog=sendBattleLog;
         this.sendRatingLog=sendRatingLog;
+        this.isRanked = isRanked;
         this.logbuffer=[];
         this.log=function(str){this.logbuffer.push(str)};
         this.noticewinner= noticewinner;
@@ -860,7 +861,7 @@ class Game{
         this.battleLog.push(players.map((p,i)=>({
             id:p.id,
             nickname:p.nickname,
-            decision:{skill:decisions[i].skill.name,args:decisions[i].args},
+            decision:{skill:decisions[i].skill.name,skillId:decisions[i].skill.id,args:decisions[i].args},
             before:p.getStateData()})
         ));
         players.forEach(p=>p.noticeDecisions(players.map((pl,i)=>{return {"id":pl.id,"decision":decisions[i].skill.id};})));
@@ -900,7 +901,12 @@ class Game{
         players.forEach((p,i)=>p.hp-=damages[i].reduce((a,c)=>a+c,0));
 
         //結果記録
-        players.forEach((p,i)=>this.battleLog[this.battleLog.length-1][i].after=p.getStateData());
+        players.forEach((p,i)=>{
+            this.battleLog[this.battleLog.length-1][i].after          = p.getStateData();
+            this.battleLog[this.battleLog.length-1][i].damageDealt    = damages.map((d,to)=>{return {"to":players[to].id,"amount":d[i]};}).filter(d=>d.amount>0);
+            this.battleLog[this.battleLog.length-1][i].damageReceived = damages[i].map((d,from)=>{return {"to":players[from].id,"amount":d};}).filter(d=>d.amount>0);
+        });
+
         //結果表示
         this.log("~~~~~");
         let livingTeams=[];
@@ -931,6 +937,8 @@ class Game{
             this.sendlog();
             return true;
         }else{
+            this.battleLog.playersLog=this.playersLog;
+            this.battleLog.isRanked = this.isRanked && this.wasRankedTaimanGame();
             this.sendBattleLog(this.battleLog);
             this.log("試合終了");
             if(livingTeams.length!=1){

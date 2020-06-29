@@ -307,7 +307,7 @@ class Room{
         this.parent=parent;
         this.kits=_game.kitsets.hasOwnProperty(args.kitsname)?_game.kitsets[args.kitsname]:_game.kitsets["スタンダード"];
         this.hidden=args.hasOwnProperty("hidden")&&args.hidden;
-	    this.game=new _game.Game(this.kits,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this),()=>{},true,this.sendBattleLogToServer.bind(this),this.sendRatingLogToServer.bind(this));
+	    this.game=new _game.Game(this.kits,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this),()=>{},true,this.sendBattleLogToServer.bind(this),this.sendRatingLogToServer.bind(this),this.isRanked());
         this.teamMode=this.game.teamMode;
     }
     getNumber(){
@@ -367,7 +367,7 @@ class Room{
     }
 
     sendBattleLogToServer(data){
-        if(process.env.hasOwnProperty("chakra_ranking_enable") && process.env.hasOwnProperty("chakra_ranking_url") && process.env.chakra_ranking_enable=="true"){
+        if(this.isRanked()){
             request.post({
                 url: process.env.chakra_ranking_url+"/log",
                 headers: {
@@ -376,13 +376,14 @@ class Room{
                 body: JSON.stringify({
                     "host":process.env.hasOwnProperty("chakra_server_name")?process.env.chakra_server_name:"unknown",
                     "id":this.id,
+                    "format":1,
                     "data":data,
                 }, null , "\t")
             }, function (error, response, body){});
         }
     }
     sendRatingLogToServer(body){
-        if(process.env.hasOwnProperty("chakra_ranking_enable") && process.env.hasOwnProperty("chakra_ranking_url") && process.env.chakra_ranking_enable=="true"){
+        if(this.isRanked()){
             let data={"data":JSON.stringify({
                 "type":"ranking_ver1",
                 "servername":process.env.chakra_server_name,
@@ -401,7 +402,9 @@ class Room{
             }.bind(null,body.players));
         }
     }
-
+    isRanked(){
+        return process.env.hasOwnProperty("chakra_ranking_enable") && process.env.hasOwnProperty("chakra_ranking_url") && process.env.chakra_ranking_enable=="true";
+    }
     chat(data){
         data.forEach(d=>{
             d.time=new Date();
