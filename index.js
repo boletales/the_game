@@ -298,6 +298,7 @@ function showRoomState(){
 }
 class Room{
     constructor(name,parent,args={}){
+        let needokawari = args.hasOwnProperty("needokawari")?args.needokawari:true;
         this.recentLog=[];
         this.recentLogMax=1000;
         this.name=name;
@@ -307,7 +308,7 @@ class Room{
         this.parent=parent;
         this.kits=_game.kitsets.hasOwnProperty(args.kitsname)?_game.kitsets[args.kitsname]:_game.kitsets["スタンダード"];
         this.hidden=args.hasOwnProperty("hidden")&&args.hidden;
-	    this.game=new _game.Game(this.kits,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this),()=>{},this.sendBattleLogToServer.bind(this),this.sendRatingLogToServer.bind(this),this.isRanked());
+	    this.game=new _game.Game(this.kits,args,this.closeGame.bind(this),(needokawari?this.okawari.bind(this):this.goout.bind(this)),this.log.bind(this),this.showPlayers.bind(this),()=>{},this.sendBattleLogToServer.bind(this),this.sendRatingLogToServer.bind(this),this.isRanked());
         this.teamMode=this.game.teamMode;
     }
     getNumber(){
@@ -461,6 +462,15 @@ class Room{
                 let id=Math.floor(Math.random()*_aidata.data.length);
                 rooms[roomid].game.joinPlayer(new _game.TaimanAi("名無しAI🤖"+id,this.game,_aidata.data[id]));
             }
+        }
+    }
+
+    goout(){
+        if(io.sockets.adapter.rooms[this.id]!=undefined){
+            humans.map(()=>{
+                let socket=io.sockets.sockets[socketid];
+                socket.emit("goRobby");
+            });
         }
     }
 
