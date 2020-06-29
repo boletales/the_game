@@ -7,8 +7,8 @@ _ATTACK_DEFAULT=(user,players,decisions,args)=>players.map(p=>0);
 _DEFENSE_DEFAULT=(user,players,decisions,attacksForMe,args)=>
     attacksForMe.map((a,i)=>(
         decisions[i].skill.beam?
-            Math.floor(a/(2**((user.buffs.mdp.level+user.buffs.mdt.level)/_DEF_FACTOR))):
-            Math.floor(a/(2**((user.buffs.pdp.level+user.buffs.pdt.level)/_DEF_FACTOR)))
+            Math.floor(a/(2**((user.buffs.mdefperm.level+user.buffs.mdeftemp.level)/_DEF_FACTOR))):
+            Math.floor(a/(2**((user.buffs.pdefperm.level+user.buffs.pdeftemp.level)/_DEF_FACTOR)))
         )
     );
 _REQUIREMENT_DEFAULT=(skill,p)=>(p.charge>=skill.getCost(p) && (!skill.hasOwnProperty("getCostEx") || p.chargeEx>=skill.getCostEx(p)));
@@ -63,7 +63,7 @@ _SKILLS_ZERO={
     },
 
 
-    chr:{name:"溜め",args:[],
+    charge:{name:"溜め",args:[],
             attackPhase:function(user,players,decisions,args){
                 user.charge+=1;
                 return players.map(p=>0);
@@ -72,7 +72,7 @@ _SKILLS_ZERO={
             requirement:_REQUIREMENT_DEFAULT,
             defensePhase:_DEFENSE_DEFAULT
         },
-    def:{name:"防御",args:[], 
+    defend:{name:"防御",args:[], 
             attackPhase:_ATTACK_DEFAULT,
             defensePhase:function(user,players,decisions,attacksForMe,args){
                 return attacksForMe.map((d,i)=>(decisions[i].skill.beam ? d : 0));
@@ -82,7 +82,7 @@ _SKILLS_ZERO={
             def:true,
         },
     
-    mir:{name:"反射",args:[],
+    mirror:{name:"反射",args:[],
             attackPhase:_ATTACK_DEFAULT,
             requirement:_REQUIREMENT_DEFAULT,
             defensePhase:function(user,players,decisions,attacksForMe,args){
@@ -92,7 +92,7 @@ _SKILLS_ZERO={
             getCost:(p)=>(0),
         },
 
-    atk:{name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
+    attack:{name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
             attackPhase:function(user,players,decisions,args){
                 let attacks=players.map(p=>0);
                 user.useChakra(this.getCost(user));
@@ -109,7 +109,7 @@ _SKILLS_ZERO={
             },
         },
 
-    wav:{name:"強攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
+    beam:{name:"強攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             user.useChakra(this.getCost(user));
@@ -136,9 +136,9 @@ _SKILLS_MOTO={
         requirement:_REQUIREMENT_DEFAULT,
     },
 
-    def:{name:"防御",args:[], 
+    defend:{name:"防御",args:[], 
         attackPhase:function(user,players,decisions,args){
-            user.buffs.pdt.levelUp(_DEF_FACTOR);
+            user.buffs.pdeftemp.levelUp(_DEF_FACTOR);
             return players.map(p=>0);
         },
         defensePhase:function(user,players,decisions,attacksForMe,args){
@@ -150,7 +150,7 @@ _SKILLS_MOTO={
         def:true,
     },
 
-    atk:{name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
+    attack:{name:"攻撃",args:[{message:"対象入力",type:"opponent",name:"to"}],
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             attacks[players.findIndex(p=>p.id==args[0])] = this.pow+user.buffs.str.getPower();
@@ -163,7 +163,7 @@ _SKILLS_MOTO={
         weak:true,
     },
 
-    chr:{name:"溜め",args:[],
+    charge:{name:"溜め",args:[],
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             user.charge+=3;
@@ -174,7 +174,7 @@ _SKILLS_MOTO={
         getCost:(p)=>(0),
     },
     
-    mir:{name:"反射",args:[],
+    mirror:{name:"反射",args:[],
         attackPhase:_ATTACK_DEFAULT,
         requirement:_REQUIREMENT_DEFAULT,
         defensePhase:function(user,players,decisions,attacksForMe,args){
@@ -186,7 +186,7 @@ _SKILLS_MOTO={
 
 };
 _SKILLS_MOD_BEAM={
-    bea:{name:"光線",args:[{message:"対象入力",type:"opponent",name:"to"}],
+    beam:{name:"光線",args:[{message:"対象入力",type:"opponent",name:"to"}],
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             user.useChakra(this.getCost(user));
@@ -214,7 +214,7 @@ _SKILLS_MOD_BEAM={
 };
 
 _SKILLS_MOD_EX_LIGHTBLADE={
-    xlb:{name:"荷電粒子砲",args:[{message:"対象入力",type:"opponent",name:"to"}],
+    exion:{name:"荷電粒子砲",args:[{message:"対象入力",type:"opponent",name:"to"}],
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             user.useChakraEx(this.getCostEx(user));
@@ -235,12 +235,12 @@ _SKILLS_MOD_EX_LIGHTBLADE={
 };
 
 _SKILLS_MOD_EX_HARDEN={
-    xha:{name:"装甲強化",args:[{message:"対象入力",type:"team",name:"to"}],
+    exharden:{name:"装甲強化",args:[{message:"対象入力",type:"team",name:"to"}],
         attackPhase:function(user,players,decisions,args){
             user.useChakraEx(this.getCostEx(user));
             let target=players.find(p=>p.id==args[0]);
-            target.buffs.pdp.levelUp(1);
-            target.buffs.mdp.levelUp(1);
+            target.buffs.pdefperm.levelUp(1);
+            target.buffs.mdefperm.levelUp(1);
             return players.map(p=>0);
         },
 
@@ -249,16 +249,16 @@ _SKILLS_MOD_EX_HARDEN={
         },
         requirement:_REQUIREMENT_DEFAULT,
         getCost:(p)=>(0),
-        getCostEx:(p)=>([2,5,Infinity][Math.min(2,Math.max(p.buffs.mdp.level,p.buffs.pdp.level))]),
+        getCostEx:(p)=>([2,5,Infinity][Math.min(2,Math.max(p.buffs.mdefperm.level,p.buffs.pdefperm.level))]),
     },
 };
 
 _SKILLS_MOD_COVER={
-    cov:{name:"護衛",args:[{message:"対象入力",type:"supporter",name:"to"}], 
+    cover:{name:"護衛",args:[{message:"対象入力",type:"supporter",name:"to"}], 
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             user.useChakra(this.getCost(user));
-            players.find(p=>p.id==args[0]).buffs.pdt.levelUp(1);
+            players.find(p=>p.id==args[0]).buffs.pdeftemp.levelUp(1);
             return attacks;
         },
         requirement:_REQUIREMENT_DEFAULT,
@@ -267,7 +267,7 @@ _SKILLS_MOD_COVER={
     },
 };
 _SKILLS_MOD_HEAL={
-    hea:{name:"回復",args:[{message:"対象入力",type:"team",name:"to"}], 
+    heal:{name:"回復",args:[{message:"対象入力",type:"team",name:"to"}], 
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             user.useChakra(this.getCost(user));
@@ -280,7 +280,7 @@ _SKILLS_MOD_HEAL={
     },
 };
 _SKILLS_MOD_HEALPLUS={
-    the:{name:"全体回復",args:[], 
+    teamheal:{name:"全体回復",args:[], 
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             user.useChakra(this.getCost(user));
@@ -291,7 +291,7 @@ _SKILLS_MOD_HEALPLUS={
         defensePhase:_DEFENSE_DEFAULT,
         getCost:(p)=>(6),
     },
-    mhe:{name:"強回復",args:[{message:"対象入力",type:"team",name:"to"}], 
+    megaheal:{name:"強回復",args:[{message:"対象入力",type:"team",name:"to"}], 
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             user.useChakra(this.getCost(user));
@@ -304,7 +304,7 @@ _SKILLS_MOD_HEALPLUS={
     },
 };
 _SKILLS_MOD_ATPLUS={
-    str:{name:"強化",args:[],
+    strengthen:{name:"強化",args:[],
         attackPhase:function(user,players,decisions,args){
             user.useChakra(this.getCost(user));
             user.buffs.str.levelUp();
@@ -319,14 +319,14 @@ _SKILLS_MOD_ATPLUS={
     },
 };
 _SKILLS_MOD_STUN={
-    stu:{name:"麻痺",args:[{message:"対象入力",type:"opponent",name:"to"}], 
+    stun:{name:"麻痺",args:[{message:"対象入力",type:"opponent",name:"to"}], 
         attackPhase:function(user,players,decisions,args){
             user.useChakra(this.getCost(user));
             let target=players.findIndex(p=>p.id==args[0]);
             if(decisions[target].skill.reflect){
-                user.buffs.stu.level++;
+                user.buffs.stun.level++;
             }else{
-                players[target].buffs.stu.level++;
+                players[target].buffs.stun.level++;
             }
             let attacks=players.map(p=>0);
             return attacks;
@@ -337,7 +337,7 @@ _SKILLS_MOD_STUN={
     },
 };
 _SKILLS_MOD_SMASH={
-    sma:{name:"強奪",args:[{message:"対象入力",type:"opponent",name:"to"}],
+    smash:{name:"強奪",args:[{message:"対象入力",type:"opponent",name:"to"}],
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             let targetIndex=players.findIndex(p=>p.id==args[0]);
@@ -366,7 +366,7 @@ _SKILLS_MOD_SMASH={
     },
 };
 _SKILLS_MOD_EXPLODE={
-    exp:{name:"爆発",args:[],
+    explode:{name:"爆発",args:[],
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             user.useChakra(this.getCost(user));
@@ -381,13 +381,13 @@ _SKILLS_MOD_EXPLODE={
         defensePhase:_DEFENSE_DEFAULT,
         requirement:_REQUIREMENT_DEFAULT,
         pow:1,
-        getCost:((p)=>(_SKILLS_MOD_EXPLODE.exp.countOpponents(p)*(_SKILLS_MOD_EXPLODE.exp.pow+p.buffs.str.getPower()))),
+        getCost:((p)=>(_SKILLS_MOD_EXPLODE.explode.countOpponents(p)*(_SKILLS_MOD_EXPLODE.explode.pow+p.buffs.str.getPower()))),
         countOpponents:((user)=>user.game.players.filter(p=>p.team!=user.team).length),
         weak:true,
     },
 };
 _SKILLS_MOD_SALVO={
-    sal:{name:"斉射",args:[{message:"対象入力",type:"opponent",name:"to"}],
+    salvo:{name:"斉射",args:[{message:"対象入力",type:"opponent",name:"to"}],
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             attacks[players.findIndex(p=>p.id==args[0])] = user.charge+user.buffs.str.getPower();
@@ -403,7 +403,7 @@ _SKILLS_MOD_SALVO={
 };
 
 _SKILLS_MOD_COPY={
-    cop:{name:"模倣",args:[{message:"対象入力",type:"opponent",name:"to"}], 
+    copy:{name:"模倣",args:[{message:"対象入力",type:"opponent",name:"to"}], 
 	    prePhaseCopyA:function(user,players,decisions,args){
             let targetIndex=players.findIndex(p=>p.id==args[0]);
             let myIndex=players.findIndex(p=>p.id==user.id);
@@ -431,7 +431,7 @@ _SKILLS_MOD_COPY={
 };
 
 _SKILLS_MOD_ATPLUS_FIGHTER={
-    str:{   
+    strengthen:{   
         inherit:true,
         getCost:(p)=>{
             let costs=[0,4,7,10];
@@ -469,13 +469,13 @@ const Buffs={
         }.bind(this);
     },
     //↓麻痺
-    stu:function(user){
+    stun:function(user){
         this.tick=function(){
         	if(this.level>0)this.level--;
         }.bind(this);
         this.level=0;
         this.user=user;
-        this.id="stu";
+        this.id="stun";
         this.state=function(){
             return "⚡️".repeat(this.level);
         }.bind(this);
@@ -499,42 +499,42 @@ const Buffs={
         }
     },
     //↓物理防御(永続)
-    pdp:function(user){
+    pdefperm:function(user){
         this.tick=(()=>(undefined));
         this.level=0;
         this.user=user;
-        this.id="pdp";
+        this.id="pdefperm";
         this.state=(()=>"⛑".repeat(this.level)).bind(this);
         this.levelUp=(level=>(this.level+=level)).bind(this);
     },
     //↓物理防御(1ターン)
-    pdt:function(user){
+    pdeftemp:function(user){
         this.tick=function(){
             this.level=0;
         }.bind(this);
         this.level=0;
         this.user=user;
-        this.id="pdt";
+        this.id="pdeftemp";
         this.state=(()=>"");
         this.levelUp=(level=>(this.level+=level)).bind(this);
     },
     //↓魔法防御(永続)
-    mdp:function(user){
+    mdefperm:function(user){
         this.tick=(()=>(undefined));
         this.level=0;
         this.user=user;
-        this.id="mdp";
+        this.id="mdefperm";
         this.state=(()=>"☂".repeat(this.level)).bind(this);
         this.levelUp=(level=>(this.level+=level)).bind(this);
     },
     //↓魔法防御(1ターン)
-    mdt:function(user){
+    mdeftemp:function(user){
         this.tick=function(){
             this.level=0;
         }.bind(this);
         this.level=0;
         this.user=user;
-        this.id="mdt";
+        this.id="mdeftemp";
         this.state=(()=>"");
         this.levelUp=(level=>(this.level+=level)).bind(this);
     },
@@ -1064,7 +1064,7 @@ function Player(id,nickname,team,game,kit,showJobMark=false,suffix=""){
     Object.keys(Buffs).forEach((key=>this.buffs[key]=new Buffs[key](this)).bind(this));
     this.decision=function(player,supporter,opponents,candidates){return new _game.decision([this.skills.non])}.bind(this);
     this.reqDecision=function(callBack,candidates){
-        if(this.buffs.stu.level>0){//麻痺
+        if(this.buffs.stun.level>0){//麻痺
         	callBack(new decision([this.skills.non]));
         }else{
             //遅刻入力対策
