@@ -376,6 +376,7 @@ class Room{
                 body: JSON.stringify({
                     "host":process.env.hasOwnProperty("chakra_server_name")?process.env.chakra_server_name:"unknown",
                     "id":this.id,
+                    "time":new Date().toUTCString(),
                     "format":1,
                     "data":data,
                 }, null , "\t")
