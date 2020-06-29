@@ -656,7 +656,7 @@ exports._HP_DEFAULT=6;
 const OKAWARISEC=5;
 
 class Game{
-    constructor(kits,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},needokawari=true,sendBattleLog=function(){},sendRatingLog=function(){},isRanked=false){
+    constructor(kits,args,closeGame,okawari,log,showPlayers=function(){},noticewinner=function(){},sendBattleLog=function(){},sendRatingLog=function(){},isRanked=false){
         this.kits=kits.set;
         this.useEx=kits.useEx;
         this.sendlog=function(){
@@ -670,8 +670,8 @@ class Game{
         this.logbuffer=[];
         this.log=function(str){this.logbuffer.push(str)};
         this.noticewinner= noticewinner;
-        this.needokawari = needokawari;
         this.playersLog  = [];//id,isHuman,isRanked,playerid
+        this.needokawari = args.hasOwnProperty("needokawari")?args.needokawari:true;
         this.teamMode    = args.hasOwnProperty("teamMode")   ?args.teamMode   :true;
         this.maxPlayers  = args.hasOwnProperty("maxPlayers") ?args.maxPlayers :Infinity;
         this.startnumber = args.hasOwnProperty("startnumber")?args.startnumber:2;

@@ -307,7 +307,7 @@ class Room{
         this.parent=parent;
         this.kits=_game.kitsets.hasOwnProperty(args.kitsname)?_game.kitsets[args.kitsname]:_game.kitsets["スタンダード"];
         this.hidden=args.hasOwnProperty("hidden")&&args.hidden;
-	    this.game=new _game.Game(this.kits,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this),()=>{},true,this.sendBattleLogToServer.bind(this),this.sendRatingLogToServer.bind(this),this.isRanked());
+	    this.game=new _game.Game(this.kits,args,this.closeGame.bind(this),this.okawari.bind(this),this.log.bind(this),this.showPlayers.bind(this),()=>{},this.sendBattleLogToServer.bind(this),this.sendRatingLogToServer.bind(this),this.isRanked());
         this.teamMode=this.game.teamMode;
     }
     getNumber(){
@@ -485,7 +485,7 @@ class Room{
 }
 class TaimanRoom extends Room{
     constructor(name,parent){
-        super(name,parent,{teamMode:false,maxPlayers:2,hidden:true,taiman:true});
+        super(name,parent,{teamMode:false,maxPlayers:2,hidden:true,taiman:true,needokawari:false});
     }
 }
 
