@@ -860,6 +860,7 @@ class Game{
 
         this.battleLog.push(players.map((p,i)=>({
             id:p.id,
+            team:p.team,
             nickname:p.nickname,
             decision:{skill:decisions[i].skill.name,skillId:decisions[i].skill.id,args:decisions[i].args},
             before:p.getStateData()})
