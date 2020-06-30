@@ -863,7 +863,7 @@ class Game{
             id:p.id,
             team:p.team,
             nickname:p.nickname,
-            decision:{skill:decisions[i].skill.name,skillId:decisions[i].skill.id,args:decisions[i].args},
+            decision:{skill:decisions[i].skill.name,args:decisions[i].args},
             before:p.getStateData()})
         ));
         players.forEach(p=>p.noticeDecisions(players.map((pl,i)=>{return {"id":pl.id,"decision":decisions[i].skill.id};})));
