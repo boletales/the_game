@@ -380,7 +380,8 @@ class Room{
                     "time":new Date().toUTCString(),
                     "format":1,
                     "data":data,
-                }, null , "\t")
+                }, null , "\t"),
+                followAllRedirects:true
             }, function (error, response, body){});
         }
     }

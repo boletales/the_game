@@ -1112,7 +1112,7 @@ function Player(id,nickname,team,game,kit,showJobMark=false,suffix=""){
         return "♥".repeat(Math.max(this.hp,0))+"   "+"☯".repeat(Math.max(this.charge,0))+(this.game.useEx?"   Ex:"+this.chargeEx.toFixed(1):"")+"   "+Object.values(this.buffs).map(b=>b.state()).join(" ");
     }
     this.getStateData=function(){//プレイヤーの状態（オブジェクト）
-        return {hp:this.hp,charge:this.charge,chargeEx:this.chargeEx,buffs:Object.values(this.buffs).map(b=>({id:b.id,level:b.level}))};
+        return {hp:this.hp,charge:this.charge,chargeEx:this.chargeEx,buffs:Object.values(this.buffs).map(b=>({id:b.id,level:b.level})).filter(b=>b.level!=0)};
     }
 
     this.refreshBuffs=function(){
