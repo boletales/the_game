@@ -467,7 +467,8 @@ class Room{
 
     goout(){
         if(io.sockets.adapter.rooms[this.id]!=undefined){
-            humans.map(()=>{
+            let humans=Object.keys(io.sockets.adapter.rooms[this.id].sockets);
+            humans.map((socketid)=>{
                 let socket=io.sockets.sockets[socketid];
                 socket.emit("goRobby");
             });
