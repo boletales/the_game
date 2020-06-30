@@ -298,7 +298,7 @@ function showRoomState(){
 }
 class Room{
     constructor(name,parent,args={}){
-        let needokawari = args.hasOwnProperty("needokawari")?args.needokawari:true;
+        let onegame = args.hasOwnProperty("onegame")?args.onegame:true;
         this.recentLog=[];
         this.recentLogMax=1000;
         this.name=name;
@@ -308,7 +308,7 @@ class Room{
         this.parent=parent;
         this.kits=_game.kitsets.hasOwnProperty(args.kitsname)?_game.kitsets[args.kitsname]:_game.kitsets["スタンダード"];
         this.hidden=args.hasOwnProperty("hidden")&&args.hidden;
-	    this.game=new _game.Game(this.kits,args,this.closeGame.bind(this),(needokawari?this.okawari.bind(this):this.goout.bind(this)),this.log.bind(this),this.showPlayers.bind(this),()=>{},this.sendBattleLogToServer.bind(this),this.sendRatingLogToServer.bind(this),this.isRanked());
+	    this.game=new _game.Game(this.kits,args,this.closeGame.bind(this),(onegame?this.okawari.bind(this):this.goout.bind(this)),this.log.bind(this),this.showPlayers.bind(this),()=>{},this.sendBattleLogToServer.bind(this),this.sendRatingLogToServer.bind(this),this.isRanked());
         this.teamMode=this.game.teamMode;
     }
     getNumber(){
@@ -496,7 +496,7 @@ class Room{
 }
 class TaimanRoom extends Room{
     constructor(name,parent){
-        super(name,parent,{teamMode:false,maxPlayers:2,hidden:true,taiman:true,needokawari:false});
+        super(name,parent,{teamMode:false,maxPlayers:2,hidden:true,taiman:true,onegame:true});
     }
 }
 
