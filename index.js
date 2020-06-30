@@ -298,7 +298,7 @@ function showRoomState(){
 }
 class Room{
     constructor(name,parent,args={}){
-        let onegame = args.hasOwnProperty("onegame")?args.onegame:true;
+        let onegame = args.hasOwnProperty("onegame")?args.onegame:false;
         this.recentLog=[];
         this.recentLogMax=1000;
         this.name=name;
@@ -308,7 +308,7 @@ class Room{
         this.parent=parent;
         this.kits=_game.kitsets.hasOwnProperty(args.kitsname)?_game.kitsets[args.kitsname]:_game.kitsets["スタンダード"];
         this.hidden=args.hasOwnProperty("hidden")&&args.hidden;
-	    this.game=new _game.Game(this.kits,args,this.closeGame.bind(this),(onegame?this.okawari.bind(this):this.goout.bind(this)),this.log.bind(this),this.showPlayers.bind(this),()=>{},this.sendBattleLogToServer.bind(this),this.sendRatingLogToServer.bind(this),this.isRanked());
+	    this.game=new _game.Game(this.kits,args,this.closeGame.bind(this),(onegame?this.goout.bind(this):this.okawari.bind(this)),this.log.bind(this),this.showPlayers.bind(this),()=>{},this.sendBattleLogToServer.bind(this),this.sendRatingLogToServer.bind(this),this.isRanked());
         this.teamMode=this.game.teamMode;
     }
     getNumber(){

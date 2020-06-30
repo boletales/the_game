@@ -671,6 +671,7 @@ class Game{
         this.log=function(str){this.logbuffer.push(str)};
         this.noticewinner= noticewinner;
         this.playersLog  = [];//id,isHuman,isRanked,playerid
+        this.onegame     = args.hasOwnProperty("onegame")    ?args.onegame    :false;
         this.needokawari = args.hasOwnProperty("needokawari")?args.needokawari:true;
         this.teamMode    = args.hasOwnProperty("teamMode")   ?args.teamMode   :true;
         this.maxPlayers  = args.hasOwnProperty("maxPlayers") ?args.maxPlayers :Infinity;
@@ -962,7 +963,7 @@ class Game{
                 this.sendRatingLog(body);
             }
             if(this.needokawari){
-                this.log(OKAWARISEC+"秒後に次の試合");
+                this.log(OKAWARISEC+"秒後に"+(this.onegame?"ロビーに戻ります":"次の試合"));
                 setTimeout(this.okawari,OKAWARISEC*1000);
             }
             this.sendlog();
