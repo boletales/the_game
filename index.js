@@ -388,7 +388,8 @@ class Room{
     sendRatingLogToServer(body){
         if(this.isRanked()){
             let data={"data":JSON.stringify({
-                "type":"ranking_ver1",
+                "type":"ranking_ver2",
+                "id":this.id,
                 "servername":process.env.chakra_server_name,
                 "body":body,
                 "serverpass":process.env.chakra_ranking_pass
