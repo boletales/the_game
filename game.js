@@ -959,7 +959,7 @@ class Game{
                 else if(players.filter(v=>v.hp>0)[0].id==this.playersLog[1].id)var result=1;
                 else var result=0.5;
 
-                let body={"time":this.getDateStr(),"players":this.playersLog.map(p=>p.playerid),"result":result};
+                let body={"time":new Date().toUTCString(),"players":this.playersLog.map(p=>p.playerid),"result":result};
                 this.sendRatingLog(body);
             }
             if(this.needokawari){
@@ -969,11 +969,6 @@ class Game{
             this.sendlog();
             return false;
         }
-    }
-    getDateStr(){
-        let pad0=(str,len)=>("0".repeat(len)+str).slice(-len);
-        let now=new Date();
-        return pad0(now.getFullYear(),4)+"-"+pad0(now.getMonth(),2)+"-"+pad0(now.getDate(),2)+" "+pad0(now.getHours(),2)+":"+pad0(now.getMinutes(),2)+":"+pad0(now.getSeconds(),2);
     }
     wasRankedTaimanGame(){
         return  this.playersLog.length==2 &&
