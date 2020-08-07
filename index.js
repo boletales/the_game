@@ -429,8 +429,8 @@ class Room{
                 {
                     others:  players.filter(p=>p.team==player.team).filter(p=>p!==player)
                                     .concat(players.filter(p=>p.team!=player.team))
-                                    .map(p=>({name:p.getShowingName(),state:p.getState(),team:p.team}))
-                    ,you:{name:player.getShowingName(),state:player.getState(),team:player.team}
+                                    .map(p=>p.getDataForClient())
+                    ,you:player.getDataForClient()
                 });
         });
     }

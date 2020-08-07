@@ -464,9 +464,9 @@ const Buffs={
         this.levelUp=function(){
             this.level++;
         }.bind(this);
-        this.state=function(){
-            return "⚔".repeat(this.level);
-        }.bind(this);
+        this.icon="⚔";
+        this.state=(()=>this.icon.repeat(this.level)).bind(this);
+        this.stateWithNum=(()=>this.level>0?this.icon+"×"+this.level:"").bind(this);
     },
     //↓麻痺
     stun:function(user){
@@ -476,9 +476,9 @@ const Buffs={
         this.level=0;
         this.user=user;
         this.id="stun";
-        this.state=function(){
-            return "⚡️".repeat(this.level);
-        }.bind(this);
+        this.icon="⚡️";
+        this.state=(()=>this.icon.repeat(this.level)).bind(this);
+        this.stateWithNum=(()=>this.level>0?this.icon+"×"+this.level:"").bind(this);
     },
     //↓☯減少
     chd:function(user){
@@ -491,9 +491,8 @@ const Buffs={
         this.level=0;
         this.user=user;
         this.id="chd";
-        this.state=function(){
-            return "";
-        }.bind(this);
+        this.state=(()=>"").bind(this);
+        this.stateWithNum=(()=>"").bind(this);
         this.levelUp=function(level){
                 this.level+=level;
         }
@@ -504,8 +503,9 @@ const Buffs={
         this.level=0;
         this.user=user;
         this.id="pdefperm";
-        this.state=(()=>"⛑".repeat(this.level)).bind(this);
-        this.levelUp=(level=>(this.level+=level)).bind(this);
+        this.icon="⛑";
+        this.state=(()=>this.icon.repeat(this.level)).bind(this);
+        this.stateWithNum=(()=>this.level>0?this.icon+"×"+this.level:"").bind(this);
     },
     //↓物理防御(1ターン)
     pdeftemp:function(user){
@@ -515,7 +515,8 @@ const Buffs={
         this.level=0;
         this.user=user;
         this.id="pdeftemp";
-        this.state=(()=>"");
+        this.state=(()=>"").bind(this);
+        this.stateWithNum=(()=>"").bind(this);
         this.levelUp=(level=>(this.level+=level)).bind(this);
     },
     //↓魔法防御(永続)
@@ -524,7 +525,9 @@ const Buffs={
         this.level=0;
         this.user=user;
         this.id="mdefperm";
-        this.state=(()=>"☂".repeat(this.level)).bind(this);
+        this.icon="☂";
+        this.state=(()=>this.icon.repeat(this.level)).bind(this);
+        this.stateWithNum=(()=>this.level>0?this.icon+"×"+this.level:"").bind(this);
         this.levelUp=(level=>(this.level+=level)).bind(this);
     },
     //↓魔法防御(1ターン)
@@ -536,6 +539,7 @@ const Buffs={
         this.user=user;
         this.id="mdeftemp";
         this.state=(()=>"");
+        this.stateWithNum=(()=>"").bind(this);
         this.levelUp=(level=>(this.level+=level)).bind(this);
     },
 }
@@ -1111,8 +1115,14 @@ function Player(id,nickname,team,game,kit,showJobMark=false,suffix=""){
     this.getState=function(){//プレイヤーの状態（文字列）
         return "♥".repeat(Math.max(this.hp,0))+"   "+"☯".repeat(Math.max(this.charge,0))+(this.game.useEx?"   Ex:"+this.chargeEx.toFixed(1):"")+"   "+Object.values(this.buffs).map(b=>b.state()).join(" ");
     }
+    this.getStateWithNum=function(){//プレイヤーの状態（文字列）
+        return "♥×"+Math.max(this.hp,0)+"   "+"☯×"+Math.max(this.charge,0)+(this.game.useEx?"   Ex:"+this.chargeEx.toFixed(1):"")+"   "+Object.values(this.buffs).map(b=>b.stateWithNum()).join(" ");
+    }
     this.getStateData=function(){//プレイヤーの状態（オブジェクト）
         return {hp:this.hp,charge:this.charge,chargeEx:this.chargeEx,buffs:Object.values(this.buffs).map(b=>({id:b.id,level:b.level})).filter(b=>b.level!=0)};
+    }
+    this.getDataForClient=function(){
+        return {name:this.getShowingName(),state:this.getState(),stateWithNum:this.getStateWithNum(),team:this.team};
     }
 
     this.refreshBuffs=function(){

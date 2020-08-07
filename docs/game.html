@@ -44,6 +44,7 @@
         
         <pre id="command" style="padding: 5px;width: 100%;background-color: #ffd;white-space: pre-wrap;">次のターンまでお待ちください</pre>
         <div id="players" style="padding: 5px;width: 100%;background-color: #eee"></div>
+        <input type="button" onclick="stateWithNum=!stateWithNum;refreshPlayers();" value="表示スタイル変更">
         
 
         <a href="../../">ロビーに戻る</a><br><br><br>
@@ -71,6 +72,8 @@
             let roomname;
             let name;
             let preCommand=document.getElementById("command");
+            let stateWithNum=false;
+            let playersHTMLWithNum,playersHTMLWithSym;
             socket.emit("getRoomData",{id:roomid});
             socket.emit("getGlobalLog",{});
                 let urlVars=getUrlVars();
@@ -124,13 +127,24 @@
                 location.href="./"+data.roomid+"?nickname="+data.nickname+"&team="+data.team+"&kit="+urlVars.kit;
             });
             socket.on("showPlayers", function(data){
-                document.getElementById("players").innerHTML="<span style='color:"+getColor(data.you.team)+";border-style: dotted;'>"+data.you.name+"≫"+data.you.state+"</span><br>";
-                data.others.forEach(player=>{
-                    document.getElementById("players").innerHTML+="<span style='color:"+getColor(player.team)+"'>"+player.name+"≫"+player.state+"</span><br>";
-                })
+                var stateStringHTML = ((player,getData,isyou)=>("<span style='color:"+getColor(player.team)+";"+(isyou?"border-style: dotted;":"")+"'>"+player.name+"≫"+getData(player)+"</span><br>"));
+                
+                playersHTMLWithSym =          stateStringHTML(data.you,p=>p.state,true)
+                    + data.others.map(player=>stateStringHTML(player  ,p=>p.state,false)).join("");
+
+                playersHTMLWithNum =          stateStringHTML(data.you,p=>p.stateWithNum,true)
+                    + data.others.map(player=>stateStringHTML(player  ,p=>p.stateWithNum,false)).join("");
+                
+                refreshPlayers();
             });
             socket.on("connectedCount",data=>document.getElementById("connected_count").innerHTML=data);
-            
+            function refreshPlayers(){
+                if(stateWithNum){
+                    document.getElementById("players").innerHTML=playersHTMLWithNum;
+                }else{
+                    document.getElementById("players").innerHTML=playersHTMLWithSym;
+                }
+            }
             function setName(data){
                 name=data.id;
                 document.getElementById("anataha").innerHTML="あなたは ";
