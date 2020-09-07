@@ -902,7 +902,10 @@ class Game{
             damages.push(decisions[to].skill.defensePhase(players[to],players,decisions,attacks[to],decisions[to].args));
         }
         
-        players.forEach(p=>p.buffs.chd.tick());
+        players.forEach(p=>{
+            p.buffs.chd.tick();
+            p.charge = Math.max(p.charge,0);
+        });
 
         //ダメージを与える
         players.forEach((p,i)=>p.hp-=damages[i].reduce((a,c)=>a+c,0));
