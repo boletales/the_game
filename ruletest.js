@@ -79,5 +79,11 @@ function testTurn(data){
     //ダメージを与える
     players.forEach((p,i)=>p.hp-=damages[i].reduce((a,c)=>a+c,0));
     
+    players.forEach(p=>{
+        p.buffs.chd.tick();
+        p.charge = Math.max(p.charge,0);
+        p.hp     = Math.max(p.hp    ,0);
+    });
+    
     return players.map(p=>{return {"name":p.id,"team":p.team,"hp":p.hp,"mana":p.charge,"buffStr":p.buffs.str.level};})
 }
