@@ -350,13 +350,14 @@ _SKILLS_MOD_SMASH={
                 &&!decisions[targetIndex].skill.beam){
                 
                 let target=players.find(p=>p.id==args[0]);
-                target.buffs.chd.levelUp(2)
-                user.charge+=Math.min(target.charge,2);
+                let robbing = Math.min(target.charge,2);
+                target.useChakra(robbing);
+                user.useChakra(-robbing);
             }else{
                 user.useChakra(this.getCost(user));
             }
-            let opp=players.find(p=>p.id==args[0]);
-            opp.buffs.chd.tick();
+            //let opp=players.find(p=>p.id==args[0]);
+            //opp.buffs.chd.tick();
         },
         defensePhase:_DEFENSE_DEFAULT,
         requirement:_REQUIREMENT_DEFAULT,
@@ -391,7 +392,7 @@ _SKILLS_MOD_SALVO={
         attackPhase:function(user,players,decisions,args){
             let attacks=players.map(p=>0);
             attacks[players.findIndex(p=>p.id==args[0])] = user.charge+user.buffs.str.getPower();
-            user.charge=0;
+            user.useChakra(user.charge);
             return attacks;
         },pow:1,
         defensePhase:_DEFENSE_DEFAULT,
@@ -483,10 +484,8 @@ const Buffs={
     //↓☯減少
     chd:function(user){
         this.tick=function(){
-        	if(this.level>0){
-                user.charge=Math.max(user.charge-this.level,0);
-                this.level=0;
-            }
+            user.charge=user.charge-this.level;
+            this.level=0;
         }.bind(this);
         this.level=0;
         this.user=user;
@@ -902,6 +901,8 @@ class Game{
         for(let to=0;to<decisions.length;to++){
             damages.push(decisions[to].skill.defensePhase(players[to],players,decisions,attacks[to],decisions[to].args));
         }
+        
+        players.forEach(p=>p.buffs.chd.tick());
 
         //ダメージを与える
         players.forEach((p,i)=>p.hp-=damages[i].reduce((a,c)=>a+c,0));
@@ -1095,7 +1096,7 @@ function Player(id,nickname,team,game,kit,showJobMark=false,suffix=""){
     }
 
     this.useChakra=(cost)=>{
-        this.charge=Math.max(0,this.charge-cost);
+        this.buffs.chd.levelUp(cost);
     }
     this.useChakraEx=(cost)=>{
         this.chargeEx=Math.max(0,this.chargeEx-cost);

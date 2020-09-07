@@ -68,6 +68,7 @@ function testTurn(data){
     
     //強奪処理
     applyAction("smashPhase");
+    players.forEach(p=>p.buffs.chd.tick());
 
     //防御処理
     let damages=[];
@@ -78,5 +79,5 @@ function testTurn(data){
     //ダメージを与える
     players.forEach((p,i)=>p.hp-=damages[i].reduce((a,c)=>a+c,0));
     
-    return players.map(p=>{return {"name":p.id,"hp":p.hp,"mana":p.charge,"buffStr":p.buffs.str.level};})
+    return players.map(p=>{return {"name":p.id,"team":p.team,"hp":p.hp,"mana":p.charge,"buffStr":p.buffs.str.level};})
 }
