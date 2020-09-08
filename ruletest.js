@@ -3,6 +3,7 @@ const fs = require('fs');
 
 let input  = JSON.parse(fs.readFileSync(process.argv[2]+"/input.json"));
 let output = JSON.parse(fs.readFileSync(process.argv[2]+"/output.json"));
+let count = 0;
 input.forEach((c,i)=>{
     let testout=testTurn(c);
     if(!checkOutput(testout,output[i])){
@@ -13,8 +14,11 @@ input.forEach((c,i)=>{
             console.log("");
         })
         console.log("~".repeat(20));
+    }else{
+        count++;
     }
 });
+console.log("checked: "+count+"/"+input.length+" passed the test");
 
 function checkOutput(o1,o2){
     return o1.reduce((p,c,i)=>(isSame(c,o2[i])&&p),true);
@@ -84,6 +88,6 @@ function testTurn(data){
         p.charge = Math.max(p.charge,0);
         p.hp     = Math.max(p.hp    ,0);
     });
-    
+
     return players.map(p=>{return {"name":p.id,"team":p.team,"hp":p.hp,"mana":p.charge,"buffStr":p.buffs.str.level};})
 }
