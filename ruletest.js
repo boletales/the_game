@@ -4,6 +4,7 @@ const fs = require('fs');
 let input  = JSON.parse(fs.readFileSync(process.argv[2]+"/input.json"));
 let output = JSON.parse(fs.readFileSync(process.argv[2]+"/output.json"));
 let count = 0;
+console.log(input.length+" data loaded");
 input.forEach((c,i)=>{
     let testout=testTurn(c);
     if(!checkOutput(testout,output[i])){
@@ -28,7 +29,7 @@ function isSame(p1,p2){
 }
 
 function testTurn(data){
-    let players = data.map(d=>d.player).map(d=>new _game.Player(d.name,d.name,d.team,null,_game._KIT_STD))
+    let players = data.map(d=>d.player).map(d=>new _game.Player(d.playerId,d.nickname,d.teamId,null,_game._KIT_STD))
     data.map(d=>d.player).map((p,i)=>{
         players[i].hp = p.hp;
         players[i].charge = p.mana;
@@ -36,7 +37,7 @@ function testTurn(data){
         players[i].game = {players:players};
     });
 
-    let decisions = data.map(d=>d.skill).map(d=>{return {skill:Object.values(_game._KIT_STD.skills).find(s=>s.name==d.name)
+    let decisions = data.map(d=>d.action).map(d=>{return {skill:Object.values(_game._KIT_STD.skills).find(s=>s.name==d.skill)
                                                             ,args:[d.target]}
                                                     });
 
@@ -89,5 +90,6 @@ function testTurn(data){
         p.hp     = Math.max(p.hp    ,0);
     });
 
-    return players.map(p=>{return {"name":p.id,"team":p.team,"hp":p.hp,"mana":p.charge,"buffStr":p.buffs.str.level};})
+    return players.map(p=>{return {"buffStr":p.buffs.str.level,"teamId":p.team,"mana":p.charge,"nickname":p.nickname,"hp":p.hp,"playerId":p.id};})
+    
 }
